@@ -7,7 +7,7 @@ Next Steps:
 2. Start Workflow
 3. Researching Vision and AdvantageKit, along with playing around with WPILib's new toys
 4. Start April Tag recognition running for limelights
-5. Figure out how to change the limelight's IP (Since it conflicts with the RoboRIO2's IP)
+5. Figure out how to change the limelight's IP (Since it conflicts with the RoboRIO2's IP) - Done
 
 Roles:
 Xander: Start Vision, Start creating Autos, Start AprilTag recognition for new robot
