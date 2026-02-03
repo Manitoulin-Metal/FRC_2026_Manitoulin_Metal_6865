@@ -7,17 +7,26 @@ Next Steps:
 2. Start Workflow
 3. Researching Vision and AdvantageKit, along with playing around with WPILib's new toys
 4. Start April Tag recognition running for limelights
+<<<<<<< HEAD
 5. Figure out how to change the limelight's IP (Since it conflicts with the RoboRIO2's IP) - Done
+=======
+>>>>>>> xander
 
 Roles:
-Xander: Start Vision, Start creating Autos, Start AprilTag recognition for new robot
-Nate: Catch up and learn about code again
-Fredrick: Unknown
+Xander: Start Vision, Start creating Autos, Start AprilTag recognition for new robot, IntakeDeploySubsystem
+Nate: Catch up and learn about code again, IntakeRollerSubsystem code
+Evan: ShooterSubsystem
+Tanner: IndexerSubsystem/Kicker Subsystem and ClimberSubsystem
+Fredrick: Coding the Up and Down movements for the arm, and LEDSubsystem
 Mandy: Unknown
 
 Things that have not been set as a responsibility for someone:
 1. Shooter Commands (Xander might take this responsibility)
 2. Intake Commands (Nate might take this, since it should be easier than the Shooter Command)
 3. Auto Align??? (If we do this, Xander should do it)
+<<<<<<< HEAD
 4. Make the most of AdvantageKit (Xander/Nate/Argall)
 5. Figure out how to change the limelight's IP (Since it conflicts with the RoboRIO2's IP)
+=======
+4. Make the most of AdvantageKit (Xander/Nate)
+>>>>>>> xander
