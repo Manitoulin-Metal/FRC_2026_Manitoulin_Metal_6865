@@ -1,6 +1,7 @@
 // Copyright (c) 2021-2026 Littleton Robotics
 // http://github.com/Mechanical-Advantage
-//
+// This is being used by Team 6865, Manitoulin Metal
+
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
@@ -33,6 +34,7 @@ public class LocalADStarAK implements Pathfinder {
    *
    * @return True if a new path is available
    */
+
   @Override
   public boolean isNewPathAvailable() {
     if (!Logger.hasReplaySource()) {
@@ -51,6 +53,7 @@ public class LocalADStarAK implements Pathfinder {
    * @param goalEndState The goal end state to use when creating the path
    * @return The PathPlannerPath created from the points calculated by the pathfinder
    */
+
   @Override
   public PathPlannerPath getCurrentPath(PathConstraints constraints, GoalEndState goalEndState) {
     if (!Logger.hasReplaySource()) {
@@ -70,8 +73,9 @@ public class LocalADStarAK implements Pathfinder {
    * Set the start position to pathfind from
    *
    * @param startPosition Start position on the field. If this is within an obstacle it will be
-   *     moved to the nearest non-obstacle node.
+   * moved to the nearest non-obstacle node.
    */
+
   @Override
   public void setStartPosition(Translation2d startPosition) {
     if (!Logger.hasReplaySource()) {
@@ -83,8 +87,9 @@ public class LocalADStarAK implements Pathfinder {
    * Set the goal position to pathfind to
    *
    * @param goalPosition Goal position on the field. f this is within an obstacle it will be moved
-   *     to the nearest non-obstacle node.
+   * to the nearest non-obstacle node.
    */
+
   @Override
   public void setGoalPosition(Translation2d goalPosition) {
     if (!Logger.hasReplaySource()) {
@@ -96,10 +101,11 @@ public class LocalADStarAK implements Pathfinder {
    * Set the dynamic obstacles that should be avoided while pathfinding.
    *
    * @param obs A List of Translation2d pairs representing obstacles. Each Translation2d represents
-   *     opposite corners of a bounding box.
+   * opposite corners of a bounding box.
    * @param currentRobotPos The current position of the robot. This is needed to change the start
-   *     position of the path to properly avoid obstacles
+   * position of the path to properly avoid obstacles
    */
+  
   @Override
   public void setDynamicObstacles(
       List<Pair<Translation2d, Translation2d>> obs, Translation2d currentRobotPos) {

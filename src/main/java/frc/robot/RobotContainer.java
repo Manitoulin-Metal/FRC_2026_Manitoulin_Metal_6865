@@ -1,5 +1,6 @@
 // Copyright (c) 2021-2026 Littleton Robotics
 // http://github.com/Mechanical-Advantage
+// This is being used by Team 6865, Manitoulin Metal
 
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file at the root directory of this project.
@@ -18,13 +19,37 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.Constants;
 import frc.robot.generated.TunerConstants;
+import frc.robot.Telemetry.*;
+import frc.robot.Robot;
+import frc.robot.Main;
+import frc.robot.LimelightHelpers;
+import frc.robot.subsystems.ClimbSubsystem;
+import frc.robot.subsystems.IntakeDeploySubsystem;
+import frc.robot.subsystems.IntakeRollerSubsystem;
+import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.LEDSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
+import frc.robot.subsystems.drive.GyroIONavX;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.subsystems.drive.ModuleIOTalonFXS;
+import frc.robot.subsystems.vision.*;
+import frc.robot.subsystems.vision.VisionUtil.*;
+import frc.robot.subsystems.vision.VisionTemplate.*;
+import frc.robot.subsystems.vision.VisionIO.*;
+import frc.robot.subsystems.vision.VisionMeasurement.*;
+import frc.robot.subsystems.vision.VisionIOLimelight.*;
+import frc.robot.subsystems.vision.VisionIOPhotonVision.*;
+import frc.robot.subsystems.vision.VisionIOPhotonVisionSim.*;
+import frc.robot.subsystems.vision.VisionConstants.*;
+
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -33,12 +58,15 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
+@SuppressWarnings("unused")
 public class RobotContainer {
+    
   // Subsystems
   private final Drive drive;
 
   PIDController XAlignController = new PIDController(Constants.X_ALIGN_P, 0, 0);
   PIDController YAlignController = new PIDController(Constants.Y_ALIGN_P, 0, 0);
+  PIDController rotController = new PIDController(Constants.ROT_ALIGN_P, 0, 0);
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
 
@@ -56,6 +84,7 @@ public class RobotContainer {
         // Real robot, instantiate hardware IO implementations
         // ModuleIOTalonFX is intended for modules with TalonFX drive, TalonFX turn, and
         // a CANcoder
+        
         drive =
             new Drive(
                 new GyroIOPigeon2(),
@@ -65,29 +94,18 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackRight));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
-        // TalonFXS controller connected to a CANdi with a PWM encoder. The
-        // implementations
-        // of ModuleIOTalonFX, ModuleIOTalonFXS, and ModuleIOSpark (from the Spark
-        // swerve
-        // template) can be freely intermixed to support alternative hardware
+        // TalonFXS controller connected to a CANdi with a PWM encoder. The implementations
+        // of ModuleIOTalonFX, ModuleIOTalonFXS, and ModuleIOSpark (from the Spark swerve template) can be freely intermixed to support alternative hardware
         // arrangements.
         // Please see the AdvantageKit template documentation for more information:
         // https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template#custom-module-implementations
-
-        // drive =
-        // new Drive(
-        // new GyroIOPigeon2(),
-        // new ModuleIOTalonFXS(TunerConstants.FrontLeft),
-        // new ModuleIOTalonFXS(TunerConstants.FrontRight),
-        // new ModuleIOTalonFXS(TunerConstants.BackLeft),
-        // new ModuleIOTalonFXS(TunerConstants.BackRight));
         break;
 
       case SIM:
         // Sim robot, instantiate physics sim IO implementations
         drive =
             new Drive(
-                new GyroIO() {},
+                new GyroIONavX(),
                 new ModuleIOSim(TunerConstants.FrontLeft),
                 new ModuleIOSim(TunerConstants.FrontRight),
                 new ModuleIOSim(TunerConstants.BackLeft),
@@ -98,11 +116,36 @@ public class RobotContainer {
         // Replayed robot, disable IO implementations
         drive =
             new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
+                new GyroIO() {
+                  @Override
+                  public void updateInputs(GyroIOInputs inputs) {
+                    // Do nothing
+                  }
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {
+                    // Do nothing
+                  }
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {
+                    // Do nothing
+                  }
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {
+                    // Do nothing
+                  }
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {
+                    // Do nothing
+                  }
+                });
         break;
     }
 
@@ -131,18 +174,19 @@ public class RobotContainer {
 
   /**
    * Use this method to define your button->command mappings. Buttons can be created by
-   * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
-   * @return
+   * instantiating a GenericHID or one of its subclasses (for example,
+   * edu.wpi.first.wpilibj.Joystick or XboxController), and then passing it to a button wrapper.
    */
+
   public boolean isFinished() {
     return this.dontSeeTagTimer.hasElapsed(Double.parseDouble(Constants.DONT_SEE_TAG_TIMEOUT_SECS));
   }
 
   public void AlignToTowerTagRelative(boolean isRed, Drive swerveSubsystem) {
-    PIDController XAlignController = new PIDController(Constants.X_ALIGN_P, 0, 0);
-    PIDController YAlignController = new PIDController(Constants.Y_ALIGN_P, 0, 0);
-    PIDController rotController = new PIDController(Constants.ROT_ALIGN_P, 0, 0);
+    // Create or replace PID controllers normally (PIDController does not implement AutoCloseable)
+    XAlignController = new PIDController(Constants.X_ALIGN_P, 0, 0);
+    YAlignController = new PIDController(Constants.Y_ALIGN_P, 0, 0);
+    rotController = new PIDController(Constants.ROT_ALIGN_P, 0, 0);
     this.isRed = isRed;
   }
 
@@ -185,6 +229,7 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
+
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }

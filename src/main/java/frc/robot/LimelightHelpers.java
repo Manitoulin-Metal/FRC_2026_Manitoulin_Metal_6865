@@ -1,4 +1,5 @@
 // LimelightHelpers v1.14 (REQUIRES LLOS 2026.0 OR LATER)
+// This is being used by Team 6865, Manitoulin Metal
 
 package frc.robot;
 
@@ -32,6 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * cameras in FRC. This library supports all Limelight features including AprilTag tracking, Neural
  * Networks, and standard color/retroreflective tracking.
  */
+
+@SuppressWarnings("unused")
+
 public class LimelightHelpers {
 
   private static final Map<String, DoubleArrayEntry> doubleArrayEntries = new ConcurrentHashMap<>();
@@ -259,7 +263,9 @@ public class LimelightHelpers {
     @JsonProperty("pts")
     public double[][] corners;
 
-    public LimelightTarget_Barcode() {}
+    public LimelightTarget_Barcode() {
+        corners = new double[4][2];
+    }
 
     public String getFamily() {
       return family;
@@ -293,7 +299,9 @@ public class LimelightHelpers {
     @JsonProperty("typ")
     public double ty_pixels;
 
-    public LimelightTarget_Classifier() {}
+    public LimelightTarget_Classifier() {
+
+    }
   }
 
   /** Represents a Neural Detector Pipeline Result extracted from JSON Output */
@@ -329,7 +337,9 @@ public class LimelightHelpers {
     @JsonProperty("ty_nocross")
     public double ty_nocrosshair;
 
-    public LimelightTarget_Detector() {}
+    public LimelightTarget_Detector() {
+
+    }
   }
 
   /** Represents hardware statistics from the Limelight. */
@@ -352,7 +362,9 @@ public class LimelightHelpers {
     @JsonProperty("temp")
     public double temperature;
 
-    public HardwareReport() {}
+    public HardwareReport() {
+
+    }
   }
 
   /** Represents IMU data from the JSON results. */
@@ -419,7 +431,9 @@ public class LimelightHelpers {
     @JsonProperty("storedSeconds")
     public double storedSeconds;
 
-    public RewindStats() {}
+    public RewindStats() {
+
+    }
   }
 
   /** Limelight Results object, parsed from a Limelight's JSON results output. */
@@ -798,7 +812,9 @@ public class LimelightHelpers {
     public double accelY = 0.0;
     public double accelZ = 0.0;
 
-    public IMUData() {}
+    public IMUData() {
+
+    }
 
     public IMUData(double[] imuData) {
       if (imuData != null && imuData.length >= 10) {
@@ -892,6 +908,7 @@ public class LimelightHelpers {
    * @param pose The Pose2d object to convert
    * @return A 6-element array containing [x, y, 0, 0, 0, yaw]
    */
+
   public static double[] pose2dToArray(Pose2d pose) {
     double[] result = new double[6];
     result[0] = pose.getTranslation().getX();
@@ -1247,9 +1264,9 @@ public class LimelightHelpers {
    *
    * @param limelightName Name of the Limelight camera
    * @return Array containing [targetValid, targetCount, targetLatency, captureLatency, tx, ty,
-   *     txnc, tync, ta, tid, targetClassIndexDetector, targetClassIndexClassifier,
-   *     targetLongSidePixels, targetShortSidePixels, targetHorizontalExtentPixels,
-   *     targetVerticalExtentPixels, targetSkewDegrees]
+   * txnc, tync, ta, tid, targetClassIndexDetector, targetClassIndexClassifier,
+   * targetLongSidePixels, targetShortSidePixels, targetHorizontalExtentPixels,
+   * targetVerticalExtentPixels, targetSkewDegrees]
    */
   public static double[] getT2DArray(String limelightName) {
     return getLimelightNTDoubleArray(limelightName, "t2d");
@@ -1475,7 +1492,7 @@ public class LimelightHelpers {
    *
    * @param limelightName Name/identifier of the Limelight
    * @return Pose3d object representing the robot's position and orientation in Red Alliance field
-   *     space
+   * space
    */
   public static Pose3d getBotPose3d_wpiRed(String limelightName) {
     double[] poseArray = getLimelightNTDoubleArray(limelightName, "botpose_wpired");
@@ -1487,7 +1504,7 @@ public class LimelightHelpers {
    *
    * @param limelightName Name/identifier of the Limelight
    * @return Pose3d object representing the robot's position and orientation in Blue Alliance field
-   *     space
+   * space
    */
   public static Pose3d getBotPose3d_wpiBlue(String limelightName) {
     double[] poseArray = getLimelightNTDoubleArray(limelightName, "botpose_wpiblue");
@@ -1821,7 +1838,7 @@ public class LimelightHelpers {
    *
    * @param limelightName Name/identifier of the Limelight
    * @param alpha Defaults to .001. Higher values will cause the internal IMU to converge onto the
-   *     assist source more rapidly.
+   * assist source more rapidly.
    */
   public static void SetIMUAssistAlpha(String limelightName, double alpha) {
     setLimelightNTDouble(limelightName, "imuassistalpha_set", alpha);
@@ -1833,7 +1850,7 @@ public class LimelightHelpers {
    *
    * @param limelightName Name/identifier of the Limelight
    * @param throttle Defaults to 0. Your Limelgiht will process one frame after skipping <throttle>
-   *     frames.
+   * frames.
    */
   public static void SetThrottle(String limelightName, int throttle) {
     setLimelightNTDouble(limelightName, "throttle_set", throttle);
@@ -1860,7 +1877,7 @@ public class LimelightHelpers {
    *
    * @param limelightName Name/identifier of the Limelight
    * @param downscale Downscale factor. Valid values: 1.0 (no downscale), 1.5, 2.0, 3.0, 4.0. Set to
-   *     0 for pipeline control.
+   * 0 for pipeline control.
    */
   public static void SetFiducialDownscalingOverride(String limelightName, float downscale) {
     int d = 0; // pipeline
@@ -2005,10 +2022,10 @@ public class LimelightHelpers {
    * Sets up port forwarding for a Limelight 3A/3G connected via USB. This allows access to the
    * Limelight web interface and video stream when connected to the robot over USB.
    *
-   * <p>For usbIndex 0: ports 5800-5809 forward to 172.29.0.1 For usbIndex 1: ports 5810-5819
+   * For usbIndex 0: ports 5800-5809 forward to 172.29.0.1 For usbIndex 1: ports 5810-5819
    * forward to 172.29.1.1 etc.
    *
-   * <p>Call this method once during robot initialization. To access the interface of the camera
+   * Call this method once during robot initialization. To access the interface of the camera
    * with usbIndex0, you would go to roboRIO-(teamnum)-FRC.local:5801. Port 5811 for usb index 1
    *
    * @param usbIndex The USB index of the Limelight (0, 1, 2, etc.)
