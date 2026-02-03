@@ -5,13 +5,13 @@
 // license that can be found in the LICENSE file
 // at the root directory of this project.
 
-package frc.robot.Subsystem.vision;
+package frc.robot.subsystems.vision;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
 
-import static frc.robot.Subsystem.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import java.util.HashSet;
 import java.util.LinkedList;

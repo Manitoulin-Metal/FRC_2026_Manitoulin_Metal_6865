@@ -749,39 +749,39 @@ public class LimelightHelpers {
           && Arrays.equals(rawFiducials, that.rawFiducials);
     }
 
-	public Pose3d robotPose() {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'robotPose'");
-	}
+    public Pose3d robotPose() {
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'robotPose'");
+    }
 
     public boolean isMegaTag2() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isMegaTag2'");
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'isMegaTag2'");
     }
 
     public int yawVelocity() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'yawVelocity'");
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'yawVelocity'");
     }
 
     public int tagCount() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'tagCount'");
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'tagCount'");
     }
 
     public double ambiguity() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'ambiguity'");
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'ambiguity'");
     }
 
     public double avgTagArea() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'avgTagArea'");
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'avgTagArea'");
     }
 
     public double avgTagDist() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'avgTagDist'");
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'avgTagDist'");
     }
   }
 

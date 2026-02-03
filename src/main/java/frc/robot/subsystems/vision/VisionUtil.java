@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file at
 // the root directory of this project.
 
-package frc.robot.Subsystem.vision;
+package frc.robot.subsystems.vision;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
@@ -23,11 +23,14 @@ import java.util.List;
  */
 public class VisionUtil {
   // Field margins and dimensions (meters)
-  public static final double FIELD_MARGIN_METERS = 0.5; // Meters beyond field boundaries to accept measurements
-  public static final double Z_MARGIN_METERS = 0.5; // Meters above/below field to accept measurements
+  public static final double FIELD_MARGIN_METERS =
+      0.5; // Meters beyond field boundaries to accept measurements
+  public static final double Z_MARGIN_METERS =
+      0.5; // Meters above/below field to accept measurements
   public static final double FIELD_LENGTH_METERS = 16.46; // Field length in meters
   public static final double FIELD_WIDTH_METERS = 8.02; // Field width in meters
-  public static final double MT2_SPIN_MAX_DPS = 40.0; // Maximum rotation speed for MT2 measurements (degrees/sec)
+  public static final double MT2_SPIN_MAX_DPS =
+      40.0; // Maximum rotation speed for MT2 measurements (degrees/sec)
   public static final double MIN_TAG_AREA = 0.05; // Minimum tag area to be accepted
 
   // MA mode tuning constants (adjust as needed)
@@ -157,8 +160,8 @@ public class VisionUtil {
       }
 
       /**
-       * Calculates standard deviations when only one tag is detected. Uses both tag area and distance
-       * from expected pose to determine confidence.
+       * Calculates standard deviations when only one tag is detected. Uses both tag area and
+       * distance from expected pose to determine confidence.
        *
        * @param mt The pose estimate containing tag detection information
        * @return VisionDevs with appropriate standard deviations
@@ -166,7 +169,10 @@ public class VisionUtil {
       private static VisionDevs calculateSingleTagStdDevs(PoseEstimate mt) {
         // Calculate how far the measured pose is from the expected pose
         double poseDifference =
-            mt.robotPose().getTranslation().toTranslation2d().getDistance(mt.robotPose().getTranslation().toTranslation2d());
+            mt.robotPose()
+                .getTranslation()
+                .toTranslation2d()
+                .getDistance(mt.robotPose().getTranslation().toTranslation2d());
 
         // Define confidence thresholds based on pose difference and tag area
         boolean isCloseToExpectedPose = poseDifference < 0.5;
@@ -279,8 +285,7 @@ public class VisionUtil {
   }
 
   /**
-  /**
-   * Validation helper method to check if rotation velocity is within acceptable limits.
+   * /** Validation helper method to check if rotation velocity is within acceptable limits.
    *
    * @param mt The pose estimate to validate
    * @return True if the rotation velocity exceeds the maximum allowed speed

@@ -23,7 +23,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  */
 public class Robot extends LoggedRobot {
   public static final boolean BEFORE_MATCH = false;
-private Command autonomousCommand;
+  private Command autonomousCommand;
   private RobotContainer robotContainer;
 
   public Robot() {

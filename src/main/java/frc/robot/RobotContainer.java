@@ -7,9 +7,11 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -35,11 +37,17 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
 
+  PIDController XAlignController = new PIDController(Constants.X_ALIGN_P, 0, 0);
+  PIDController YAlignController = new PIDController(Constants.Y_ALIGN_P, 0, 0);
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
+  private boolean isRed;
+
+  Timer dontSeeTagTimer = new Timer();
+  private Object dontSeeTagTimerObject;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -125,8 +133,19 @@ public class RobotContainer {
    * Use this method to define your button->command mappings. Buttons can be created by
    * instantiating a {@link GenericHID} or one of its subclasses ({@link
    * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
-   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
+   * @return
    */
+  public boolean isFinished() {
+    return this.dontSeeTagTimer.hasElapsed(Double.parseDouble(Constants.DONT_SEE_TAG_TIMEOUT_SECS));
+  }
+
+  public void AlignToTowerTagRelative(boolean isRed, Drive swerveSubsystem) {
+    PIDController XAlignController = new PIDController(Constants.X_ALIGN_P, 0, 0);
+    PIDController YAlignController = new PIDController(Constants.Y_ALIGN_P, 0, 0);
+    PIDController rotController = new PIDController(Constants.ROT_ALIGN_P, 0, 0);
+    this.isRed = isRed;
+  }
+
   private void configureButtonBindings() {
     // Default command, normal field-relative drive
     drive.setDefaultCommand(

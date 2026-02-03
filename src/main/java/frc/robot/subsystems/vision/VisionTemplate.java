@@ -1,13 +1,11 @@
 // Copyright (c) 2021-2026 Littleton Robotics
 // http://github.com/Mechanical-Advantage
-//
+
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
 
-package frc.robot.Subsystem.vision;
-
-import static frc.robot.Subsystem.vision.VisionConstants.*;
+package frc.robot.subsystems.vision;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -19,9 +17,10 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Subsystem.vision.VisionIO;
-import frc.robot.Subsystem.vision.VisionIO.PoseObservationType;
-import frc.robot.Subsystem.vision.VisionIO.VisionIOInputs;
+import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
+import frc.robot.subsystems.vision.VisionIO.VisionIOInputs;
+
+import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import java.util.LinkedList;
 import java.util.List;
