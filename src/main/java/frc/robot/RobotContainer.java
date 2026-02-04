@@ -11,27 +11,14 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.commands.DriveCommands;
-import frc.robot.Constants;
-import frc.robot.generated.TunerConstants;
 import frc.robot.Telemetry.*;
-import frc.robot.Robot;
-import frc.robot.Main;
-import frc.robot.LimelightHelpers;
-import frc.robot.subsystems.ClimbSubsystem;
-import frc.robot.subsystems.IntakeDeploySubsystem;
-import frc.robot.subsystems.IntakeRollerSubsystem;
-import frc.robot.subsystems.KickerSubsystem;
-import frc.robot.subsystems.LEDSubsystem;
-import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.commands.DriveCommands;
+import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIONavX;
@@ -39,17 +26,15 @@ import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
-import frc.robot.subsystems.drive.ModuleIOTalonFXS;
 import frc.robot.subsystems.vision.*;
-import frc.robot.subsystems.vision.VisionUtil.*;
-import frc.robot.subsystems.vision.VisionTemplate.*;
+import frc.robot.subsystems.vision.VisionConstants.*;
 import frc.robot.subsystems.vision.VisionIO.*;
-import frc.robot.subsystems.vision.VisionMeasurement.*;
 import frc.robot.subsystems.vision.VisionIOLimelight.*;
 import frc.robot.subsystems.vision.VisionIOPhotonVision.*;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim.*;
-import frc.robot.subsystems.vision.VisionConstants.*;
-
+import frc.robot.subsystems.vision.VisionMeasurement.*;
+import frc.robot.subsystems.vision.VisionTemplate.*;
+import frc.robot.subsystems.vision.VisionUtil.*;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -60,7 +45,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  */
 @SuppressWarnings("unused")
 public class RobotContainer {
-    
+
   // Subsystems
   private final Drive drive;
 
@@ -84,7 +69,7 @@ public class RobotContainer {
         // Real robot, instantiate hardware IO implementations
         // ModuleIOTalonFX is intended for modules with TalonFX drive, TalonFX turn, and
         // a CANcoder
-        
+
         drive =
             new Drive(
                 new GyroIOPigeon2(),
@@ -95,7 +80,8 @@ public class RobotContainer {
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
         // TalonFXS controller connected to a CANdi with a PWM encoder. The implementations
-        // of ModuleIOTalonFX, ModuleIOTalonFXS, and ModuleIOSpark (from the Spark swerve template) can be freely intermixed to support alternative hardware
+        // of ModuleIOTalonFX, ModuleIOTalonFXS, and ModuleIOSpark (from the Spark swerve template)
+        // can be freely intermixed to support alternative hardware
         // arrangements.
         // Please see the AdvantageKit template documentation for more information:
         // https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template#custom-module-implementations
@@ -177,7 +163,6 @@ public class RobotContainer {
    * instantiating a GenericHID or one of its subclasses (for example,
    * edu.wpi.first.wpilibj.Joystick or XboxController), and then passing it to a button wrapper.
    */
-
   public boolean isFinished() {
     return this.dontSeeTagTimer.hasElapsed(Double.parseDouble(Constants.DONT_SEE_TAG_TIMEOUT_SECS));
   }
@@ -229,7 +214,6 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
-
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }

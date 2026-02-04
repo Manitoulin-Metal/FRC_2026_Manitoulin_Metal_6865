@@ -3,6 +3,4 @@
 
 package frc.robot.subsystems;
 
-public class IntakeDeploySubsystem {
-    
-}
+public class IntakeDeploySubsystem {}
