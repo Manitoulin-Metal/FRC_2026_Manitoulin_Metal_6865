@@ -175,12 +175,18 @@ public class Drive extends SubsystemBase {
 
     // Update odometry
     double[] sampleTimestamps = modules[0].getOdometryTimestamps();
-    // All signals are sampled together
     int sampleCount = sampleTimestamps.length;
+
+    // 🚧 SIM-SAFE GUARD: gyro and modules must both have samples
+    if (sampleCount == 0 || gyroInputs.odometryYawPositions.length < sampleCount) {
+      return;
+    }
+
     for (int i = 0; i < sampleCount; i++) {
       // Read wheel positions and deltas from each module
       SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
       SwerveModulePosition[] moduleDeltas = new SwerveModulePosition[4];
+
       for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
         modulePositions[moduleIndex] = modules[moduleIndex].getOdometryPositions()[i];
         moduleDeltas[moduleIndex] =
@@ -193,10 +199,8 @@ public class Drive extends SubsystemBase {
 
       // Update gyro angle
       if (gyroInputs.connected) {
-        // Use the real gyro angle
         rawGyroRotation = gyroInputs.odometryYawPositions[i];
       } else {
-        // Use the angle delta from the kinematics and module deltas
         Twist2d twist = kinematics.toTwist2d(moduleDeltas);
         rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
       }
