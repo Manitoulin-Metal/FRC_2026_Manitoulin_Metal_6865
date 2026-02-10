@@ -9,6 +9,8 @@ public class SimpleDriveAndSpinAuto extends SequentialCommandGroup {
 
   public SimpleDriveAndSpinAuto(Drive drive) {
 
+    addRequirements(drive); // 🔥 THIS IS THE KEY
+
     addCommands(
         // Drive forward for 1 second
         Commands.run(
@@ -22,13 +24,11 @@ public class SimpleDriveAndSpinAuto extends SequentialCommandGroup {
                 drive)
             .withTimeout(1.0),
 
-        // Spin in place for 2 seconds
+        // Spin HARD in place for 2 seconds
         Commands.run(
                 () ->
                     drive.runVelocity(
-                        new ChassisSpeeds(
-                            0.0, 0.0, Math.toRadians(45.0) // slow rotation
-                            )),
+                        new ChassisSpeeds(0.0, 0.0, drive.getMaxAngularSpeedRadPerSec())),
                 drive)
             .withTimeout(2.0),
 

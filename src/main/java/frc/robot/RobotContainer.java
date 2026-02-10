@@ -78,8 +78,10 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.BackRight));
 
         // The ModuleIOTalonFXS implementation provides an example implementation for
-        // TalonFXS controller connected to a CANdi with a PWM encoder. The implementations
-        // of ModuleIOTalonFX, ModuleIOTalonFXS, and ModuleIOSpark (from the Spark swerve template)
+        // TalonFXS controller connected to a CANdi with a PWM encoder. The
+        // implementations
+        // of ModuleIOTalonFX, ModuleIOTalonFXS, and ModuleIOSpark (from the Spark
+        // swerve template)
         // can be freely intermixed to support alternative hardware
         // arrangements.
         // Please see the AdvantageKit template documentation for more information:
@@ -87,7 +89,6 @@ public class RobotContainer {
         break;
 
       case SIM:
-        // Sim robot, instantiate physics sim IO implementations
         drive =
             new Drive(
                 new GyroIOPigeon2(),
@@ -170,7 +171,8 @@ public class RobotContainer {
   }
 
   public void AlignToTowerTagRelative(boolean isRed, Drive swerveSubsystem) {
-    // Create or replace PID controllers normally (PIDController does not implement AutoCloseable)
+    // Create or replace PID controllers normally (PIDController does not implement
+    // AutoCloseable)
     XAlignController = new PIDController(Constants.X_ALIGN_P, 0, 0);
     YAlignController = new PIDController(Constants.Y_ALIGN_P, 0, 0);
     rotController = new PIDController(Constants.ROT_ALIGN_P, 0, 0);
