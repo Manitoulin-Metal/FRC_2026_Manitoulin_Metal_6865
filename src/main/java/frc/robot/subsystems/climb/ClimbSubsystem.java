@@ -3,6 +3,4 @@
 
 package frc.robot.subsystems.climb;
 
-public class ClimbSubsystem {
-    
-}
+public class ClimbSubsystem {}
