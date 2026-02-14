@@ -7,12 +7,22 @@
 
 package frc.robot;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Telemetry.*;
@@ -53,6 +63,13 @@ public class RobotContainer {
   PIDController rotController = new PIDController(Constants.ROT_ALIGN_P, 0, 0);
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+
+  // Field display
+  private final Field2d field = new Field2d();
+
+  // 2026 official AprilTag layout
+  private final AprilTagFieldLayout fieldLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
@@ -211,6 +228,10 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                     drive)
                 .ignoringDisable(true));
+
+    controller
+        .leftTrigger(0.5) // activates when trigger pulled > 50%
+        .onTrue(driveToTag26());
   }
 
   /**
@@ -220,5 +241,51 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autoChooser.get();
+  }
+
+  private Command driveToTag26() {
+
+    // Get tag 26 pose from field layout
+    var tagOptional = fieldLayout.getTagPose(26);
+
+    if (tagOptional.isEmpty()) {
+      return new InstantCommand(); // Do nothing if tag missing
+    }
+
+    Pose2d tagPose = tagOptional.get().toPose2d();
+
+    // 2 feet in meters
+    double offsetMeters = 0.9;
+
+    // Create transform straight out from tag
+    Transform2d offset = new Transform2d(new Translation2d(offsetMeters, 0), Rotation2d.kZero);
+
+    Pose2d targetPose = tagPose.transformBy(offset);
+
+    // Controllers
+    PIDController xController = new PIDController(2.0, 0, 0);
+    PIDController yController = new PIDController(2.0, 0, 0);
+
+    ProfiledPIDController thetaController =
+        new ProfiledPIDController(3.0, 0, 0, new TrapezoidProfile.Constraints(3, 3));
+
+    thetaController.enableContinuousInput(-Math.PI, Math.PI);
+
+    HolonomicDriveController controller =
+        new HolonomicDriveController(xController, yController, thetaController);
+
+    return new RunCommand(
+            () -> {
+              Pose2d currentPose = drive.getPose();
+
+              var speeds =
+                  controller.calculate(currentPose, targetPose, 0.0, targetPose.getRotation());
+
+              drive.runVelocity(speeds);
+            },
+            drive)
+        .until(
+            () -> drive.getPose().getTranslation().getDistance(targetPose.getTranslation()) < 0.05)
+        .andThen(() -> drive.stop());
   }
 }
