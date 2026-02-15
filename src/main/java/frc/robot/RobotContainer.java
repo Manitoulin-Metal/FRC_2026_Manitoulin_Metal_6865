@@ -2,42 +2,51 @@ package frc.robot;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.controller.HolonomicDriveController;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.*;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.drive.*;
-import java.util.Optional;
+import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.GyroIO;
+import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.drive.ModuleIO;
+import frc.robot.subsystems.drive.ModuleIOSim;
+import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.subsystems.vision.VisionConstants.*;
+import frc.robot.subsystems.vision.VisionIO.*;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
+@SuppressWarnings("unused")
 public class RobotContainer {
 
+  // Subsystems
   private final Drive drive;
+
+  // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
+
+  // Field display
   private final Field2d field = new Field2d();
 
+  // AprilTag layout 2026
   private final AprilTagFieldLayout fieldLayout =
       AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
+  // Auto chooser
   private final LoggedDashboardChooser<Command> autoChooser;
 
+  /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
 
+    // Instantiate Drive depending on mode
     switch (Constants.currentMode) {
       case REAL:
         drive =
@@ -52,33 +61,40 @@ public class RobotContainer {
       case SIM:
         drive =
             new Drive(
-                new GyroIOSim(),
+                new GyroIOPigeon2(),
                 new ModuleIOSim(TunerConstants.FrontLeft),
                 new ModuleIOSim(TunerConstants.FrontRight),
                 new ModuleIOSim(TunerConstants.BackLeft),
                 new ModuleIOSim(TunerConstants.BackRight));
         break;
 
-      default:
+      default: // REPLAY
         drive =
             new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
+                new GyroIO() {
+                  @Override
+                  public void updateInputs(GyroIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                });
         break;
     }
 
-    SmartDashboard.putData("Field", field);
-
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices");
-
-    configureButtonBindings();
-  }
-
-  private void configureButtonBindings() {
-
+    // Configure default drive command
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
@@ -86,118 +102,66 @@ public class RobotContainer {
             () -> -controller.getLeftX(),
             () -> -controller.getRightX()));
 
-    // LEFT TRIGGER → Drive to Tag 2 (if confirmed)
-    controller.leftTrigger(0.5).whileTrue(driveToTag2IfVisible());
+    // Auto chooser
+    autoChooser = new LoggedDashboardChooser<>("Auto Choices");
+    autoChooser.addOption("Simple Drive + Spin", new SimpleDriveAndSpinAuto(drive));
+    autoChooser.addOption("Drive to Tag 26", driveToTag26Command());
+
+    // Configure buttons
+    configureButtonBindings();
   }
 
+  private void configureButtonBindings() {
+
+    // Hold left trigger to drive to AprilTag 26
+    controller.leftTrigger(0.5).onTrue(driveToTag26Command());
+
+    // Lock to 0° when A button held
+    controller
+        .a()
+        .whileTrue(
+            DriveCommands.joystickDriveAtAngle(
+                drive,
+                () -> -controller.getLeftY(),
+                () -> -controller.getLeftX(),
+                () -> Rotation2d.kZero));
+
+    // Switch to X pattern when X button pressed
+    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+
+    // Reset gyro to 0° when B pressed
+    controller
+        .b()
+        .onTrue(
+            Commands.runOnce(
+                () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
+                drive));
+  }
+
+  /** Returns the autonomous command selected on dashboard */
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }
 
-  // ==============================================================
-  // MAIN VISION DRIVE COMMAND
-  // ==============================================================
+  /** Drive to AprilTag 26 using DriveCommands.driveToPose */
+  private Command driveToTag26Command() {
 
-  private Command driveToTag2IfVisible() {
+    var tagOptional = fieldLayout.getTagPose(26);
+    if (tagOptional.isEmpty()) {
+      return new InstantCommand(); // Do nothing if tag not found
+    }
 
-    return new RunCommand(
-        () -> {
+    Pose2d tagPose = tagOptional.get().toPose2d();
+    Transform2d offset = new Transform2d(new Translation2d(0.9, 0.0), Rotation2d.kZero);
+    Pose2d targetPose = tagPose.transformBy(offset);
 
-          // ------------------------------------------------
-          // 1. CHECK LIMELIGHT FOR TAG 2
-          // ------------------------------------------------
-
-          boolean hasTarget = LimelightHelpers.getTV("limelight");
-          double tagID = LimelightHelpers.getFiducialID("limelight");
-
-          if (!hasTarget || tagID != 2) {
-            drive.stop();
-            return;
-          }
-
-          // ------------------------------------------------
-          // 2. GET LIMELIGHT ROBOT POSE (MegaTag2 recommended)
-          // ------------------------------------------------
-
-          LimelightHelpers.PoseEstimate estimate =
-              LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
-
-          if (estimate == null || estimate.pose == null) {
-            drive.stop();
-            return;
-          }
-
-          Pose2d visionPose = estimate.pose;
-
-          // ------------------------------------------------
-          // 3. BLEND INTO POSE ESTIMATOR
-          // ------------------------------------------------
-
-          Matrix<N3, N1> visionStdDevs = VecBuilder.fill(0.7, 0.7, 9999999);
-          // trust X/Y moderately, ignore rotation (LL rotation can be noisy)
-
-          drive.addVisionMeasurement(visionPose, estimate.timestampSeconds, visionStdDevs);
-
-          // ------------------------------------------------
-          // 4. GET TARGET TAG POSE FROM FIELD LAYOUT
-          // ------------------------------------------------
-
-          Optional<edu.wpi.first.math.geometry.Pose3d> tagOptional = fieldLayout.getTagPose(2);
-
-          if (tagOptional.isEmpty()) {
-            drive.stop();
-            return;
-          }
-
-          Pose2d tagPose = tagOptional.get().toPose2d();
-
-          // ------------------------------------------------
-          // 5. AUTO-FLIP FOR ALLIANCE
-          // ------------------------------------------------
-
-          if (DriverStation.getAlliance().isPresent()
-              && DriverStation.getAlliance().get() == DriverStation.Alliance.Red) {
-
-            tagPose =
-                new Pose2d(
-                    fieldLayout.getFieldLength() - tagPose.getX(),
-                    tagPose.getY(),
-                    tagPose.getRotation().rotateBy(Rotation2d.fromDegrees(180)));
-          }
-
-          // ------------------------------------------------
-          // 6. TARGET = 2 FEET IN FRONT OF TAG
-          // ------------------------------------------------
-
-          double offsetMeters = 0.6096;
-
-          Pose2d targetPose =
-              tagPose.transformBy(
-                  new Transform2d(new Translation2d(offsetMeters, 0), Rotation2d.kZero));
-
-          field.setRobotPose(drive.getPose());
-          field.getObject("Target").setPose(targetPose);
-
-          // ------------------------------------------------
-          // 7. HOLONOMIC CONTROLLER
-          // ------------------------------------------------
-
-          PIDController xController = new PIDController(2.5, 0, 0);
-          PIDController yController = new PIDController(2.5, 0, 0);
-
-          ProfiledPIDController thetaController =
-              new ProfiledPIDController(3.0, 0, 0, new TrapezoidProfile.Constraints(3, 3));
-
-          thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
-          HolonomicDriveController controller =
-              new HolonomicDriveController(xController, yController, thetaController);
-
-          var speeds =
-              controller.calculate(drive.getPose(), targetPose, 0, targetPose.getRotation());
-
-          drive.runVelocity(speeds);
-        },
-        drive);
+    // Use your DriveCommands.driveToPose
+    return DriveCommands.driveToPose(
+        drive,
+        targetPose,
+        1.5, // kP linear
+        3.0, // kP rotation
+        fieldLayout,
+        !edu.wpi.first.wpilibj.RobotBase.isSimulation());
   }
 }

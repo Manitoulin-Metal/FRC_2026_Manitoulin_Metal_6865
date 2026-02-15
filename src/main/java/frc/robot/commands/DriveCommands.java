@@ -8,7 +8,9 @@
 package frc.robot.commands;
 
 // All imports between: Line 9 - Line 30
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -16,6 +18,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -23,6 +27,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.LimelightHelpers;
 import frc.robot.subsystems.drive.Drive;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -289,5 +294,88 @@ public class DriveCommands {
     double[] positions = new double[4];
     Rotation2d lastAngle = Rotation2d.kZero;
     double gyroDelta = 0.0;
+  }
+
+  // Add the reusable DriveToPose command here
+  /**
+   * Generic Drive to Pose command. Works for SIM, Teleop, or Autonomous.
+   *
+   * @param drive the Drive subsystem
+   * @param targetPose the Pose2d to drive to
+   * @param kP simple proportional gain for translation
+   * @param fieldLayout optional field layout for vision alignment
+   * @param useLimelight whether to use Limelight vision updates
+   */
+  public static Command driveToPose(
+      Drive drive,
+      Pose2d targetPose,
+      double kPLinear,
+      double kPRotation,
+      AprilTagFieldLayout fieldLayout,
+      boolean useLimelight) {
+
+    return Commands.run(
+            () -> {
+              Pose2d currentPose = drive.getPose();
+              Pose2d adjustedTarget = targetPose;
+
+              // Vision update if enabled
+              if (useLimelight) {
+                if (LimelightHelpers.getTV("limelight")
+                    && LimelightHelpers.getFiducialID("limelight") == 26) {
+                  var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
+                  if (estimate != null && estimate.pose != null) {
+                    drive.addVisionMeasurement(
+                        estimate.pose,
+                        estimate.timestampSeconds,
+                        new Matrix<N3, N1>(
+                            N3.instance, N1.instance, new double[] {0.7, 0.7, 9999999}));
+                  }
+                }
+
+                // Flip target for Red alliance
+                if (DriverStation.getAlliance().isPresent()
+                    && DriverStation.getAlliance().get() == Alliance.Red) {
+                  adjustedTarget =
+                      new Pose2d(
+                          fieldLayout.getFieldLength() - targetPose.getX(),
+                          targetPose.getY(),
+                          targetPose.getRotation().rotateBy(Rotation2d.fromDegrees(180)));
+                }
+              }
+
+              // Linear proportional control
+              double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
+              double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
+
+              // Rotation proportional control
+              double rotError =
+                  adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
+              double rotSpeed = rotError * kPRotation;
+
+              // Clamp speeds if necessary
+              double maxSpeed = drive.getMaxLinearSpeedMetersPerSec();
+              xSpeed = MathUtil.clamp(xSpeed, -maxSpeed, maxSpeed);
+              ySpeed = MathUtil.clamp(ySpeed, -maxSpeed, maxSpeed);
+              rotSpeed =
+                  MathUtil.clamp(
+                      rotSpeed,
+                      -drive.getMaxAngularSpeedRadPerSec(),
+                      drive.getMaxAngularSpeedRadPerSec());
+
+              // Run drive
+              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+            },
+            drive)
+        // Stop when close enough
+        .until(
+            () -> {
+              Pose2d current = drive.getPose();
+              double distance = current.getTranslation().getDistance(targetPose.getTranslation());
+              double angleError =
+                  Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
+              return distance < 0.05 && angleError < 0.05;
+            })
+        .andThen(Commands.runOnce(drive::stop));
   }
 }
