@@ -114,7 +114,7 @@ public class RobotContainer {
   private void configureButtonBindings() {
 
     // Hold left trigger to drive to AprilTag 26
-    controller.leftTrigger(0.5).onTrue(driveToTag26Command());
+    controller.leftTrigger(0.5).whileTrue(driveToTag26Command());
 
     // Lock to 0° when A button held
     controller

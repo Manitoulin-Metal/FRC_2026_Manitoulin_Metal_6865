@@ -376,6 +376,6 @@ public class DriveCommands {
                   Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
               return distance < 0.05 && angleError < 0.05;
             })
-        .andThen(Commands.runOnce(drive::stop));
+        .finallyDo(interrupted -> drive.stop());
   }
 }
