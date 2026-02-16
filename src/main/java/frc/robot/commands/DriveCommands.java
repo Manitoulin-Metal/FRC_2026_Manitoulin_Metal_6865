@@ -364,165 +364,120 @@ public class DriveCommands {
         .beforeStarting(() -> rotationController.reset(drive.getRotation().getRadians()));
   }
 
-  public static void driveToPoseLoop(
+  /**
+   * Drive to a pose with optional vision updates. Works in teleop (button held) or autonomous.
+   *
+   * @param drive the Drive subsystem
+   * @param targetPose the target Pose2d
+   * @param kPLinear proportional gain for translation
+   * @param kPRotation proportional gain for rotation
+   * @param fieldLayout used in simulation to confirm tag positions
+   * @param useLimelight whether to use Limelight vision updates
+   */
+  public static Command driveToShoot(
     Drive drive,
     Pose2d targetPose,
     double kPLinear,
     double kPRotation,
+    AprilTagFieldLayout fieldLayout,
     boolean useLimelight) {
 
-    Pose2d currentPose = drive.getPose();
-    Pose2d adjustedTarget = targetPose;
+  // 3 feet offset in meters
+  double offsetMeters = 0.9144;
 
-    // Optional: use vision if enabled
-    if (useLimelight) {
-        // your Limelight update code here
-    }
+  // Offset along -X so robot stays 3ft away, facing the target
+  Transform2d offset = new Transform2d(new Translation2d(-offsetMeters, 0.0), Rotation2d.kZero);
 
-    double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
-    double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
-    double rotError = adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
-    double rotSpeed = rotError * kPRotation;
+  // Compute adjusted target once and make it final
+  Pose2d initialAdjustedTarget = targetPose.transformBy(offset);
 
-    // Clamp speeds
-    xSpeed = MathUtil.clamp(xSpeed, -drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec());
-    ySpeed = MathUtil.clamp(ySpeed, -drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec());
-    rotSpeed = MathUtil.clamp(rotSpeed, -drive.getMaxAngularSpeedRadPerSec(), drive.getMaxAngularSpeedRadPerSec());
-
-    drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-}
-
-
-  public static Command driveToShoot(
-      Drive drive,
-      Pose2d targetPose,
-      double kPLinear,
-      double kPRotation,
-      AprilTagFieldLayout fieldLayout,
-      boolean useLimelight) {
-
-    return Commands.run(
-            () -> {
-              Pose2d currentPose = drive.getPose();
-              Pose2d adjustedTarget = targetPose;
-
-              // Vision update if enabled
-              if (useLimelight) {
-                if (LimelightHelpers.getTV("limelight")
-                    && LimelightHelpers.getFiducialID("limelight") == 26) {
-                  var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
-                  if (estimate != null && estimate.pose != null) {
-                    drive.addVisionMeasurement(
-                        estimate.pose,
-                        estimate.timestampSeconds,
-                        new Matrix<N3, N1>(
-                            N3.instance, N1.instance, new double[] {0.7, 0.7, 9999999}));
-                  }
-                }
-
-                // Flip target for Red alliance
-                if (DriverStation.getAlliance().isPresent()
-                    && DriverStation.getAlliance().get() == Alliance.Red) {
-                  adjustedTarget =
-                      new Pose2d(
-                          fieldLayout.getFieldLength() - targetPose.getX(),
-                          targetPose.getY(),
-                          targetPose.getRotation().rotateBy(Rotation2d.fromDegrees(180)));
-                }
-              }
-
-              // Linear proportional control
-              double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
-              double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
-
-              // Rotation proportional control
-              double rotError =
-                  adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
-              double rotSpeed = rotError * kPRotation;
-
-              // Clamp speeds if necessary
-              double maxSpeed = drive.getMaxLinearSpeedMetersPerSec();
-              xSpeed = MathUtil.clamp(xSpeed, -maxSpeed, maxSpeed);
-              ySpeed = MathUtil.clamp(ySpeed, -maxSpeed, maxSpeed);
-              rotSpeed =
-                  MathUtil.clamp(
-                      rotSpeed,
-                      -drive.getMaxAngularSpeedRadPerSec(),
-                      drive.getMaxAngularSpeedRadPerSec());
-
-              // Run drive
-              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-            },
-            drive)
-        // Stop when close enough
-        .until(
-            () -> {
-              Pose2d current = drive.getPose();
-              double distance = current.getTranslation().getDistance(targetPose.getTranslation());
-              double angleError =
-                  Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
-              return distance < 0.05 && angleError < 0.05;
-            })
-        .finallyDo(interrupted -> drive.stop());
+  // Flip for Red alliance in simulator if no Limelight
+  final Pose2d adjustedTarget;
+  if (!useLimelight && fieldLayout != null
+      && DriverStation.getAlliance().isPresent()
+      && DriverStation.getAlliance().get() == Alliance.Red) {
+    adjustedTarget =
+        new Pose2d(
+            fieldLayout.getFieldLength() - initialAdjustedTarget.getX(),
+            initialAdjustedTarget.getY(),
+            initialAdjustedTarget.getRotation().plus(Rotation2d.fromDegrees(180)));
+  } else {
+    adjustedTarget = initialAdjustedTarget;
   }
 
-  /** Drive to climb position with optional vision correction. */
-  public static Command driveToClimb(
-      Drive drive, double kPLinear, double kPRotation, boolean useLimelight) {
+  return Commands.run(
+          () -> {
+            Pose2d currentPose = drive.getPose();
 
-    // Absolute target coordinates for the right-front corner (meters)
-    Pose2d targetPose = new Pose2d(1.549, 2.978, Rotation2d.fromDegrees(180));
-
-    return Commands.run(
-            () -> {
-              Pose2d currentPose = drive.getPose();
-              Pose2d adjustedTarget = targetPose;
-
-              // Vision correction using AprilTag 31 if enabled
-              if (useLimelight
-                  && LimelightHelpers.getTV("limelight")
-                  && LimelightHelpers.getFiducialID("limelight") == 31) {
-                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
-                if (estimate != null && estimate.pose != null) {
-                  drive.addVisionMeasurement(
-                      estimate.pose,
-                      estimate.timestampSeconds,
-                      new Matrix<>(N3.instance, N1.instance, new double[] {0.7, 0.7, 9999999}));
-                }
+            // Vision update for real robot
+            if (useLimelight && LimelightHelpers.getTV("limelight")
+                && LimelightHelpers.getFiducialID("limelight") == 26) {
+              var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
+              if (estimate != null && estimate.pose != null) {
+                drive.addVisionMeasurement(
+                    estimate.pose,
+                    estimate.timestampSeconds,
+                    new Matrix<N3, N1>(N3.instance, N1.instance, new double[] {0.7, 0.7, 9999999}));
               }
+            }
 
-              // Linear proportional control
-              double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
-              double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
+            // Calculate translational speeds
+            double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
+            double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
 
-              // Rotation proportional control
-              double rotError =
-                  adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
-              double rotSpeed = rotError * kPRotation;
+            // Rotate to face the target
+            double rotError =
+                adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
+            double rotSpeed = rotError * kPRotation;
 
-              // Clamp speeds
-              double maxSpeed = drive.getMaxLinearSpeedMetersPerSec();
-              xSpeed = MathUtil.clamp(xSpeed, -maxSpeed, maxSpeed);
-              ySpeed = MathUtil.clamp(ySpeed, -maxSpeed, maxSpeed);
-              rotSpeed =
-                  MathUtil.clamp(
-                      rotSpeed,
-                      -drive.getMaxAngularSpeedRadPerSec(),
-                      drive.getMaxAngularSpeedRadPerSec());
+            // Clamp speeds
+            xSpeed = MathUtil.clamp(xSpeed, -drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec());
+            ySpeed = MathUtil.clamp(ySpeed, -drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec());
+            rotSpeed = MathUtil.clamp(rotSpeed, -drive.getMaxAngularSpeedRadPerSec(), drive.getMaxAngularSpeedRadPerSec());
 
-              // Run the drive
-              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-            },
-            drive)
-        // Stop when close enough
-        .until(
-            () -> {
-              Pose2d current = drive.getPose();
-              double distance = current.getTranslation().getDistance(targetPose.getTranslation());
-              double angleError =
-                  Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
-              return distance < 0.05 && angleError < 0.05;
-            })
-        .andThen(Commands.runOnce(drive::stop));
+            // Field-relative speeds for proper rotation in simulator
+            boolean isFlipped = DriverStation.getAlliance().isPresent()
+                && DriverStation.getAlliance().get() == Alliance.Red;
+            ChassisSpeeds speeds =
+                ChassisSpeeds.fromFieldRelativeSpeeds(
+                    xSpeed,
+                    ySpeed,
+                    rotSpeed,
+                    isFlipped ? drive.getRotation().plus(Rotation2d.fromDegrees(Math.PI)) : drive.getRotation());
+
+            drive.runVelocity(speeds);
+          },
+          drive)
+      // Stop when close to adjusted target
+      .until(
+          () -> {
+            Pose2d current = drive.getPose();
+            double distance = current.getTranslation().getDistance(adjustedTarget.getTranslation());
+            double angleError = Math.abs(current.getRotation().minus(adjustedTarget.getRotation()).getRadians());
+            return distance < 0.05 && angleError < 0.05;
+          })
+      // Stop robot immediately when command ends or button released
+      .andThen(Commands.runOnce(drive::stop));
+}
+
+  /**
+   * Drive to climb position relative to AprilTag 31. Uses Limelight if available (real robot) or
+   * fieldLayout in simulation. Stops when the robot reaches the target pose.
+   */
+  public static Command driveToClimb(
+      Drive drive,
+      AprilTagFieldLayout fieldLayout,
+      double kPLinear,
+      double kPRotation,
+      boolean useLimelight) {
+
+    // 180 degrees facing the climb
+    Rotation2d targetRotation = Rotation2d.fromDegrees(180);
+
+    // X/Y coordinates for right front corner on Blue Alliance
+    Pose2d targetPose = new Pose2d(1.549, 2.978, targetRotation); // meters
+
+    // Use driveToShoot as a reusable base (with vision or field layout)
+    return driveToShoot(drive, targetPose, kPLinear, kPRotation, fieldLayout, useLimelight);
   }
 }
