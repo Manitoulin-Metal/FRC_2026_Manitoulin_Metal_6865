@@ -9,8 +9,6 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import java.util.Set;
-import java.util.Collections;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
@@ -24,6 +22,7 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.vision.VisionConstants.*;
 import frc.robot.subsystems.vision.VisionIO.*;
+import java.util.Set;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 @SuppressWarnings("unused")
@@ -119,32 +118,30 @@ public class RobotContainer {
 
   private void configureButtonBindings() {
 
-   // Hold left trigger to drive to AprilTag 26
-controller.leftTrigger(0.5)
-    .whileTrue(
-        Commands.defer(
-            () -> {
-                // Get Pose2d for Tag 26
-                var tagOptional = fieldLayout.getTagPose(26);
-                if (tagOptional.isEmpty()) {
+    // Hold left trigger to drive to AprilTag 26
+    controller
+        .leftTrigger(0.5)
+        .whileTrue(
+            Commands.defer(
+                () -> {
+                  // Get Pose2d for Tag 26
+                  var tagOptional = fieldLayout.getTagPose(26);
+                  if (tagOptional.isEmpty()) {
                     return Commands.none(); // Do nothing if tag not found
-                }
-                Pose2d tag26Pose = tagOptional.get().toPose2d();
+                  }
+                  Pose2d tag26Pose = tagOptional.get().toPose2d();
 
-                // Return the driveToShoot command
-                return DriveCommands.driveToShoot(
-                    drive,
-                    tag26Pose,
-                    1.5, // kP linear
-                    3.0, // kP rotation
-                    fieldLayout,
-                    !edu.wpi.first.wpilibj.RobotBase.isSimulation()
-                );
-            },
-            Set.of(drive) // <-- required subsystem set
-        )
-    );
-
+                  // Return the driveToShoot command
+                  return DriveCommands.driveToShoot(
+                      drive,
+                      tag26Pose,
+                      1.5, // kP linear
+                      3.0, // kP rotation
+                      fieldLayout,
+                      !edu.wpi.first.wpilibj.RobotBase.isSimulation());
+                },
+                Set.of(drive) // <-- required subsystem set
+                ));
 
     // Hold right trigger to drive to climb position (Tag 31)
     controller
