@@ -19,6 +19,7 @@ import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -95,6 +96,8 @@ public class Drive extends SubsystemBase {
       };
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
+
+  private Pose2d previousPose = Pose2d.kZero;
 
   public Drive(
       GyroIO gyroIO,
@@ -205,6 +208,25 @@ public class Drive extends SubsystemBase {
       }
 
       poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
+    }
+
+    Pose2d pose = poseEstimator.getEstimatedPosition();
+
+    double x = pose.getX();
+    double y = pose.getY();
+
+    // 2024 Crescendo field size (meters)
+    double fieldLength = 16.54;
+    double fieldWidth = 8.21;
+
+    double clampedX = MathUtil.clamp(x, 0.0, fieldLength);
+    double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
+
+    if (x != clampedX || y != clampedY) {
+      poseEstimator.resetPosition(
+          rawGyroRotation,
+          getModulePositions(),
+          new Pose2d(clampedX, clampedY, pose.getRotation()));
     }
   }
 

@@ -14,6 +14,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
@@ -67,8 +69,7 @@ public class DriveCommands {
   }
 
   /**
-   * Field relative drive command using two joysticks (controlling linear and
-   * angular velocities).
+   * Field relative drive command using two joysticks (controlling linear and angular velocities).
    */
   public static Command joystickDrive(
       Drive drive,
@@ -78,8 +79,8 @@ public class DriveCommands {
     return Commands.run(
         () -> {
           // Get linear velocity
-          Translation2d linearVelocity = getLinearVelocityFromJoysticks(xSupplier.getAsDouble(),
-              ySupplier.getAsDouble());
+          Translation2d linearVelocity =
+              getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
           // Apply rotation deadband
           double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
@@ -88,12 +89,14 @@ public class DriveCommands {
           omega = Math.copySign(omega * omega, omega);
 
           // Convert to field relative speeds & send command
-          ChassisSpeeds speeds = new ChassisSpeeds(
-              linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-              linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-              omega * drive.getMaxAngularSpeedRadPerSec());
-          boolean isFlipped = DriverStation.getAlliance().isPresent()
-              && DriverStation.getAlliance().get() == Alliance.Red;
+          ChassisSpeeds speeds =
+              new ChassisSpeeds(
+                  linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                  linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                  omega * drive.getMaxAngularSpeedRadPerSec());
+          boolean isFlipped =
+              DriverStation.getAlliance().isPresent()
+                  && DriverStation.getAlliance().get() == Alliance.Red;
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
                   speeds,
@@ -105,10 +108,8 @@ public class DriveCommands {
   }
 
   /**
-   * Field relative drive command using joystick for linear control and PID for
-   * angular control.
-   * Possible use cases include snapping to an angle, aiming at a vision target,
-   * or controlling
+   * Field relative drive command using joystick for linear control and PID for angular control.
+   * Possible use cases include snapping to an angle, aiming at a vision target, or controlling
    * absolute rotation with a joystick.
    */
   public static Command joystickDriveAtAngle(
@@ -118,47 +119,50 @@ public class DriveCommands {
       Supplier<Rotation2d> rotationSupplier) {
 
     // Create PID controller
-    ProfiledPIDController angleController = new ProfiledPIDController(
-        ANGLE_KP,
-        0.0,
-        ANGLE_KD,
-        new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+    ProfiledPIDController angleController =
+        new ProfiledPIDController(
+            ANGLE_KP,
+            0.0,
+            ANGLE_KD,
+            new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
 
     // Constructs command
     return Commands.run(
-        () -> {
-          // Get linear velocity
-          Translation2d linearVelocity = getLinearVelocityFromJoysticks(xSupplier.getAsDouble(),
-              ySupplier.getAsDouble());
+            () -> {
+              // Get linear velocity
+              Translation2d linearVelocity =
+                  getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
-          // Calculate angular speed
-          double omega = angleController.calculate(
-              drive.getRotation().getRadians(), rotationSupplier.get().getRadians());
+              // Calculate angular speed
+              double omega =
+                  angleController.calculate(
+                      drive.getRotation().getRadians(), rotationSupplier.get().getRadians());
 
-          // Convert to field relative speeds & send command
-          ChassisSpeeds speeds = new ChassisSpeeds(
-              linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-              linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-              omega);
-          boolean isFlipped = DriverStation.getAlliance().isPresent()
-              && DriverStation.getAlliance().get() == Alliance.Red;
-          drive.runVelocity(
-              ChassisSpeeds.fromFieldRelativeSpeeds(
-                  speeds,
-                  isFlipped
-                      ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                      : drive.getRotation()));
-        },
-        drive)
+              // Convert to field relative speeds & send command
+              ChassisSpeeds speeds =
+                  new ChassisSpeeds(
+                      linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                      linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                      omega);
+              boolean isFlipped =
+                  DriverStation.getAlliance().isPresent()
+                      && DriverStation.getAlliance().get() == Alliance.Red;
+              drive.runVelocity(
+                  ChassisSpeeds.fromFieldRelativeSpeeds(
+                      speeds,
+                      isFlipped
+                          ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                          : drive.getRotation()));
+            },
+            drive)
 
         // Reset PID controller when command starts
         .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
   }
 
   /**
-   * Measures the velocity feedforward constants for the drive motors. This
-   * command should only be
+   * Measures the velocity feedforward constants for the drive motors. This command should only be
    * used in voltage control mode.
    */
   public static Command feedforwardCharacterization(Drive drive) {
@@ -176,10 +180,10 @@ public class DriveCommands {
 
         // Allow modules to orient
         Commands.run(
-            () -> {
-              drive.runCharacterization(0.0);
-            },
-            drive)
+                () -> {
+                  drive.runCharacterization(0.0);
+                },
+                drive)
             .withTimeout(FF_START_DELAY),
 
         // Start timer
@@ -187,13 +191,13 @@ public class DriveCommands {
 
         // Accelerate and gather data
         Commands.run(
-            () -> {
-              double voltage = timer.get() * FF_RAMP_RATE;
-              drive.runCharacterization(voltage);
-              velocitySamples.add(drive.getFFCharacterizationVelocity());
-              voltageSamples.add(voltage);
-            },
-            drive)
+                () -> {
+                  double voltage = timer.get() * FF_RAMP_RATE;
+                  drive.runCharacterization(voltage);
+                  velocitySamples.add(drive.getFFCharacterizationVelocity());
+                  voltageSamples.add(voltage);
+                },
+                drive)
 
             // When cancelled, calculate and print results
             .finallyDo(
@@ -256,11 +260,11 @@ public class DriveCommands {
 
             // Update gyro delta
             Commands.run(
-                () -> {
-                  var rotation = drive.getRotation();
-                  state.gyroDelta += Math.abs(rotation.minus(state.lastAngle).getRadians());
-                  state.lastAngle = rotation;
-                })
+                    () -> {
+                      var rotation = drive.getRotation();
+                      state.gyroDelta += Math.abs(rotation.minus(state.lastAngle).getRadians());
+                      state.lastAngle = rotation;
+                    })
 
                 // When cancelled, calculate and print results
                 .finallyDo(
@@ -300,166 +304,150 @@ public class DriveCommands {
   /**
    * Generic Drive to Pose command. Works for SIM, Teleop, or Autonomous.
    *
-   * @param drive        the Drive subsystem
-   * @param targetPose   the Pose2d to drive to
-   * @param kP           simple proportional gain for translation
-   * @param fieldLayout  optional field layout for vision alignment
+   * @param drive the Drive subsystem
+   * @param targetPose the Pose2d to drive to
+   * @param kP simple proportional gain for translation
+   * @param fieldLayout optional field layout for vision alignment
    * @param useLimelight whether to use Limelight vision updates
    */
   /**
-   * Drive to a Pose with smooth rotation. Keeps the robot facing the target
-   * heading while driving.
+   * Drive to a Pose with smooth rotation. Keeps the robot facing the target heading while driving.
    */
-  public static Command driveToPoseWithRotation(
-      Drive drive, Pose2d targetPose, double kPLinear, double kPRotation) {
+  public static Command driveToShoot(
+      Drive drive,
+      AprilTagFieldLayout fieldLayout,
+      double kPLinear,
+      double kPRotation,
+      boolean useLimelight) {
 
-    ProfiledPIDController rotationController = new ProfiledPIDController(
-        kPRotation,
-        0.0,
-        0.4,
-        new TrapezoidProfile.Constraints(
-            drive.getMaxAngularSpeedRadPerSec(), // max velocity
-            drive.getMaxAngularSpeedRadPerSec() * 2)); // max accel
-    rotationController.enableContinuousInput(-Math.PI, Math.PI);
+    final int TAG_ID = 26;
+    final double desiredRadius = 2.0; // meters from tag
+    final double maxArcRad = Math.toRadians(30.0); // ±30° scoring arc
 
     return Commands.run(
-        () -> {
-          Pose2d current = drive.getPose();
+            () -> {
+              Pose2d currentPose = drive.getPose();
 
-          // Linear proportional control
-          double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
-          double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
+              // ---------------------------------------------------
+              // Get tag pose (sim OR real)
+              // ---------------------------------------------------
+              Optional<Pose3d> tagOptional = fieldLayout.getTagPose(TAG_ID);
+              if (tagOptional.isEmpty()) return;
 
-          // Clamp speeds
-          double maxSpeed = drive.getMaxLinearSpeedMetersPerSec();
-          xSpeed = MathUtil.clamp(xSpeed, -maxSpeed, maxSpeed);
-          ySpeed = MathUtil.clamp(ySpeed, -maxSpeed, maxSpeed);
+              Pose2d tagPose = tagOptional.get().toPose2d();
 
-          // Rotation PID
-          double rotSpeed = rotationController.calculate(
-              current.getRotation().getRadians(), targetPose.getRotation().getRadians());
-          rotSpeed = MathUtil.clamp(
-              rotSpeed,
-              -drive.getMaxAngularSpeedRadPerSec(),
-              drive.getMaxAngularSpeedRadPerSec());
+              // ---------------------------------------------------
+              // Real robot vision correction
+              // ---------------------------------------------------
+              if (useLimelight
+                  && LimelightHelpers.getTV("limelight")
+                  && LimelightHelpers.getFiducialID("limelight") == TAG_ID) {
 
-          // Send velocity to drive
-          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-        },
-        drive)
-        // Stop when close enough
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
+
+                if (estimate != null && estimate.pose != null) {
+                  drive.addVisionMeasurement(
+                      estimate.pose,
+                      estimate.timestampSeconds,
+                      new Matrix<N3, N1>(
+                          N3.instance, N1.instance, new double[] {0.7, 0.7, 9999999}));
+                }
+              }
+
+              // ---------------------------------------------------
+              // Hub scoring direction (front face only)
+              // ---------------------------------------------------
+              Rotation2d hubForward = tagPose.getRotation().plus(Rotation2d.fromDegrees(180));
+
+              // ---------------------------------------------------
+              // Vector from tag to robot
+              // ---------------------------------------------------
+              Translation2d tagToRobot =
+                  currentPose.getTranslation().minus(tagPose.getTranslation());
+
+              Rotation2d robotAngle = tagToRobot.getAngle();
+
+              double angleError = MathUtil.angleModulus(robotAngle.minus(hubForward).getRadians());
+
+              // HARD clamp to ±30°
+              double clampedError = MathUtil.clamp(angleError, -maxArcRad, maxArcRad);
+
+              Rotation2d finalAngle = hubForward.plus(Rotation2d.fromRadians(clampedError));
+
+              // ---------------------------------------------------
+              // Compute arc target
+              // ---------------------------------------------------
+              Translation2d targetTranslation =
+                  new Translation2d(
+                      tagPose.getX() + desiredRadius * Math.cos(finalAngle.getRadians()),
+                      tagPose.getY() + desiredRadius * Math.sin(finalAngle.getRadians()));
+
+              Rotation2d targetRotation =
+                  tagPose.getTranslation().minus(targetTranslation).getAngle();
+
+              Pose2d targetPose = new Pose2d(targetTranslation, targetRotation);
+
+              // ---------------------------------------------------
+              // AdvantageKit Logging
+              // ---------------------------------------------------
+              Logger.recordOutput("DriveToShoot/TagPose", tagPose);
+              Logger.recordOutput("DriveToShoot/CurrentPose", currentPose);
+              Logger.recordOutput("DriveToShoot/TargetPose", targetPose);
+              Logger.recordOutput("DriveToShoot/AngleErrorDeg", Math.toDegrees(angleError));
+              Logger.recordOutput("DriveToShoot/ClampedErrorDeg", Math.toDegrees(clampedError));
+
+              // ---------------------------------------------------
+              // P Control
+              // ---------------------------------------------------
+              double xSpeed = (targetPose.getX() - currentPose.getX()) * kPLinear;
+
+              double ySpeed = (targetPose.getY() - currentPose.getY()) * kPLinear;
+
+              double rotError =
+                  targetPose.getRotation().minus(currentPose.getRotation()).getRadians();
+
+              double rotSpeed = rotError * kPRotation;
+
+              xSpeed =
+                  MathUtil.clamp(
+                      xSpeed,
+                      -drive.getMaxLinearSpeedMetersPerSec(),
+                      drive.getMaxLinearSpeedMetersPerSec());
+
+              ySpeed =
+                  MathUtil.clamp(
+                      ySpeed,
+                      -drive.getMaxLinearSpeedMetersPerSec(),
+                      drive.getMaxLinearSpeedMetersPerSec());
+
+              rotSpeed =
+                  MathUtil.clamp(
+                      rotSpeed,
+                      -drive.getMaxAngularSpeedRadPerSec(),
+                      drive.getMaxAngularSpeedRadPerSec());
+
+              drive.runVelocity(
+                  ChassisSpeeds.fromFieldRelativeSpeeds(
+                      xSpeed, ySpeed, rotSpeed, drive.getRotation()));
+            },
+            drive)
         .until(
             () -> {
               Pose2d current = drive.getPose();
-              double distance = current.getTranslation().getDistance(targetPose.getTranslation());
-              double angleError = Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
-              return distance < 0.05 && angleError < 0.05;
+              Optional<Pose3d> tagOptional = fieldLayout.getTagPose(TAG_ID);
+              if (tagOptional.isEmpty()) return true;
+
+              Pose2d tagPose = tagOptional.get().toPose2d();
+
+              double distance = current.getTranslation().getDistance(tagPose.getTranslation());
+
+              return Math.abs(distance - desiredRadius) < 0.05;
             })
-        .andThen(Commands.runOnce(drive::stop))
-        // Reset controller at start
-        .beforeStarting(() -> rotationController.reset(drive.getRotation().getRadians()));
+        .andThen(Commands.runOnce(drive::stop));
   }
 
   /**
-   * Drive to a pose with optional vision updates. Works in teleop (button held)
-   * or autonomous.
-   *
-   * @param drive        the Drive subsystem
-   * @param targetPose   the target Pose2d
-   * @param kPLinear     proportional gain for translation
-   * @param kPRotation   proportional gain for rotation
-   * @param fieldLayout  used in simulation to confirm tag positions
-   * @param useLimelight whether to use Limelight vision updates
-   */
-  public static Command driveToShoot(
-    Drive drive,
-    Pose2d tagPose,
-    double kPLinear,
-    double kPRotation,
-    AprilTagFieldLayout fieldLayout,
-    boolean useLimelight) {
-
-  final double desiredRadius = 2.0;       // meters from tag
-  final double maxArcRad = Math.toRadians(30.0); // ±30° arc for scoring
-
-  return Commands.run(() -> {
-    Pose2d currentPose = drive.getPose();
-
-    // Vision update for real robot
-    if (useLimelight && LimelightHelpers.getTV("limelight")
-        && LimelightHelpers.getFiducialID("limelight") == 26) {
-      var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
-      if (estimate != null && estimate.pose != null) {
-        drive.addVisionMeasurement(
-            estimate.pose,
-            estimate.timestampSeconds,
-            new Matrix<N3, N1>(N3.instance, N1.instance, new double[]{0.7, 0.7, 9999999}));
-      }
-    }
-
-    // Determine the hub "front" (scoring side)
-    Rotation2d hubForward = tagPose.getRotation().plus(Rotation2d.fromDegrees(180));
-
-    // For simulation, flip for Red alliance
-    Optional<Alliance> alliance = DriverStation.getAlliance();
-    boolean isRedSim = alliance.isPresent() && alliance.get() == Alliance.Red && !useLimelight;
-    if (isRedSim) {
-      hubForward = hubForward.plus(Rotation2d.fromDegrees(180)); // flip hub forward for red
-    }
-
-    // Vector from hub to robot
-    Translation2d tagToRobot = currentPose.getTranslation().minus(tagPose.getTranslation());
-    Rotation2d robotAngle = tagToRobot.getAngle();
-
-    // Compute the angle difference from hub front
-    double angleDiff = MathUtil.angleModulus(robotAngle.minus(hubForward).getRadians());
-
-    // Clamp angleDiff to ±maxArcRad
-    angleDiff = MathUtil.clamp(angleDiff, -maxArcRad, maxArcRad);
-
-    // Compute target point along allowed arc
-    Rotation2d clampedAngle = hubForward.plus(Rotation2d.fromRadians(angleDiff));
-    Translation2d targetTranslation = new Translation2d(
-        tagPose.getX() + desiredRadius * Math.cos(clampedAngle.getRadians()),
-        tagPose.getY() + desiredRadius * Math.sin(clampedAngle.getRadians())
-    );
-
-    // Robot should face the hub
-    Rotation2d targetRotation = tagPose.getTranslation().minus(targetTranslation).getAngle();
-    Pose2d adjustedTarget = new Pose2d(targetTranslation, targetRotation);
-
-    // Proportional translation control
-    double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
-    double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
-    double rotError = adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
-    double rotSpeed = rotError * kPRotation;
-
-    // Clamp speeds
-    xSpeed = MathUtil.clamp(xSpeed, -drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec());
-    ySpeed = MathUtil.clamp(ySpeed, -drive.getMaxLinearSpeedMetersPerSec(), drive.getMaxLinearSpeedMetersPerSec());
-    rotSpeed = MathUtil.clamp(rotSpeed, -drive.getMaxAngularSpeedRadPerSec(), drive.getMaxAngularSpeedRadPerSec());
-
-    // Field-relative speeds
-    ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-        xSpeed, ySpeed, rotSpeed,
-        drive.getRotation()
-    );
-
-    drive.runVelocity(speeds);
-
-  }, drive)
-  .until(() -> {
-    Pose2d current = drive.getPose();
-    double distance = current.getTranslation().getDistance(tagPose.getTranslation());
-    return Math.abs(distance - desiredRadius) < 0.05;
-  })
-  .andThen(Commands.runOnce(drive::stop));
-}
-
-
-  /**
-   * Drive to climb position relative to AprilTag 31. Uses Limelight if available
-   * (real robot) or
+   * Drive to climb position relative to AprilTag 31. Uses Limelight if available (real robot) or
    * fieldLayout in simulation. Stops when the robot reaches the target pose.
    */
   public static Command driveToClimb(
@@ -479,62 +467,69 @@ public class DriveCommands {
         && DriverStation.getAlliance().isPresent()
         && DriverStation.getAlliance().get() == Alliance.Red) {
 
-      adjustedTarget = new Pose2d(
-          fieldLayout.getFieldLength() - blueTargetPose.getX(),
-          blueTargetPose.getY(),
-          blueTargetPose.getRotation().plus(Rotation2d.fromDegrees(180)));
+      adjustedTarget =
+          new Pose2d(
+              fieldLayout.getFieldLength() - blueTargetPose.getX(),
+              blueTargetPose.getY(),
+              blueTargetPose.getRotation().plus(Rotation2d.fromDegrees(180)));
 
     } else {
       adjustedTarget = blueTargetPose;
     }
 
     return Commands.run(
-        () -> {
-          Pose2d currentPose = drive.getPose();
+            () -> {
+              Pose2d currentPose = drive.getPose();
 
-          // Vision update (REAL ROBOT ONLY)
-          if (useLimelight && LimelightHelpers.getTV("limelight")) {
+              // Vision update (REAL ROBOT ONLY)
+              if (useLimelight && LimelightHelpers.getTV("limelight")) {
 
-            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
-            if (estimate != null && estimate.pose != null) {
-              drive.addVisionMeasurement(
-                  estimate.pose,
-                  estimate.timestampSeconds,
-                  new Matrix<N3, N1>(
-                      N3.instance, N1.instance, new double[] { 0.7, 0.7, 9999999 }));
-            }
-          }
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
+                if (estimate != null && estimate.pose != null) {
+                  drive.addVisionMeasurement(
+                      estimate.pose,
+                      estimate.timestampSeconds,
+                      new Matrix<N3, N1>(
+                          N3.instance, N1.instance, new double[] {0.7, 0.7, 9999999}));
+                }
+              }
 
-          double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
-          double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
+              double xSpeed = (adjustedTarget.getX() - currentPose.getX()) * kPLinear;
+              double ySpeed = (adjustedTarget.getY() - currentPose.getY()) * kPLinear;
 
-          double rotError = adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
+              double rotError =
+                  adjustedTarget.getRotation().minus(currentPose.getRotation()).getRadians();
 
-          double rotSpeed = rotError * kPRotation;
+              double rotSpeed = rotError * kPRotation;
 
-          xSpeed = MathUtil.clamp(
-              xSpeed,
-              -drive.getMaxLinearSpeedMetersPerSec(),
-              drive.getMaxLinearSpeedMetersPerSec());
+              xSpeed =
+                  MathUtil.clamp(
+                      xSpeed,
+                      -drive.getMaxLinearSpeedMetersPerSec(),
+                      drive.getMaxLinearSpeedMetersPerSec());
 
-          ySpeed = MathUtil.clamp(
-              ySpeed,
-              -drive.getMaxLinearSpeedMetersPerSec(),
-              drive.getMaxLinearSpeedMetersPerSec());
+              ySpeed =
+                  MathUtil.clamp(
+                      ySpeed,
+                      -drive.getMaxLinearSpeedMetersPerSec(),
+                      drive.getMaxLinearSpeedMetersPerSec());
 
-          rotSpeed = MathUtil.clamp(
-              rotSpeed,
-              -drive.getMaxAngularSpeedRadPerSec(),
-              drive.getMaxAngularSpeedRadPerSec());
+              rotSpeed =
+                  MathUtil.clamp(
+                      rotSpeed,
+                      -drive.getMaxAngularSpeedRadPerSec(),
+                      drive.getMaxAngularSpeedRadPerSec());
 
-          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-        },
-        drive)
+              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+            },
+            drive)
         .until(
             () -> {
               Pose2d current = drive.getPose();
-              double distance = current.getTranslation().getDistance(adjustedTarget.getTranslation());
-              double angleError = Math.abs(current.getRotation().minus(adjustedTarget.getRotation()).getRadians());
+              double distance =
+                  current.getTranslation().getDistance(adjustedTarget.getTranslation());
+              double angleError =
+                  Math.abs(current.getRotation().minus(adjustedTarget.getRotation()).getRadians());
 
               return distance < 0.05 && angleError < 0.05;
             })
