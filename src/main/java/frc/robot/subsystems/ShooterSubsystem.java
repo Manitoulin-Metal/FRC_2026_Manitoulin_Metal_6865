@@ -18,30 +18,33 @@ public class ShooterSubsystem extends SubsystemBase {
     private final TalonFX shooter = new TalonFX(61, kCANBus);
     private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0);
 
-    // run shooter at percentage speed
+     /** Run shooter at percentage speed */
     public void runShooter(double speed) {
         shooter.setControl(dutyCycleRequest.withOutput(speed));
     }
 
-    // run shooter at percentage speed
-    public void stopShooter(double speed) {
+    /** Stop shooter */
+    public void stopShooter() {
         shooter.setControl(dutyCycleRequest.withOutput(0));
     }
 
-    /** Returns a command to run the shooter at a given speed once. */
+    /** One-shot command: immediately spins shooter at given speed */
     public Command shootCommand(double speed) {
-        // This creates a one-shot command that requires this subsystem
         return Commands.runOnce(() -> runShooter(speed), this);
     }
 
-    /** Returns a command to stop the shooter. */
-    public Command stopCommand() {
-        return Commands.runOnce(() -> stopShooter(), this);
+    /** Timed shoot: spins shooter at given speed for 15 seconds */
+    public Command timedShootCommand(double speed) {
+        return Commands.runEnd(
+                () -> runShooter(speed), // start shooting
+                this::stopShooter,       // stop shooting after finished
+                this                      // requires this subsystem
+        ).withTimeout(15.0);
     }
 
-    // Optional: helper that stops the motor
-    public void stopShooter() {
-        shooter.setControl(dutyCycleRequest.withOutput(0));
+    /** Stop command: stops shooter instantly */
+    public Command stopCommand() {
+        return Commands.runOnce(this::stopShooter, this);
     }
 
     @Override
