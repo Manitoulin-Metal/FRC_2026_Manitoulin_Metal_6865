@@ -1,6 +1,7 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -14,7 +15,14 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
+
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.IntakeDeploySubsystem;
+import frc.robot.subsystems.IntakeRollerSubsystem;
+import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.ClimbSubsystem;
+
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
@@ -26,10 +34,16 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
+@SuppressWarnings("unused")
 public class RobotContainer {
 
   // Subsystems
   private final Drive drive;
+  private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
+  private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
+  private final KickerSubsystem kicker = new KickerSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem();
+  private final ClimbSubsystem climb1 = new ClimbSubsystem();
 
   // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -38,65 +52,66 @@ public class RobotContainer {
   private final Field2d field = new Field2d();
 
   // AprilTag layout 2026
-  private final AprilTagFieldLayout fieldLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   // Auto chooser
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
-  private final LoggedNetworkNumber endgameAlert2 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
-  /** The container for the robot. Contains subsystems, OI devices, and commands. */
+  /**
+   * The container for the robot. Contains subsystems, OI devices, and commands.
+   */
   public RobotContainer() {
 
     // Instantiate Drive depending on mode
     switch (Constants.currentMode) {
       case REAL:
-        drive =
-            new Drive(
-                new GyroIOPigeon2(),
-                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOPigeon2(),
+            new ModuleIOTalonFX(TunerConstants.FrontLeft),
+            new ModuleIOTalonFX(TunerConstants.FrontRight),
+            new ModuleIOTalonFX(TunerConstants.BackLeft),
+            new ModuleIOTalonFX(TunerConstants.BackRight));
         break;
 
       case SIM:
-        drive =
-            new Drive(
-                new GyroIOPigeon2(),
-                new ModuleIOSim(TunerConstants.FrontLeft),
-                new ModuleIOSim(TunerConstants.FrontRight),
-                new ModuleIOSim(TunerConstants.BackLeft),
-                new ModuleIOSim(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOPigeon2(),
+            new ModuleIOSim(TunerConstants.FrontLeft),
+            new ModuleIOSim(TunerConstants.FrontRight),
+            new ModuleIOSim(TunerConstants.BackLeft),
+            new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default: // REPLAY
-        drive =
-            new Drive(
-                new GyroIO() {
-                  @Override
-                  public void updateInputs(GyroIOInputs inputs) {}
-                },
-                new ModuleIO() {
-                  @Override
-                  public void updateInputs(ModuleIOInputs inputs) {}
-                },
-                new ModuleIO() {
-                  @Override
-                  public void updateInputs(ModuleIOInputs inputs) {}
-                },
-                new ModuleIO() {
-                  @Override
-                  public void updateInputs(ModuleIOInputs inputs) {}
-                },
-                new ModuleIO() {
-                  @Override
-                  public void updateInputs(ModuleIOInputs inputs) {}
-                });
+        drive = new Drive(
+            new GyroIO() {
+              @Override
+              public void updateInputs(GyroIOInputs inputs) {
+              }
+            },
+            new ModuleIO() {
+              @Override
+              public void updateInputs(ModuleIOInputs inputs) {
+              }
+            },
+            new ModuleIO() {
+              @Override
+              public void updateInputs(ModuleIOInputs inputs) {
+              }
+            },
+            new ModuleIO() {
+              @Override
+              public void updateInputs(ModuleIOInputs inputs) {
+              }
+            },
+            new ModuleIO() {
+              @Override
+              public void updateInputs(ModuleIOInputs inputs) {
+              }
+            });
         break;
     }
 
@@ -121,6 +136,11 @@ public class RobotContainer {
     for (String autoName : AutoBuilder.getAllAutoNames()) {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
+
+    // Register NamedCommands FIRST
+    NamedCommands.registerCommand(
+        "StopDrive",
+        Commands.runOnce(drive::stop, drive));
 
     // Configure buttons
     configureButtonBindings();

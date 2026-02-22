@@ -12,9 +12,10 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+@SuppressWarnings("removal")
 public class IntakeDeploySubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
-  SparkMax motor3 = new SparkMax(59, MotorType.kBrushless);
+  SparkMax intakeDeploy = new SparkMax(59, MotorType.kBrushless);
 
   /** Creates a new Subsystem. */
   public IntakeDeploySubsystem() {
@@ -35,7 +36,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     config3.inverted(true).idleMode(IdleMode.kBrake);
 
     // Apply configs - reset old parameters, and persist through power-cycles.
-    motor3.configure(config3, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
+    intakeDeploy.configure(config3, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
     {
     }
   }
@@ -55,7 +56,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   public void runIntakeDeploy(double speed) {
-    motor3.set(speed);
+    intakeDeploy.set(speed);
   }
 
   /**

@@ -12,19 +12,20 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+@SuppressWarnings("removal")
 public class KickerSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
-  SparkMax motor3 = new SparkMax(59, MotorType.kBrushless);
+  SparkMax kicker = new SparkMax(59, MotorType.kBrushless);
 
   /** Creates a new Subsystem. */
   public KickerSubsystem() {}
 
   {
-    SparkMaxConfig config3 = new SparkMaxConfig();
-    config3.inverted(true).idleMode(IdleMode.kBrake);
+    SparkMaxConfig config4 = new SparkMaxConfig();
+    config4.inverted(true).idleMode(IdleMode.kBrake);
 
     // Apply configs - reset old parameters, and persist through power-cycles.
-    motor3.configure(config3, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
+    kicker.configure(config4, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
     {
     }
   }
@@ -34,17 +35,17 @@ public class KickerSubsystem extends SubsystemBase {
    *
    * @return a command
    */
-  public final Command IntakeDeployCommand(double speed) {
+  public final Command kickerCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return run(
         () -> {
-          runIntakeDeploy(speed);
+          kicker(speed);
         });
   }
 
-  public void runIntakeDeploy(double speed) {
-    motor3.set(speed);
+  public void kicker(double speed) {
+    kicker.set(speed);
   }
 
   /**
@@ -52,7 +53,7 @@ public class KickerSubsystem extends SubsystemBase {
    *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
-  public boolean IntakeDeployCondition() {
+  public boolean kickerCondition() {
     // Query some boolean state, such as a digital sensor.
     return false;
   }
