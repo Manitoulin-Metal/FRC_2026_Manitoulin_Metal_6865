@@ -14,8 +14,6 @@ import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
@@ -41,7 +39,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
-import frc.robot.util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -118,25 +115,19 @@ public class Drive extends SubsystemBase {
     PhoenixOdometryThread.getInstance().start();
 
     // Configure AutoBuilder for PathPlanner
+    RobotConfig config = PP_CONFIG;
+
     AutoBuilder.configure(
-        this::getPose,
-        this::setPose,
-        this::getChassisSpeeds,
-        this::runVelocity,
+        this::getPose, // pose supplier
+        this::setPose, // pose reset
+        this::getChassisSpeeds, // speeds supplier
+        this::runVelocity, // speeds consumer
         new PPHolonomicDriveController(
-            new PIDConstants(5.0, 0.0, 0.0), new PIDConstants(5.0, 0.0, 0.0)),
-        PP_CONFIG,
+            new PIDConstants(5.0, 0.0, 0.0), // translation PID
+            new PIDConstants(5.0, 0.0, 0.0)), // rotation PID
+        config,
         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
         this);
-    Pathfinding.setPathfinder(new LocalADStarAK());
-    PathPlannerLogging.setLogActivePathCallback(
-        (activePath) -> {
-          Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[0]));
-        });
-    PathPlannerLogging.setLogTargetPoseCallback(
-        (targetPose) -> {
-          Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
-        });
 
     // Configure SysId
     sysId =
@@ -244,6 +235,10 @@ public class Drive extends SubsystemBase {
     // Log unoptimized setpoints and setpoint speeds
     Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
     Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
+
+    // Log for Advantage Scope
+    Logger.recordOutput("Field/Robot", getPose());
+    Logger.recordOutput("Drive/ChassisSpeeds", getChassisSpeeds());
 
     // Send setpoints to modules
     for (int i = 0; i < 4; i++) {

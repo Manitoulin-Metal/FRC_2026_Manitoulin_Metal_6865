@@ -1,5 +1,6 @@
 package frc.robot;
 
+import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -115,6 +116,11 @@ public class RobotContainer {
         "Drive to Climb (coordinates)",
         DriveCommands.driveToClimb(
             drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
+
+    // This automatically loads ALL autos from the deploy folder
+    for (String autoName : AutoBuilder.getAllAutoNames()) {
+      autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
+    }
 
     // Configure buttons
     configureButtonBindings();
