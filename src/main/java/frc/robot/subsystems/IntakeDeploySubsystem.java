@@ -36,7 +36,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     config3.inverted(true).idleMode(IdleMode.kBrake);
 
     // Apply configs - reset old parameters, and persist through power-cycles.
-    intakeDeploy.configure(config3, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
+    intakeDeploy.configure(
+        config3, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
     {
     }
   }

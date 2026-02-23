@@ -15,16 +15,15 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
-
-import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.ClimbSubsystem;
-
+import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.drive.GyroIOSim;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
@@ -52,66 +51,65 @@ public class RobotContainer {
   private final Field2d field = new Field2d();
 
   // AprilTag layout 2026
-  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   // Auto chooser
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
-  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert1 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert2 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
-  /**
-   * The container for the robot. Contains subsystems, OI devices, and commands.
-   */
+  /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
 
     // Instantiate Drive depending on mode
     switch (Constants.currentMode) {
       case REAL:
-        drive = new Drive(
-            new GyroIOPigeon2(),
-            new ModuleIOTalonFX(TunerConstants.FrontLeft),
-            new ModuleIOTalonFX(TunerConstants.FrontRight),
-            new ModuleIOTalonFX(TunerConstants.BackLeft),
-            new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOPigeon2(),
+                new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                new ModuleIOTalonFX(TunerConstants.FrontRight),
+                new ModuleIOTalonFX(TunerConstants.BackLeft),
+                new ModuleIOTalonFX(TunerConstants.BackRight));
         break;
 
       case SIM:
-        drive = new Drive(
-            new GyroIOPigeon2(),
-            new ModuleIOSim(TunerConstants.FrontLeft),
-            new ModuleIOSim(TunerConstants.FrontRight),
-            new ModuleIOSim(TunerConstants.BackLeft),
-            new ModuleIOSim(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOSim(),
+                new ModuleIOSim(TunerConstants.FrontLeft),
+                new ModuleIOSim(TunerConstants.FrontRight),
+                new ModuleIOSim(TunerConstants.BackLeft),
+                new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default: // REPLAY
-        drive = new Drive(
-            new GyroIO() {
-              @Override
-              public void updateInputs(GyroIOInputs inputs) {
-              }
-            },
-            new ModuleIO() {
-              @Override
-              public void updateInputs(ModuleIOInputs inputs) {
-              }
-            },
-            new ModuleIO() {
-              @Override
-              public void updateInputs(ModuleIOInputs inputs) {
-              }
-            },
-            new ModuleIO() {
-              @Override
-              public void updateInputs(ModuleIOInputs inputs) {
-              }
-            },
-            new ModuleIO() {
-              @Override
-              public void updateInputs(ModuleIOInputs inputs) {
-              }
-            });
+        drive =
+            new Drive(
+                new GyroIO() {
+                  @Override
+                  public void updateInputs(GyroIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                },
+                new ModuleIO() {
+                  @Override
+                  public void updateInputs(ModuleIOInputs inputs) {}
+                });
         break;
     }
 
@@ -138,9 +136,7 @@ public class RobotContainer {
     }
 
     // Register NamedCommands FIRST
-    NamedCommands.registerCommand(
-        "StopDrive",
-        Commands.runOnce(drive::stop, drive));
+    NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
 
     // Configure buttons
     configureButtonBindings();
