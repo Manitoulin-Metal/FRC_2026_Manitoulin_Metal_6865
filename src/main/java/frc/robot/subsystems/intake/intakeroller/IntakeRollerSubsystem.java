@@ -37,12 +37,12 @@ public class IntakeRollerSubsystem extends SubsystemBase {
         // Subsystem::RunOnce implicitly requires `this` subsystem.
         return run(
                 () -> {
-                    runInakeRoller(speed);
+                    runIntakeRoller(speed);
                 });
     }
 
-    private void runInakeRoller(double speed) {
-        throw new UnsupportedOperationException("Unimplemented method 'runInakeRoller'");
+    private void runIntakeRoller(double speed) {
+        throw new UnsupportedOperationException("Unimplemented method 'runIntakeRoller'");
     }
 
     {
