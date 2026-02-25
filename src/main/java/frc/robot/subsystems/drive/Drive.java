@@ -14,11 +14,10 @@ import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -40,7 +39,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
-import frc.robot.util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -81,6 +79,7 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4]; // FL, FR, BL, BR
   private final SysIdRoutine sysId;
+
   private final Alert gyroDisconnectedAlert =
       new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
 
@@ -95,6 +94,8 @@ public class Drive extends SubsystemBase {
       };
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
+
+  private Pose2d previousPose = Pose2d.kZero;
 
   public Drive(
       GyroIO gyroIO,
@@ -115,25 +116,19 @@ public class Drive extends SubsystemBase {
     PhoenixOdometryThread.getInstance().start();
 
     // Configure AutoBuilder for PathPlanner
+    RobotConfig config = PP_CONFIG;
+
     AutoBuilder.configure(
-        this::getPose,
-        this::setPose,
-        this::getChassisSpeeds,
-        this::runVelocity,
+        this::getPose, // pose supplier
+        this::setPose, // pose reset
+        this::getChassisSpeeds, // speeds supplier
+        this::runVelocity, // speeds consumer
         new PPHolonomicDriveController(
-            new PIDConstants(5.0, 0.0, 0.0), new PIDConstants(5.0, 0.0, 0.0)),
-        PP_CONFIG,
+            new PIDConstants(5.0, 0.0, 0.0), // translation PID
+            new PIDConstants(5.0, 0.0, 0.0)), // rotation PID
+        config,
         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
         this);
-    Pathfinding.setPathfinder(new LocalADStarAK());
-    PathPlannerLogging.setLogActivePathCallback(
-        (activePath) -> {
-          Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[0]));
-        });
-    PathPlannerLogging.setLogTargetPoseCallback(
-        (targetPose) -> {
-          Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
-        });
 
     // Configure SysId
     sysId =
@@ -206,6 +201,25 @@ public class Drive extends SubsystemBase {
 
       poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
     }
+
+    Pose2d pose = poseEstimator.getEstimatedPosition();
+
+    double x = pose.getX();
+    double y = pose.getY();
+
+    // 2024 Crescendo field size (meters)
+    double fieldLength = 16.54;
+    double fieldWidth = 8.21;
+
+    double clampedX = MathUtil.clamp(x, 0.0, fieldLength);
+    double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
+
+    if (x != clampedX || y != clampedY) {
+      poseEstimator.resetPosition(
+          rawGyroRotation,
+          getModulePositions(),
+          new Pose2d(clampedX, clampedY, pose.getRotation()));
+    }
   }
 
   /**
@@ -222,6 +236,10 @@ public class Drive extends SubsystemBase {
     // Log unoptimized setpoints and setpoint speeds
     Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
     Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
+
+    // Log for Advantage Scope
+    Logger.recordOutput("Field/Robot", getPose());
+    Logger.recordOutput("Drive/ChassisSpeeds", getChassisSpeeds());
 
     // Send setpoints to modules
     for (int i = 0; i < 4; i++) {

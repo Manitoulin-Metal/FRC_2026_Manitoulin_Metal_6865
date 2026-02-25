@@ -3,4 +3,58 @@
 
 package frc.robot.subsystems;
 
-public class ShooterSubsystem {}
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+/** Creates a new Subsystem. */
+public class ShooterSubsystem extends SubsystemBase {
+
+  // Initialize the motor (Kraken direct drive CAN ID 61)
+  private static final CANBus kCANBus = new CANBus("canivore");
+  private final TalonFX shooter = new TalonFX(61, kCANBus);
+  private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0);
+
+  /** Run shooter at percentage speed */
+  public void runShooter(double speed) {
+    shooter.setControl(dutyCycleRequest.withOutput(speed));
+  }
+
+  /** Stop shooter */
+  public void stopShooter() {
+    shooter.setControl(dutyCycleRequest.withOutput(0));
+  }
+
+  /** One-shot command: immediately spins shooter at given speed */
+  public Command shootCommand(double speed) {
+    return Commands.runOnce(() -> runShooter(speed), this);
+  }
+
+  /** Timed shoot: spins shooter at given speed for 15 seconds */
+  public Command timedShootCommand(double speed) {
+    return Commands.runEnd(
+            () -> runShooter(speed), // start shooting
+            this::stopShooter, // stop shooting after finished
+            this // requires this subsystem
+            )
+        .withTimeout(15.0);
+  }
+
+  /** Stop command: stops shooter instantly */
+  public Command stopCommand() {
+    return Commands.runOnce(this::stopShooter, this);
+  }
+
+  @Override
+  public void periodic() {
+    // This method will be called once per scheduler run
+  }
+
+  @Override
+  public void simulationPeriodic() {
+    // This method will be called once per scheduler run during simulation
+  }
+}

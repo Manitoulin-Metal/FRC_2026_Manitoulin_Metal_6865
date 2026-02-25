@@ -14,6 +14,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
@@ -341,6 +343,113 @@ public class DriveCommands {
               double rotSpeed =
                   rotationController.calculate(
                       current.getRotation().getRadians(), targetPose.getRotation().getRadians());
+  public static Command driveToShoot(
+      Drive drive,
+      AprilTagFieldLayout fieldLayout,
+      double kPLinear,
+      double kPRotation,
+      boolean useLimelight) {
+
+    final int TAG_ID = 26;
+    final double desiredRadius = 2.0; // meters from tag
+    final double maxArcRad = Math.toRadians(30.0); // ±30° scoring arc
+
+    return Commands.run(
+            () -> {
+              Pose2d currentPose = drive.getPose();
+
+              // ---------------------------------------------------
+              // Get tag pose (sim OR real)
+              // ---------------------------------------------------
+              Optional<Pose3d> tagOptional = fieldLayout.getTagPose(TAG_ID);
+              if (tagOptional.isEmpty()) return;
+
+              Pose2d tagPose = tagOptional.get().toPose2d();
+
+              // ---------------------------------------------------
+              // Real robot vision correction
+              // ---------------------------------------------------
+              if (useLimelight
+                  && LimelightHelpers.getTV("limelight")
+                  && LimelightHelpers.getFiducialID("limelight") == TAG_ID) {
+
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
+
+                if (estimate != null && estimate.pose != null) {
+                  drive.addVisionMeasurement(
+                      estimate.pose,
+                      estimate.timestampSeconds,
+                      new Matrix<N3, N1>(
+                          N3.instance, N1.instance, new double[] {0.7, 0.7, 9999999}));
+                }
+              }
+
+              // ---------------------------------------------------
+              // Hub scoring direction (front face only)
+              // ---------------------------------------------------
+              Rotation2d hubForward = tagPose.getRotation().plus(Rotation2d.fromDegrees(180));
+
+              // ---------------------------------------------------
+              // Vector from tag to robot
+              // ---------------------------------------------------
+              Translation2d tagToRobot =
+                  currentPose.getTranslation().minus(tagPose.getTranslation());
+
+              Rotation2d robotAngle = tagToRobot.getAngle();
+
+              double angleError = MathUtil.angleModulus(robotAngle.minus(hubForward).getRadians());
+
+              // HARD clamp to ±30°
+              double clampedError = MathUtil.clamp(angleError, -maxArcRad, maxArcRad);
+
+              Rotation2d finalAngle = hubForward.plus(Rotation2d.fromRadians(clampedError));
+
+              // ---------------------------------------------------
+              // Compute arc target
+              // ---------------------------------------------------
+              Translation2d targetTranslation =
+                  new Translation2d(
+                      tagPose.getX() + desiredRadius * Math.cos(finalAngle.getRadians()),
+                      tagPose.getY() + desiredRadius * Math.sin(finalAngle.getRadians()));
+
+              Rotation2d targetRotation =
+                  tagPose.getTranslation().minus(targetTranslation).getAngle();
+
+              Pose2d targetPose = new Pose2d(targetTranslation, targetRotation);
+
+              // ---------------------------------------------------
+              // AdvantageKit Logging
+              // ---------------------------------------------------
+              Logger.recordOutput("DriveToShoot/TagPose", tagPose);
+              Logger.recordOutput("DriveToShoot/CurrentPose", currentPose);
+              Logger.recordOutput("DriveToShoot/TargetPose", targetPose);
+              Logger.recordOutput("DriveToShoot/AngleErrorDeg", Math.toDegrees(angleError));
+              Logger.recordOutput("DriveToShoot/ClampedErrorDeg", Math.toDegrees(clampedError));
+
+              // ---------------------------------------------------
+              // P Control
+              // ---------------------------------------------------
+              double xSpeed = (targetPose.getX() - currentPose.getX()) * kPLinear;
+
+              double ySpeed = (targetPose.getY() - currentPose.getY()) * kPLinear;
+
+              double rotError =
+                  targetPose.getRotation().minus(currentPose.getRotation()).getRadians();
+
+              double rotSpeed = rotError * kPRotation;
+
+              xSpeed =
+                  MathUtil.clamp(
+                      xSpeed,
+                      -drive.getMaxLinearSpeedMetersPerSec(),
+                      drive.getMaxLinearSpeedMetersPerSec());
+
+              ySpeed =
+                  MathUtil.clamp(
+                      ySpeed,
+                      -drive.getMaxLinearSpeedMetersPerSec(),
+                      drive.getMaxLinearSpeedMetersPerSec());
+
               rotSpeed =
                   MathUtil.clamp(
                       rotSpeed,
@@ -475,6 +584,21 @@ public class DriveCommands {
             () -> {
               Pose2d current = drive.getPose();
               double distance = current.getTranslation().getDistance(tagPose.getTranslation());
+              drive.runVelocity(
+                  ChassisSpeeds.fromFieldRelativeSpeeds(
+                      xSpeed, ySpeed, rotSpeed, drive.getRotation()));
+            },
+            drive)
+        .until(
+            () -> {
+              Pose2d current = drive.getPose();
+              Optional<Pose3d> tagOptional = fieldLayout.getTagPose(TAG_ID);
+              if (tagOptional.isEmpty()) return true;
+
+              Pose2d tagPose = tagOptional.get().toPose2d();
+
+              double distance = current.getTranslation().getDistance(tagPose.getTranslation());
+
               return Math.abs(distance - desiredRadius) < 0.05;
             })
         .andThen(Commands.runOnce(drive::stop));

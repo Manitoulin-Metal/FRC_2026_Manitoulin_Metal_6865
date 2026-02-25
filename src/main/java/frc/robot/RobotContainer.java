@@ -1,12 +1,14 @@
 package frc.robot;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -14,22 +16,35 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.ClimbSubsystem;
+import frc.robot.subsystems.IntakeDeploySubsystem;
+import frc.robot.subsystems.IntakeRollerSubsystem;
+import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.drive.GyroIOSim;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.vision.VisionConstants.*;
 import frc.robot.subsystems.vision.VisionIO.*;
 import java.util.Set;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 @SuppressWarnings("unused")
 public class RobotContainer {
 
   // Subsystems
   private final Drive drive;
+  private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
+  private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
+  private final KickerSubsystem kicker = new KickerSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem();
+  private final ClimbSubsystem climb1 = new ClimbSubsystem();
 
   // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -43,6 +58,11 @@ public class RobotContainer {
 
   // Auto chooser
   private final LoggedDashboardChooser<Command> autoChooser;
+
+  private final LoggedNetworkNumber endgameAlert1 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert2 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -62,7 +82,7 @@ public class RobotContainer {
       case SIM:
         drive =
             new Drive(
-                new GyroIOPigeon2(),
+                new GyroIOSim(),
                 new ModuleIOSim(TunerConstants.FrontLeft),
                 new ModuleIOSim(TunerConstants.FrontRight),
                 new ModuleIOSim(TunerConstants.BackLeft),
@@ -112,6 +132,14 @@ public class RobotContainer {
         DriveCommands.driveToClimb(
             drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
+    // This automatically loads ALL autos from the deploy folder
+    for (String autoName : AutoBuilder.getAllAutoNames()) {
+      autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
+    }
+
+    // Register NamedCommands FIRST
+    NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
+
     // Configure buttons
     configureButtonBindings();
   }
@@ -142,6 +170,8 @@ public class RobotContainer {
                 },
                 Set.of(drive) // <-- required subsystem set
                 ));
+            DriveCommands.driveToShoot(
+                drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
     // Hold right trigger to drive to climb position (Tag 31)
     controller
@@ -179,23 +209,45 @@ public class RobotContainer {
 
   /** Drive to AprilTag 26 using DriveCommands.driveToPose */
   private Command driveToShoot() {
+    return DriveCommands.driveToShoot(
+        drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation());
+  }
 
-    var tagOptional = fieldLayout.getTagPose(26);
-    if (tagOptional.isEmpty()) {
-      return new InstantCommand(); // Do nothing if tag not found
+  // ---------------- Periodic method for endgame alerts ----------------
+  public void periodic() {
+    double matchTime = DriverStation.getMatchTime();
+
+    boolean alert20 = matchTime > 0 && matchTime <= endgameAlert1.get();
+    boolean alert10 = matchTime > 0 && matchTime <= endgameAlert2.get();
+
+    // SmartDashboard display
+    SmartDashboard.putBoolean("Endgame 20s", alert20);
+    SmartDashboard.putBoolean("Endgame 10s", alert10);
+
+    // AdvantageScope logging
+    Logger.recordOutput("Match/Endgame20", alert20);
+    Logger.recordOutput("Match/Endgame10", alert10);
+
+    // ------------- Controller rumble ----------------
+    double rumbleIntensity = 0.5; // 0.0 to 1.0
+    if (alert20 || alert10) {
+      controller.setRumble(
+          edu.wpi.first.wpilibj.GenericHID.RumbleType.kLeftRumble, rumbleIntensity);
+      controller.setRumble(
+          edu.wpi.first.wpilibj.GenericHID.RumbleType.kRightRumble, rumbleIntensity);
+    } else {
+      controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kLeftRumble, 0.0);
+      controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kRightRumble, 0.0);
     }
 
-    Pose2d tagPose = tagOptional.get().toPose2d();
-    Transform2d offset = new Transform2d(new Translation2d(0.9, 0.0), Rotation2d.kZero);
-    Pose2d targetPose = tagPose.transformBy(offset);
-
-    // Use your DriveCommands.driveToPose
-    return DriveCommands.driveToShoot(
-        drive,
-        targetPose,
-        1.5, // kP linear
-        3.0, // kP rotation
-        fieldLayout,
-        !edu.wpi.first.wpilibj.RobotBase.isSimulation());
+    // Optional: flash SmartDashboard color for 10s alert (requires Shuffleboard,
+    // pseudo code)
+    if (alert10) {
+      SmartDashboard.putString("Endgame Warning Color", "RED");
+    } else if (alert20) {
+      SmartDashboard.putString("Endgame Warning Color", "YELLOW");
+    } else {
+      SmartDashboard.putString("Endgame Warning Color", "NONE");
+    }
   }
 }
