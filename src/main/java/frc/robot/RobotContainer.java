@@ -11,7 +11,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
@@ -170,8 +169,8 @@ public class RobotContainer {
                 },
                 Set.of(drive) // <-- required subsystem set
                 ));
-            DriveCommands.driveToShoot(
-                drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
+    DriveCommands.driveToShoot(
+        drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation());
 
     // Hold right trigger to drive to climb position (Tag 31)
     controller
@@ -214,6 +213,7 @@ public class RobotContainer {
   }
 
   // ---------------- Periodic method for endgame alerts ----------------
+
   public void periodic() {
     double matchTime = DriverStation.getMatchTime();
 
@@ -229,6 +229,7 @@ public class RobotContainer {
     Logger.recordOutput("Match/Endgame10", alert10);
 
     // ------------- Controller rumble ----------------
+    
     double rumbleIntensity = 0.5; // 0.0 to 1.0
     if (alert20 || alert10) {
       controller.setRumble(

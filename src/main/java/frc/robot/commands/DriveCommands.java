@@ -71,6 +71,7 @@ public class DriveCommands {
   /**
    * Field relative drive command using two joysticks (controlling linear and angular velocities).
    */
+  
   public static Command joystickDrive(
       Drive drive,
       DoubleSupplier xSupplier,
@@ -112,6 +113,7 @@ public class DriveCommands {
    * Possible use cases include snapping to an angle, aiming at a vision target, or controlling
    * absolute rotation with a joystick.
    */
+
   public static Command joystickDriveAtAngle(
       Drive drive,
       DoubleSupplier xSupplier,
@@ -165,6 +167,7 @@ public class DriveCommands {
    * Measures the velocity feedforward constants for the drive motors. This command should only be
    * used in voltage control mode.
    */
+
   public static Command feedforwardCharacterization(Drive drive) {
     List<Double> velocitySamples = new LinkedList<>();
     List<Double> voltageSamples = new LinkedList<>();
@@ -301,18 +304,20 @@ public class DriveCommands {
   }
 
   // Add the reusable DriveToPose command here
+
   /**
    * Generic Drive to Pose command. Works for SIM, Teleop, or Autonomous.
-   *
    * @param drive the Drive subsystem
    * @param targetPose the Pose2d to drive to
    * @param kP simple proportional gain for translation
    * @param fieldLayout optional field layout for vision alignment
    * @param useLimelight whether to use Limelight vision updates
    */
+
   /**
    * Drive to a Pose with smooth rotation. Keeps the robot facing the target heading while driving.
    */
+
   public static Command driveToPoseWithRotation(
       Drive drive, Pose2d targetPose, double kPLinear, double kPRotation) {
 
@@ -343,6 +348,34 @@ public class DriveCommands {
               double rotSpeed =
                   rotationController.calculate(
                       current.getRotation().getRadians(), targetPose.getRotation().getRadians());
+
+              // Clamp speeds
+              xSpeed = MathUtil.clamp(xSpeed, -maxSpeed, maxSpeed);
+              ySpeed = MathUtil.clamp(ySpeed, -maxSpeed, maxSpeed);
+              rotSpeed =
+                  MathUtil.clamp(
+                      rotSpeed,
+                      -drive.getMaxAngularSpeedRadPerSec(),
+                      drive.getMaxAngularSpeedRadPerSec());
+
+              // Send velocity to drive
+              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+            },
+            drive)
+        // Stop when close enough
+        .until(
+            () -> {
+              Pose2d current = drive.getPose();
+              double distance = current.getTranslation().getDistance(targetPose.getTranslation());
+              double angleError =
+                  Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
+              return distance < 0.05 && angleError < 0.05;
+            })
+        .andThen(Commands.runOnce(drive::stop))
+        // Reset controller at start
+        .beforeStarting(() -> rotationController.reset(drive.getRotation().getRadians()));
+  }
+
   public static Command driveToShoot(
       Drive drive,
       AprilTagFieldLayout fieldLayout,
@@ -354,6 +387,9 @@ public class DriveCommands {
     final double desiredRadius = 2.0; // meters from tag
     final double maxArcRad = Math.toRadians(30.0); // ±30° scoring arc
 
+    // Declare targetPose outside the lambda for scope access
+    Pose2d[] targetPoseHolder = new Pose2d[1];
+
     return Commands.run(
             () -> {
               Pose2d currentPose = drive.getPose();
@@ -361,6 +397,7 @@ public class DriveCommands {
               // ---------------------------------------------------
               // Get tag pose (sim OR real)
               // ---------------------------------------------------
+
               Optional<Pose3d> tagOptional = fieldLayout.getTagPose(TAG_ID);
               if (tagOptional.isEmpty()) return;
 
@@ -369,6 +406,7 @@ public class DriveCommands {
               // ---------------------------------------------------
               // Real robot vision correction
               // ---------------------------------------------------
+
               if (useLimelight
                   && LimelightHelpers.getTV("limelight")
                   && LimelightHelpers.getFiducialID("limelight") == TAG_ID) {
@@ -387,11 +425,13 @@ public class DriveCommands {
               // ---------------------------------------------------
               // Hub scoring direction (front face only)
               // ---------------------------------------------------
+
               Rotation2d hubForward = tagPose.getRotation().plus(Rotation2d.fromDegrees(180));
 
               // ---------------------------------------------------
               // Vector from tag to robot
               // ---------------------------------------------------
+
               Translation2d tagToRobot =
                   currentPose.getTranslation().minus(tagPose.getTranslation());
 
@@ -407,6 +447,7 @@ public class DriveCommands {
               // ---------------------------------------------------
               // Compute arc target
               // ---------------------------------------------------
+
               Translation2d targetTranslation =
                   new Translation2d(
                       tagPose.getX() + desiredRadius * Math.cos(finalAngle.getRadians()),
@@ -415,26 +456,28 @@ public class DriveCommands {
               Rotation2d targetRotation =
                   tagPose.getTranslation().minus(targetTranslation).getAngle();
 
-              Pose2d targetPose = new Pose2d(targetTranslation, targetRotation);
+              targetPoseHolder[0] = new Pose2d(targetTranslation, targetRotation);
 
               // ---------------------------------------------------
               // AdvantageKit Logging
               // ---------------------------------------------------
+
               Logger.recordOutput("DriveToShoot/TagPose", tagPose);
               Logger.recordOutput("DriveToShoot/CurrentPose", currentPose);
-              Logger.recordOutput("DriveToShoot/TargetPose", targetPose);
+              Logger.recordOutput("DriveToShoot/TargetPose", targetPoseHolder[0]);
               Logger.recordOutput("DriveToShoot/AngleErrorDeg", Math.toDegrees(angleError));
               Logger.recordOutput("DriveToShoot/ClampedErrorDeg", Math.toDegrees(clampedError));
 
               // ---------------------------------------------------
               // P Control
               // ---------------------------------------------------
-              double xSpeed = (targetPose.getX() - currentPose.getX()) * kPLinear;
 
-              double ySpeed = (targetPose.getY() - currentPose.getY()) * kPLinear;
+              double xSpeed = (targetPoseHolder[0].getX() - currentPose.getX()) * kPLinear;
+
+              double ySpeed = (targetPoseHolder[0].getY() - currentPose.getY()) * kPLinear;
 
               double rotError =
-                  targetPose.getRotation().minus(currentPose.getRotation()).getRadians();
+                  targetPoseHolder[0].getRotation().minus(currentPose.getRotation()).getRadians();
 
               double rotSpeed = rotError * kPRotation;
 
@@ -463,20 +506,20 @@ public class DriveCommands {
         // Stop when close enough
         .until(
             () -> {
+              if (targetPoseHolder[0] == null) return false;
               Pose2d current = drive.getPose();
-              double distance = current.getTranslation().getDistance(targetPose.getTranslation());
+              double distance =
+                  current.getTranslation().getDistance(targetPoseHolder[0].getTranslation());
               double angleError =
-                  Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
+                  Math.abs(
+                      current.getRotation().minus(targetPoseHolder[0].getRotation()).getRadians());
               return distance < 0.05 && angleError < 0.05;
             })
-        .andThen(Commands.runOnce(drive::stop))
-        // Reset controller at start
-        .beforeStarting(() -> rotationController.reset(drive.getRotation().getRadians()));
+        .andThen(Commands.runOnce(drive::stop));
   }
 
   /**
    * Drive to a pose with optional vision updates. Works in teleop (button held) or autonomous.
-   *
    * @param drive the Drive subsystem
    * @param targetPose the target Pose2d
    * @param kPLinear proportional gain for translation
@@ -484,6 +527,7 @@ public class DriveCommands {
    * @param fieldLayout used in simulation to confirm tag positions
    * @param useLimelight whether to use Limelight vision updates
    */
+
   public static Command driveToShoot(
       Drive drive,
       Pose2d tagPose,
@@ -492,6 +536,7 @@ public class DriveCommands {
       AprilTagFieldLayout fieldLayout,
       boolean useLimelight) {
 
+    final int TAG_ID = 26;
     final double desiredRadius = 2.0; // meters from tag
     final double maxArcRad = Math.toRadians(30.0); // ±30° arc for scoring
 
@@ -583,21 +628,12 @@ public class DriveCommands {
         .until(
             () -> {
               Pose2d current = drive.getPose();
-              double distance = current.getTranslation().getDistance(tagPose.getTranslation());
-              drive.runVelocity(
-                  ChassisSpeeds.fromFieldRelativeSpeeds(
-                      xSpeed, ySpeed, rotSpeed, drive.getRotation()));
-            },
-            drive)
-        .until(
-            () -> {
-              Pose2d current = drive.getPose();
               Optional<Pose3d> tagOptional = fieldLayout.getTagPose(TAG_ID);
               if (tagOptional.isEmpty()) return true;
 
-              Pose2d tagPose = tagOptional.get().toPose2d();
+              Pose2d tagPose2d = tagOptional.get().toPose2d();
 
-              double distance = current.getTranslation().getDistance(tagPose.getTranslation());
+              double distance = current.getTranslation().getDistance(tagPose2d.getTranslation());
 
               return Math.abs(distance - desiredRadius) < 0.05;
             })
@@ -608,6 +644,7 @@ public class DriveCommands {
    * Drive to climb position relative to AprilTag 31. Uses Limelight if available (real robot) or
    * fieldLayout in simulation. Stops when the robot reaches the target pose.
    */
+
   public static Command driveToClimb(
       Drive drive,
       AprilTagFieldLayout fieldLayout,

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 FRC 5712
+// Copyright (c) 2026 FRC 6865
 // This is being used by Team 6865, Manitoulin Metal
 
 // Use of this source code is governed by an MIT-style
@@ -22,6 +22,7 @@ import java.util.List;
  * and data structures for vision measurements. Supports both MegaTag1 (MT1) and MegaTag2 (MT2)
  * vision systems.
  */
+
 public class VisionUtil {
 
   // Field margins and dimensions (meters)
@@ -51,6 +52,7 @@ public class VisionUtil {
    * Enum defining different vision processing modes with unique validation and measurement
    * calculation implementations.
    */
+
   public enum VisionMode {
 
     /**
@@ -77,6 +79,7 @@ public class VisionUtil {
      * simple model where standard deviations increase quadratically with distance and decrease
      * linearly with the number of tags detected.
      */
+
     MA {
       @Override
       public VisionMeasurement getVisionMeasurement(PoseEstimate mt) {
@@ -91,11 +94,11 @@ public class VisionUtil {
 
       /**
        * Calculates the standard deviation for X and Y measurements.
-       *
        * @param mt The pose estimate containing tag detection information
        * @param scaler Amount to scale trust by. Smaller is greater trust
        * @return Standard deviation scaled by distance squared and tag count
        */
+
       private double calculateStdDev(PoseEstimate mt, double scaler) {
 
         return scaler * Math.pow(mt.avgTagDist(), 2.0) / mt.tagCount();
@@ -107,14 +110,15 @@ public class VisionUtil {
      * how the distance should be similar from last game to this game (being feed vs cycling). You
      * will want to tune.
      */
+
     POOF {
 
       /**
        * Calculates vision measurements using the POOF algorithm.
-       *
        * @param mt The pose estimate to process
        * @return A VisionMeasurement with calculated standard deviations
        */
+
       @Override
       public VisionMeasurement getVisionMeasurement(PoseEstimate mt) {
 
@@ -141,18 +145,18 @@ public class VisionUtil {
 
       /**
        * Record holding vision standard deviation values for both position and rotation.
-       *
        * @param xyStdDev Standard deviation for X and Y measurements
        * @param thetaStdDev Standard deviation for rotation measurements
        */
+
       record VisionDevs(double xyStdDev, double thetaStdDev) {}
 
       /**
        * Calculates standard deviations based on the number of tags detected.
-       *
        * @param mt The pose estimate containing tag detection information
        * @return VisionDevs containing calculated standard deviations
        */
+
       private static VisionDevs calculateStandardDeviations(PoseEstimate mt) {
         if (mt.tagCount() >= 2) {
           return calculateMultipleTagStdDevs(mt);
@@ -167,10 +171,10 @@ public class VisionUtil {
       /**
        * Calculates standard deviations when multiple tags are detected. Uses tag area to determine
        * measurement confidence.
-       *
        * @param mt The pose estimate containing tag detection information
        * @return VisionDevs with appropriate standard deviations
        */
+
       private static VisionDevs calculateMultipleTagStdDevs(PoseEstimate mt) {
         boolean hasLargeTagArea = mt.avgTagArea() > 0.1;
         // Higher confidence (smaller std devs) when tags appear larger in the image
@@ -182,10 +186,10 @@ public class VisionUtil {
       /**
        * Calculates standard deviations when only one tag is detected. Uses both tag area and
        * distance from expected pose to determine confidence.
-       *
        * @param mt The pose estimate containing tag detection information
        * @return VisionDevs with appropriate standard deviations
        */
+
       private static VisionDevs calculateSingleTagStdDevs(PoseEstimate mt) {
         // Calculate how far the measured pose is from the expected pose
         double poseDifference =
@@ -215,19 +219,19 @@ public class VisionUtil {
 
     /**
      * Creates a vision measurement with calculated standard deviations.
-     *
      * @param mt The pose estimate to process
      * @return A vision measurement with appropriate standard deviations
      */
+
     public abstract VisionMeasurement getVisionMeasurement(PoseEstimate mt);
 
     /**
      * Default implementation for validating vision measurements. Checks all standard validation
      * criteria. This implementation is shared between MA and POOF modes.
-     *
      * @param mt The pose observation to validate
      * @return True if the measurement should be accepted, false otherwise
      */
+
     private static boolean baseAcceptVisionMeasurement(PoseEstimate poseEst) {
       if (poseEst == null) {
         return false;
@@ -250,6 +254,7 @@ public class VisionUtil {
    * Record containing collections of vision measurements and poses, categorized by acceptance
    * status.
    */
+
   public record VisionData(
       List<VisionMeasurement> measurements,
       List<Pose3d> tagPoses,
@@ -280,10 +285,10 @@ public class VisionUtil {
 
     /**
      * Combines this VisionData with another, merging all corresponding lists.
-     *
      * @param other The VisionData to merge with
      * @return A new VisionData containing all elements from both objects
      */
+
     public VisionData merge(VisionData other) {
       return new VisionData(
           mergeLists(measurements, other.measurements),
@@ -298,40 +303,40 @@ public class VisionUtil {
 
   /**
    * Validation helper method to check if MT2 measurements are being used before match start.
-   *
    * @param mt The pose estimate to validate
    * @return True if the measurement is invalid due to timing constraints
    */
+
   private static boolean invalidMT2Time(PoseEstimate mt) {
     return mt.isMegaTag2() && Robot.BEFORE_MATCH;
   }
 
   /**
    * /** Validation helper method to check if rotation velocity is within acceptable limits.
-   *
    * @param mt The pose estimate to validate
    * @return True if the rotation velocity exceeds the maximum allowed speed
    */
+
   private static boolean invalidRotationVelocity(PoseEstimate mt) {
     return Math.abs(mt.yawVelocity()) > MT2_SPIN_MAX_DPS;
   }
 
   /**
    * Validation helper method to check if ambiguity is acceptable for single-tag measurements.
-   *
    * @param mt The pose estimate to validate
    * @return True if the ambiguity exceeds the configured threshold for single-tag detections
    */
+
   private static boolean invalidAmbiguity(PoseEstimate mt) {
     return mt.tagCount() == 1 && mt.ambiguity() > MA_AMBIGUITY;
   }
 
   /**
    * Validation helper method to check if the pose is within the valid field boundaries.
-   *
    * @param robotPose The 3D pose to validate
    * @return True if the pose is outside the allowed field bounds (with margin)
    */
+
   private static boolean invalidPose(Pose3d robotPose) {
     double x = robotPose.getX();
     double y = robotPose.getY();
@@ -350,10 +355,10 @@ public class VisionUtil {
 
   /**
    * Validation helper that checks if the average detected tag area is too small.
-   *
    * @param mt The pose estimate
    * @return True if the average tag area is below the minimum threshold
    */
+
   private static boolean invalidTagArea(PoseEstimate mt) {
     return mt.avgTagArea() < MIN_TAG_AREA;
   }

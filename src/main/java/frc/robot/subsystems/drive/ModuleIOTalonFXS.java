@@ -40,6 +40,7 @@ import java.util.Queue;
  * and CANdi (PWM 1). Configured using a set of module constants from Phoenix. Device configuration
  * and other behaviors not exposed by TunerConstants can be customized here.
  */
+
 public class ModuleIOTalonFXS implements ModuleIO {
   // Hardware objects
   private final TalonFXS driveTalon;
