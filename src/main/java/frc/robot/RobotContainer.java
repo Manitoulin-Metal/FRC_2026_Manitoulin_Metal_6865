@@ -19,6 +19,7 @@ import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -44,6 +45,7 @@ public class RobotContainer {
   private final KickerSubsystem kicker = new KickerSubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem();
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
+  private final LEDSubsystem led = new LEDSubsystem();
 
   // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
