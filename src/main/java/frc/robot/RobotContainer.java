@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.commands.ClimbCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
@@ -49,6 +50,7 @@ public class RobotContainer {
 
   // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController controller1 = new CommandXboxController(1);
 
   // Field display
   private final Field2d field = new Field2d();
@@ -148,6 +150,7 @@ public class RobotContainer {
   private void configureButtonBindings() {
 
     // Hold left trigger to drive to AprilTag 26
+    // (Driver Controller)
     controller
         .leftTrigger(0.5)
         .whileTrue(
@@ -174,6 +177,7 @@ public class RobotContainer {
     DriveCommands.driveToShoot(
         drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation());
 
+    // (Driver Controller)
     // Hold right trigger to drive to climb position (Tag 31)
     controller
         .rightTrigger(0.5)
@@ -181,26 +185,31 @@ public class RobotContainer {
             DriveCommands.driveToClimb(
                 drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
-    // Lock to 0° when A button held
-    controller
-        .a()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                () -> -controller.getLeftY(),
-                () -> -controller.getLeftX(),
-                () -> Rotation2d.kZero));
+    // When A button pressed, deploy intake (For Operator Controller)
+    controller1.a().whileTrue(intakeDeploy.IntakeDeployCommand(0.5));
 
-    // Switch to X pattern when X button pressed
+    // When B button pressed, Raise intake (For Operator Controller)
+    controller1.b().whileTrue(intakeDeploy.IntakeDeployCommand(-0.5));
+
+    // When Right Trigger pressed, run intake rollers; when released, stop rollers (For Operator Controller)
+    controller1.rightTrigger(0.5).whileTrue(intakeRoller.IntakeRollerCommand(0.5));
+
+    // Switch to X pattern when X button pressed (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Reset gyro to 0° when B pressed
+    // Reset gyro to 0° when B pressed (Driver Controller)
     controller
         .b()
         .onTrue(
             Commands.runOnce(
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
+
+    // When Left Bumper held, Climber pulls up (Operator Controller)
+    controller1.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
+
+    // When Left Bumper released, Climber stops (Operator Controller)
+    controller1.leftBumper().onFalse(climb1.ClimbCommand(0));
   }
 
   /** Returns the autonomous command selected on dashboard */
@@ -251,6 +260,11 @@ public class RobotContainer {
       SmartDashboard.putString("Endgame Warning Color", "YELLOW");
     } else {
       SmartDashboard.putString("Endgame Warning Color", "NONE");
+    }
+
+    // ------------- Gyro disconnected alert ----------------
+    if (drive.isGyroDisconnected()) {
+      led.gyroDisconnectedAlert();
     }
   }
 }

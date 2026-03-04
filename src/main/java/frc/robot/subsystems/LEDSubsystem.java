@@ -33,9 +33,9 @@ public class LEDSubsystem extends SubsystemBase {
 
   /**
    * Example command factory method.
-   *
    * @return a command
    */
+
   public Command LEDCommand(String color) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
@@ -155,12 +155,23 @@ public class LEDSubsystem extends SubsystemBase {
     m_led.setData(m_ledBuffer);
   }
 
+  /** Flashing red pattern for gyro disconnected alert */
+  public void gyroDisconnectedAlert() {
+    // Alternate between red and off every 500ms
+    boolean isRedPhase = (int)(System.currentTimeMillis() / 500) % 2 == 0;
+    if (isRedPhase) {
+      setAllLEDs(255, 0, 0); // Red
+    } else {
+      setAllLEDs(0, 0, 0);   // Off
+    }
+  }
+
   /*
    * An example method querying a boolean state of the subsystem (for example, a
    * digital sensor).
-   *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
+  
   public boolean exampleCondition() {
     // Query some boolean state, such as a digital sensor.
     return false;

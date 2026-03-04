@@ -194,9 +194,11 @@ public class Drive extends SubsystemBase {
       // Use single gyro value (SIM safe)
       if (gyroInputs.connected) {
         rawGyroRotation = gyroInputs.yawPosition;
+        gyroDisconnectedAlert.set(false);
       } else {
         Twist2d twist = kinematics.toTwist2d(moduleDeltas);
         rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
+        gyroDisconnectedAlert.set(true);
       }
 
       poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
@@ -374,5 +376,10 @@ public class Drive extends SubsystemBase {
       new Translation2d(TunerConstants.BackLeft.LocationX, TunerConstants.BackLeft.LocationY),
       new Translation2d(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY)
     };
+  }
+
+  /** Returns true if the gyro is disconnected */
+  public boolean isGyroDisconnected() {
+    return !gyroInputs.connected;
   }
 }
