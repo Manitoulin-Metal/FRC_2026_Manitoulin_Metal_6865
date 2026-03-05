@@ -3,17 +3,16 @@ Not for Coding in!
 This is created for FRC Team 6865, Manitoulin Metal. This is to make sure everyone knows what their role is and what we should do next.
 
 Next Steps:
-1. Create Vision Base
-2. Start Workflow
-3. Researching Vision and AdvantageKit, along with playing around with WPILib's new toys
-4. Start April Tag recognition running for limelights
+1. Camera 3? (pointing down into our fuel container)
+2. Intake Stow
+3. Combine Align to shoot with kicker to start motor
 <<<<<<< HEAD
 5. Figure out how to change the limelight's IP (Since it conflicts with the RoboRIO2's IP) - Done
 =======
 >>>>>>> xander
 
 Roles:
-Xander: Start Vision, Start creating Autos, Start AprilTag recognition for new robot, IntakeDeploySubsystem
+Xander: Climber (raise), Kicker spin when Shooter reaches max rpm
 Nate: Catch up and learn about code again, IntakeRollerSubsystem code
 Evan: ShooterSubsystem
 Tanner: IndexerSubsystem/Kicker Subsystem and ClimberSubsystem
