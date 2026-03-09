@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /** IO implementation for real Limelight hardware. */
-
 public class VisionIOLimelight implements VisionIO {
 
   private final Supplier<Rotation2d> rotationSupplier;
@@ -47,7 +46,6 @@ public class VisionIOLimelight implements VisionIO {
    * @param name The configured name of the Limelight.
    * @param rotationSupplier Supplier for the current estimated rotation, used for MegaTag 2.
    */
-
   public VisionIOLimelight(String name, Supplier<Rotation2d> rotationSupplier) {
 
     var table = NetworkTableInstance.getDefault().getTable(name);
@@ -62,14 +60,10 @@ public class VisionIOLimelight implements VisionIO {
 
     tySubscriber = table.getDoubleTopic("ty").subscribe(0.0);
 
-    megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {
-
-        });
+    megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
 
     megatag2Subscriber =
-        table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {
-
-        });
+        table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
   }
 
   @Override
@@ -129,7 +123,7 @@ public class VisionIOLimelight implements VisionIO {
               // Observation type
               PoseObservationType.MEGATAG_1));
     }
-    
+
     for (var rawSample : megatag2Subscriber.readQueue()) {
 
       if (rawSample.value.length == 0) continue;
@@ -179,9 +173,8 @@ public class VisionIOLimelight implements VisionIO {
   }
 
   /** Parses the 3D pose from a Limelight botpose array. */
-
   private static Pose3d parsePose(double[] rawLLArray) {
-    
+
     return new Pose3d(
         rawLLArray[0],
         rawLLArray[1],

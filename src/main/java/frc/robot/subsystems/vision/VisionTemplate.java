@@ -8,6 +8,8 @@
 
 package frc.robot.subsystems.vision;
 
+import static frc.robot.subsystems.vision.VisionConstants.*;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -20,42 +22,34 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.VisionIO.VisionIOInputs;
-
-import static frc.robot.subsystems.vision.VisionConstants.*;
-
 import java.util.LinkedList;
 import java.util.List;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.inputs.LoggableInputs;
 
-public class VisionTemplate extends SubsystemBase 
-{
+public class VisionTemplate extends SubsystemBase {
 
   private final VisionConsumer consumer;
   private final VisionIO[] io;
   private final VisionIOInputs[] inputs;
   private final Alert[] disconnectedAlerts;
 
-  public VisionTemplate(VisionConsumer consumer, VisionIO... io) 
-  {
+  public VisionTemplate(VisionConsumer consumer, VisionIO... io) {
     this.consumer = consumer;
     this.io = io;
 
     // Initialize inputs
     this.inputs = new VisionIOInputs[io.length];
 
-    for (int i = 0; i < inputs.length; i++) 
-    {
+    for (int i = 0; i < inputs.length; i++) {
       inputs[i] = new VisionIOInputs();
     }
 
     // Initialize disconnected alerts
     this.disconnectedAlerts = new Alert[io.length];
 
-    for (int i = 0; i < inputs.length; i++) 
-    {
+    for (int i = 0; i < inputs.length; i++) {
       disconnectedAlerts[i] =
-          
           new Alert(
               "Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
     }
@@ -66,18 +60,14 @@ public class VisionTemplate extends SubsystemBase
    *
    * @param cameraIndex The index of the camera to use.
    */
-
-  public Rotation2d getTargetX(int cameraIndex) 
-  {
+  public Rotation2d getTargetX(int cameraIndex) {
     return inputs[cameraIndex].latestTargetObservation.tx();
   }
 
   @Override
-  public void periodic() 
-  {
+  public void periodic() {
 
-    for (int i = 0; i < io.length; i++) 
-    {
+    for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
       Logger.processInputs("Vision/Camera" + Integer.toString(i), (LoggableInputs) inputs[i]);
     }
@@ -90,8 +80,7 @@ public class VisionTemplate extends SubsystemBase
 
     // Loop over cameras
 
-    for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) 
-    {
+    for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
       // Update disconnected alert
       disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
 
@@ -103,12 +92,10 @@ public class VisionTemplate extends SubsystemBase
 
       // Add tag poses
 
-      for (int tagId : inputs[cameraIndex].tagIds) 
-      {
+      for (int tagId : inputs[cameraIndex].tagIds) {
         var tagPose = aprilTagLayout.getTagPose(tagId);
 
-        if (tagPose.isPresent()) 
-        {
+        if (tagPose.isPresent()) {
           tagPoses.add(tagPose.get());
         }
       }
@@ -133,20 +120,15 @@ public class VisionTemplate extends SubsystemBase
         // Add pose to log
         robotPoses.add(observation.pose());
 
-        if (rejectPose) 
-        {
+        if (rejectPose) {
           robotPosesRejected.add(observation.pose());
-        } 
-        
-        else 
-        {
+        } else {
           robotPosesAccepted.add(observation.pose());
         }
 
         // Skip if rejected
 
-        if (rejectPose) 
-        {
+        if (rejectPose) {
           continue;
         }
 
@@ -155,16 +137,14 @@ public class VisionTemplate extends SubsystemBase
             Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
         double linearStdDev = linearStdDevBaseline * stdDevFactor;
         double angularStdDev = angularStdDevBaseline * stdDevFactor;
-        if (observation.type() == PoseObservationType.MEGATAG_2)
+        if (observation.type() == PoseObservationType.MEGATAG_2) {
 
-        {
           linearStdDev *= linearStdDevMegatag2Factor;
           angularStdDev *= angularStdDevMegatag2Factor;
         }
 
-        if (cameraIndex < cameraStdDevFactors.length)
-        
-        {
+        if (cameraIndex < cameraStdDevFactors.length) {
+
           linearStdDev *= cameraStdDevFactors[cameraIndex];
           angularStdDev *= cameraStdDevFactors[cameraIndex];
         }
@@ -197,7 +177,6 @@ public class VisionTemplate extends SubsystemBase
       allRobotPoses.addAll(robotPoses);
       allRobotPosesAccepted.addAll(robotPosesAccepted);
       allRobotPosesRejected.addAll(robotPosesRejected);
-
     }
 
     // Log summary data
@@ -210,12 +189,10 @@ public class VisionTemplate extends SubsystemBase
 
     Logger.recordOutput(
         "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
-
   }
 
   @FunctionalInterface
-  public static interface VisionConsumer 
-  {
+  public static interface VisionConsumer {
     public void accept(
         Pose2d visionRobotPoseMeters,
         double timestampSeconds,

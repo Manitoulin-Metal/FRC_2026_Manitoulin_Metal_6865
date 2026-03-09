@@ -3,6 +3,4 @@
 
 package frc.robot.subsystems.kicker;
 
-public class KickerSubsystem {
-    
-}
+public class KickerSubsystem {}
