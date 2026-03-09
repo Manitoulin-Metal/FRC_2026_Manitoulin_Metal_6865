@@ -191,19 +191,15 @@ public class RobotContainer {
     // When B button pressed, Raise intake (For Operator Controller)
     controller1.b().whileTrue(intakeDeploy.IntakeDeployCommand(-0.5));
 
-    //||||||||||||||||||||||||||||||||||||||||||||||||||||
-    //|TO-DO: Add stow command and bind to another button|
-    //||||||||||||||||||||||||||||||||||||||||||||||||||||
-    
     // When Right Trigger pressed, run intake rollers; when released, stop rollers (For Operator Controller)
     controller1.rightTrigger(0.5).onTrue(intakeRoller.IntakeRollerCommand(0.5));
 
     // Switch to X pattern when X button pressed (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    //|||||||||||||||||||||||||||||||||||||||||||||||||||||||
-    //|TO-DO: Add shooter command and bind to another button|
-    //|||||||||||||||||||||||||||||||||||||||||||||||||||||||
+    //|||||||||||||||||||||||||||||||||||||||||||||||||
+    //|TO-DO: Add shooter command and bind to a button|
+    //|||||||||||||||||||||||||||||||||||||||||||||||||
 
     //|||||||||||||||||||||||||||||||||||||||||||||||||||
     //|TO-DO: Add Drive to Shoot Command to Left Trigger|

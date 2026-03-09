@@ -99,6 +99,8 @@ public class TunerConstants {
   private static final int kCANivore = 3;
   private static final int ThriftyNova1 = 55;
   private static final int ThriftyNova2 = 56;
+  private static final int kShooterMoter = 61;
+  private static final int kCANDle = 4;
 
   // These are only used for simulation
   private static final MomentOfInertia kSteerInertia = KilogramSquareMeters.of(0.01);
