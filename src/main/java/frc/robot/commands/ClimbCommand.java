@@ -11,6 +11,7 @@ import frc.robot.subsystems.ClimbSubsystem;
  * Command helpers for the climb subsystem. This class follows the same pattern as DriveCommands -
  * static methods that create commands using the subsystem.
  */
+
 public class ClimbCommand {
 
   private ClimbCommand() {
@@ -24,6 +25,7 @@ public class ClimbCommand {
    * @param speed The speed (-1.0 to 1.0) to run the climber
    * @return A command that runs the climber
    */
+  
   public static Command runClimber(ClimbSubsystem climbSubsystem, double speed) {
     return run(
         () -> {
@@ -38,6 +40,7 @@ public class ClimbCommand {
    * @param climbSubsystem The climb subsystem to use
    * @return A command that stops the climber
    */
+
   public static Command stopClimber(ClimbSubsystem climbSubsystem) {
     return run(
         () -> {
