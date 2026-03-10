@@ -34,6 +34,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
    *
    * @return a command
    */
+  
   public Command IntakeRollerCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
@@ -44,7 +45,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   }
 
   private void runIntakeRoller(double speed) {
-    throw new UnsupportedOperationException("Unimplemented method 'runIntakeRoller'");
+    IntakeRoller.set(speed);
   }
 
   {
@@ -57,6 +58,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
    *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
+
   // public boolean IntakeDeployCondition() {
   // Query some boolean state, such as a digital sensor.
   // If needed add IntakeDeploy command.
