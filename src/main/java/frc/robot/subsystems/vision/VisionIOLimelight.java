@@ -42,10 +42,10 @@ public class VisionIOLimelight implements VisionIO {
 
   /**
    * Creates a new VisionIOLimelight.
+   *
    * @param name The configured name of the Limelight.
    * @param rotationSupplier Supplier for the current estimated rotation, used for MegaTag 2.
    */
-  
   public VisionIOLimelight(String name, Supplier<Rotation2d> rotationSupplier) {
 
     var table = NetworkTableInstance.getDefault().getTable(name);

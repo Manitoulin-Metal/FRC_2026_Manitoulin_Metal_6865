@@ -1,12 +1,12 @@
 // This is being used by Team 6865, Manitoulin Metal
 // This was created by Team 6865, Manitoulin Metal
-
+/*
 package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 
-// import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.hardware.TalonFX;
 
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -21,45 +21,44 @@ public class ClimbSubsystem extends SubsystemBase {
   SparkFlex climb1 = new SparkFlex(60, MotorType.kBrushless);
 
   /** Creates a new Subsystem. */
-  @SuppressWarnings("removal")
+/*
+public ClimbSubsystem() {
+  SparkMaxConfig config4 = new SparkMaxConfig();
 
-  public ClimbSubsystem() {
-    SparkMaxConfig config4 = new SparkMaxConfig();
+  config4.idleMode(IdleMode.kBrake);
 
-    config4.idleMode(IdleMode.kBrake);
+  climb1.configure(config4, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+}
 
-    climb1.configure(config4, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-  }
+/**
+ * Sets motor controllers to run-to-pos based off distance
+ * @return a command
+ */
+/*
+public Command ClimbCommand(double speed) {
+  // Inline construction of command goes here.
+  // Subsystem::RunOnce implicitly requires `this` subsystem.
+  return run(
+      () -> {
+        runClimber(speed);
+      });
+}
 
-  /**
-   * Sets motor controllers to run-to-pos based off distance
-   * @return a command
-   */
+public void runClimber(double speed) {
+  climb1.set(speed);
+}
 
-  public Command ClimbCommand(double speed) {
-    // Inline construction of command goes here.
-    // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return run(
-        () -> {
-          runClimber(speed);
-        });
-  }
+/**
+ * An example method querying a boolean state of the subsystem (for example, a digital sensor).
+ * @return value of some boolean subsystem state, such as a digital sensor.
+ */
 
-  public void runClimber(double speed) {
-    climb1.set(speed);
-  }
-
-  /**
-   * An example method querying a boolean state of the subsystem (for example, a digital sensor).
-   * @return value of some boolean subsystem state, such as a digital sensor.
-   */
-  
   // public boolean IntakeDeployCondition() {
   // Query some boolean state, such as a digital sensor.
   // If needed add IntakeDeploy command.
   // return false;
   // }
-
+/*
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
@@ -70,3 +69,4 @@ public class ClimbSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run during simulation
   }
 }
+*/

@@ -12,11 +12,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.ClimbCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
@@ -45,7 +43,7 @@ public class RobotContainer {
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
   private final KickerSubsystem kicker = new KickerSubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem();
-  private final ClimbSubsystem climb1 = new ClimbSubsystem();
+  // private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
 
   // Controllers
@@ -191,23 +189,24 @@ public class RobotContainer {
     // When B button pressed, Raise intake (For Operator Controller)
     controller1.b().whileTrue(intakeDeploy.IntakeDeployCommand(-0.5));
 
-    // When Right Trigger pressed, run intake rollers; when released, stop rollers (For Operator Controller)
+    // When Right Trigger pressed, run intake rollers; when released, stop rollers (For Operator
+    // Controller)
     controller1.rightTrigger(0.5).onTrue(intakeRoller.IntakeRollerCommand(0.5));
 
     // Switch to X pattern when X button pressed (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    //|||||||||||||||||||||||||||||||||||||||||||||||||
-    //|TO-DO: Add shooter command and bind to a button|
-    //|||||||||||||||||||||||||||||||||||||||||||||||||
+    // |||||||||||||||||||||||||||||||||||||||||||||||||
+    // |TO-DO: Add shooter command and bind to a button|
+    // |||||||||||||||||||||||||||||||||||||||||||||||||
 
-    //|||||||||||||||||||||||||||||||||||||||||||||||||||
-    //|TO-DO: Add Drive to Shoot Command to Left Trigger|
-    //|||||||||||||||||||||||||||||||||||||||||||||||||||
+    // |||||||||||||||||||||||||||||||||||||||||||||||||||
+    // |TO-DO: Add Drive to Shoot Command to Left Trigger|
+    // |||||||||||||||||||||||||||||||||||||||||||||||||||
 
-    //||||||||||||||||||||||||||||||||||||||||||||
-    //|TO-DO: Added a Kicker Command to a binding|
-    //||||||||||||||||||||||||||||||||||||||||||||
+    // ||||||||||||||||||||||||||||||||||||||||||||
+    // |TO-DO: Added a Kicker Command to a binding|
+    // ||||||||||||||||||||||||||||||||||||||||||||
 
     // Reset gyro to 0° when B pressed (Driver Controller)
     controller
@@ -218,13 +217,13 @@ public class RobotContainer {
                 drive));
 
     // When Left Bumper held, Climber pulls up (Driver Controller)
-    controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
+    // controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
 
     // When Left Bumper released, Climber stops (Driver Controller)
-    controller.leftBumper().onFalse(climb1.ClimbCommand(0));
+    // controller.leftBumper().onFalse(climb1.ClimbCommand(0));
 
     // When Right Bumper held, Climber Raises (Driver Controller)
-    controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
+    // controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
   }
 
   /** Returns the autonomous command selected on dashboard */
@@ -255,7 +254,7 @@ public class RobotContainer {
     Logger.recordOutput("Match/Endgame10", alert10);
 
     // ------------- Controller rumble ----------------
-    
+
     double rumbleIntensity = 0.5; // 0.0 to 1.0
     if (alert20 || alert10) {
       controller.setRumble(

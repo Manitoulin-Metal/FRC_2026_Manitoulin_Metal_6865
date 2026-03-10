@@ -82,9 +82,8 @@ public class TunerConstants {
   private static final CANcoderConfiguration encoderInitialConfigs = new CANcoderConfiguration();
 
   // Configs for the Pigeon 2; leave this null to skip applying Pigeon 2 configs.
-  
-  private static final Pigeon2Configuration pigeonConfigs = null;
 
+  private static final Pigeon2Configuration pigeonConfigs = null;
 
   // CAN bus that the devices are located on
   // All swerve devices must share the same CAN bus
@@ -121,7 +120,7 @@ public class TunerConstants {
   private static final MomentOfInertia kDriveInertia = KilogramSquareMeters.of(0.01);
 
   // Simulated voltage necessary to overcome friction
-  
+
   private static final Voltage kSteerFrictionVoltage = Volts.of(0.2);
   private static final Voltage kDriveFrictionVoltage = Volts.of(0.2);
 
@@ -258,7 +257,6 @@ public class TunerConstants {
    * Creates a CommandSwerveDrivetrain instance. This should only be called once in your robot
    * program.
    */
-
   @SuppressWarnings("rawtypes")
   public static SwerveDrivetrain createDrivetrain() {
     return new TunerSwerveDrivetrain(
@@ -269,28 +267,28 @@ public class TunerConstants {
   public static class TunerSwerveDrivetrain extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder> {
 
     /**
-     * Constructs a CTRE SwerveDrivetrain using the specified constants.
-     * This constructs the underlying hardware devices, so users should not construct the devices
-     * themselves. If they need the devices, they can access them through getters in the classes.
+     * Constructs a CTRE SwerveDrivetrain using the specified constants. This constructs the
+     * underlying hardware devices, so users should not construct the devices themselves. If they
+     * need the devices, they can access them through getters in the classes.
+     *
      * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
      * @param modules Constants for each specific module
      */
-
     public TunerSwerveDrivetrain(
         SwerveDrivetrainConstants drivetrainConstants, SwerveModuleConstants<?, ?, ?>... modules) {
       super(TalonFX::new, TalonFX::new, CANcoder::new, drivetrainConstants, modules);
     }
 
     /**
-     * Constructs a CTRE SwerveDrivetrain using the specified constants.
-     * This constructs the underlying hardware devices, so users should not construct the devices
-     * themselves. If they need the devices, they can access them through getters in the classes.
+     * Constructs a CTRE SwerveDrivetrain using the specified constants. This constructs the
+     * underlying hardware devices, so users should not construct the devices themselves. If they
+     * need the devices, they can access them through getters in the classes.
+     *
      * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
      * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set
-     * to 0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
+     *     to 0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
      * @param modules Constants for each specific module
      */
-
     public TunerSwerveDrivetrain(
         SwerveDrivetrainConstants drivetrainConstants,
         double odometryUpdateFrequency,
@@ -305,19 +303,19 @@ public class TunerConstants {
     }
 
     /**
-     * Constructs a CTRE SwerveDrivetrain using the specified constants.
-     * This constructs the underlying hardware devices, so users should not construct the devices
-     * themselves. If they need the devices, they can access them through getters in the classes.
+     * Constructs a CTRE SwerveDrivetrain using the specified constants. This constructs the
+     * underlying hardware devices, so users should not construct the devices themselves. If they
+     * need the devices, they can access them through getters in the classes.
+     *
      * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
      * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set
-     * to 0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
+     *     to 0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
      * @param odometryStandardDeviation The standard deviation for odometry calculation in the form
-     * [x, y, theta]áµ€, with units in meters and radians
+     *     [x, y, theta]áµ€, with units in meters and radians
      * @param visionStandardDeviation The standard deviation for vision calculation in the form [x,
-     * y, theta]áµ€, with units in meters and radians
+     *     y, theta]áµ€, with units in meters and radians
      * @param modules Constants for each specific module
      */
-
     public TunerSwerveDrivetrain(
         SwerveDrivetrainConstants drivetrainConstants,
         double odometryUpdateFrequency,

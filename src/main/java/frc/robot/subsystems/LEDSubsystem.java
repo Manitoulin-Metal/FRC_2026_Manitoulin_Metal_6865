@@ -14,10 +14,10 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class LEDSubsystem extends SubsystemBase {
-  @SuppressWarnings({ "deprecated", "removal" })
+  @SuppressWarnings({"deprecated", "removal"})
   // CANdle support - uncomment when CTRE APIs are available
   CANdle candle = new CANdle(4, "DriveCanivore");
-  
+
   private static final int kPort = 9;
   private static final int kLength = 120;
 
@@ -34,9 +34,9 @@ public class LEDSubsystem extends SubsystemBase {
 
   /**
    * Example command factory method.
+   *
    * @return a command
    */
-
   public Command LEDCommand(String color) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
@@ -77,11 +77,8 @@ public class LEDSubsystem extends SubsystemBase {
         });
   }
 
-  public Command runPattern(LEDPattern pattern)
-  {
-    return runOnce(
-      () -> pattern.applyTo(m_ledBuffer)
-    );
+  public Command runPattern(LEDPattern pattern) {
+    return runOnce(() -> pattern.applyTo(m_ledBuffer));
   }
 
   public void RED() {
@@ -141,10 +138,8 @@ public class LEDSubsystem extends SubsystemBase {
 
   public void TEAM_PATTERN2() {
     // Yellow gradient pattern
-    LEDPattern pattern = LEDPattern.gradient(
-        LEDPattern.GradientType.kDiscontinuous,
-        Color.kYellow, 
-        Color.kBlack);
+    LEDPattern pattern =
+        LEDPattern.gradient(LEDPattern.GradientType.kDiscontinuous, Color.kYellow, Color.kBlack);
     pattern.applyTo(m_ledBuffer);
     m_led.setData(m_ledBuffer);
   }
@@ -159,11 +154,11 @@ public class LEDSubsystem extends SubsystemBase {
   /** Flashing red pattern for gyro disconnected alert */
   public void gyroDisconnectedAlert() {
     // Alternate between red and off every 500ms
-    boolean isRedPhase = (int)(System.currentTimeMillis() / 500) % 2 == 0;
+    boolean isRedPhase = (int) (System.currentTimeMillis() / 500) % 2 == 0;
     if (isRedPhase) {
       setAllLEDs(255, 0, 0); // Red
     } else {
-      setAllLEDs(0, 0, 0);   // Off
+      setAllLEDs(0, 0, 0); // Off
     }
   }
 
@@ -172,7 +167,7 @@ public class LEDSubsystem extends SubsystemBase {
    * digital sensor).
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
-  
+
   public boolean exampleCondition() {
     // Query some boolean state, such as a digital sensor.
     return false;

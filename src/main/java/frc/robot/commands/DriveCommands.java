@@ -71,7 +71,6 @@ public class DriveCommands {
   /**
    * Field relative drive command using two joysticks (controlling linear and angular velocities).
    */
-  
   public static Command joystickDrive(
       Drive drive,
       DoubleSupplier xSupplier,
@@ -113,7 +112,6 @@ public class DriveCommands {
    * Possible use cases include snapping to an angle, aiming at a vision target, or controlling
    * absolute rotation with a joystick.
    */
-
   public static Command joystickDriveAtAngle(
       Drive drive,
       DoubleSupplier xSupplier,
@@ -167,7 +165,6 @@ public class DriveCommands {
    * Measures the velocity feedforward constants for the drive motors. This command should only be
    * used in voltage control mode.
    */
-
   public static Command feedforwardCharacterization(Drive drive) {
     List<Double> velocitySamples = new LinkedList<>();
     List<Double> voltageSamples = new LinkedList<>();
@@ -307,6 +304,7 @@ public class DriveCommands {
 
   /**
    * Generic Drive to Pose command. Works for SIM, Teleop, or Autonomous.
+   *
    * @param drive the Drive subsystem
    * @param targetPose the Pose2d to drive to
    * @param kP simple proportional gain for translation
@@ -317,7 +315,6 @@ public class DriveCommands {
   /**
    * Drive to a Pose with smooth rotation. Keeps the robot facing the target heading while driving.
    */
-
   public static Command driveToPoseWithRotation(
       Drive drive, Pose2d targetPose, double kPLinear, double kPRotation) {
 
@@ -520,6 +517,7 @@ public class DriveCommands {
 
   /**
    * Drive to a pose with optional vision updates. Works in teleop (button held) or autonomous.
+   *
    * @param drive the Drive subsystem
    * @param targetPose the target Pose2d
    * @param kPLinear proportional gain for translation
@@ -527,7 +525,6 @@ public class DriveCommands {
    * @param fieldLayout used in simulation to confirm tag positions
    * @param useLimelight whether to use Limelight vision updates
    */
-
   public static Command driveToShoot(
       Drive drive,
       Pose2d tagPose,
@@ -644,7 +641,6 @@ public class DriveCommands {
    * Drive to climb position relative to AprilTag 31. Uses Limelight if available (real robot) or
    * fieldLayout in simulation. Stops when the robot reaches the target pose.
    */
-
   public static Command driveToClimb(
       Drive drive,
       AprilTagFieldLayout fieldLayout,

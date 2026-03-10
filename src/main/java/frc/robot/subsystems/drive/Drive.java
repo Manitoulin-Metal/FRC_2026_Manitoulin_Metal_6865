@@ -226,9 +226,9 @@ public class Drive extends SubsystemBase {
 
   /**
    * Runs the drive at the desired velocity.
+   *
    * @param speeds Speeds in meters/sec
    */
-
   public void runVelocity(ChassisSpeeds speeds) {
     // Calculate module setpoints
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
@@ -268,7 +268,6 @@ public class Drive extends SubsystemBase {
    * Stops the drive and turns the modules to an X arrangement to resist movement. The modules will
    * return to their normal orientations the next time a nonzero velocity is requested.
    */
-  
   public void stopWithX() {
     Rotation2d[] headings = new Rotation2d[4];
     for (int i = 0; i < 4; i++) {

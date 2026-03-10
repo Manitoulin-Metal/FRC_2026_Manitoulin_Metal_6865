@@ -12,9 +12,10 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 public class IntakeRollerSubsystem extends SubsystemBase {
   @Deprecated
-  
+
   // Initialize the motor (Flex/MAX are setup the same way)
   SparkFlex IntakeRoller = new SparkFlex(58, MotorType.kBrushless);
 
