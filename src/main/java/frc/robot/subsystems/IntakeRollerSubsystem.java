@@ -34,7 +34,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
    *
    * @return a command
    */
-  
+
   public Command IntakeRollerCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
@@ -46,9 +46,6 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   private void runIntakeRoller(double speed) {
     IntakeRoller.set(speed);
-  }
-
-  {
   }
 
   // May need to add set speed code here
