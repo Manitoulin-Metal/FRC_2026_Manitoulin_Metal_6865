@@ -3,4 +3,6 @@
 
 package frc.robot.subsystems.vision;
 
-public class VisionMeasurement {}
+public class VisionMeasurement {
+    
+}

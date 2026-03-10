@@ -33,7 +33,7 @@ public class ClimbCommand extends SubsystemBase {
     * @return a command
     */
 
-   public Command ClimbCommand(double speed) {
+   public Command createClimbCommand(double speed) {
      // Inline construction of command goes here.
      // Subsystem::RunOnce implicitly requires `this` subsystem.
      return run(
