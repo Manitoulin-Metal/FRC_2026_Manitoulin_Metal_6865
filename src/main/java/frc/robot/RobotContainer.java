@@ -172,8 +172,6 @@ public class RobotContainer {
                 },
                 Set.of(drive) // <-- required subsystem set
                 ));
-    DriveCommands.driveToShoot(
-        drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation());
 
     // (Driver Controller)
     // Hold right trigger to drive to climb position (Tag 31)
