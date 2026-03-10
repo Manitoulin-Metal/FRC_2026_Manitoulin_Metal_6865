@@ -1,58 +1,48 @@
-/* package frc.robot.commands;
+// This is being used by Team 6865, Manitoulin Metal
 
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
+package frc.robot.commands;
 
-// import com.ctre.phoenix6.hardware.TalonFX;
+import static edu.wpi.first.wpilibj2.command.Commands.run;
 
-import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.ClimbSubsystem;
 
-public class ClimbCommand extends SubsystemBase {
-  // Initialize the motor (Flex/MAX are setup the same way)
+/**
+ * Command helpers for the climb subsystem. This class follows the same pattern as DriveCommands -
+ * static methods that create commands using the subsystem.
+ */
+public class ClimbCommand {
 
-  SparkFlex climb1 = new SparkFlex(60, MotorType.kBrushless);
+  private ClimbCommand() {
+    // Utility class - no instantiation
+  }
 
-  /** Creates a new Subsystem.
-  @SuppressWarnings("removal")
+  /**
+   * Creates a command that runs the climber at a given speed.
+   *
+   * @param climbSubsystem The climb subsystem to use
+   * @param speed The speed (-1.0 to 1.0) to run the climber
+   * @return A command that runs the climber
+   */
+  public static Command runClimber(ClimbSubsystem climbSubsystem, double speed) {
+    return run(
+        () -> {
+          climbSubsystem.runClimber(speed);
+        },
+        climbSubsystem);
+  }
 
-  public ClimbCommand() {
-    SparkMaxConfig config4 = new SparkMaxConfig();
-
-    config4.idleMode(IdleMode.kBrake);
-
-    climb1.configure(config4, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-   }
-
-   /**
-    * Sets motor controllers to run-to-pos based off distance
-    * @return a command
-    */
-
-   // public Command createClimbCommand(double speed) {
-     // Inline construction of command goes here.
-     // Subsystem::RunOnce implicitly requires `this` subsystem.
-    // return run(
-      //   () -> {
-        //   runClimber(speed);
-      //   });
-  // }
- /*
- public void runClimber(double speed) {
-   climb1.set(speed);
- }
-
- /**
-  * An example method querying a boolean state of the subsystem (for example, a digital sensor).
-  * @return value of some boolean subsystem state, such as a digital sensor.
-  */
-
-   // public boolean IntakeDeployCondition() {
-   // Query some boolean state, such as a digital sensor.
-   // If needed add IntakeDeploy command.
-   // return false;
-   // */
+  /**
+   * Creates a command that stops the climber.
+   *
+   * @param climbSubsystem The climb subsystem to use
+   * @return A command that stops the climber
+   */
+  public static Command stopClimber(ClimbSubsystem climbSubsystem) {
+    return run(
+        () -> {
+          climbSubsystem.runClimber(0.0);
+        },
+        climbSubsystem);
+  }
+}

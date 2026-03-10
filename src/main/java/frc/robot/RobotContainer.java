@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
@@ -43,7 +44,7 @@ public class RobotContainer {
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
   private final KickerSubsystem kicker = new KickerSubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem();
-  // private final ClimbSubsystem climb1 = new ClimbSubsystem();
+  private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
 
   // Controllers
@@ -215,13 +216,13 @@ public class RobotContainer {
                 drive));
 
     // When Left Bumper held, Climber pulls up (Driver Controller)
-    // controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
+    controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
 
     // When Left Bumper released, Climber stops (Driver Controller)
-    // controller.leftBumper().onFalse(climb1.ClimbCommand(0));
+    controller.leftBumper().onFalse(climb1.ClimbCommand(0));
 
     // When Right Bumper held, Climber Raises (Driver Controller)
-    // controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
+    controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
   }
 
   /** Returns the autonomous command selected on dashboard */
