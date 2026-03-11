@@ -1,7 +1,7 @@
 // This is being used by Team 6865, Manitoulin Metal
 // This was created by Team 6865, Manitoulin Metal
 
-package frc.robot.subsystems;
+package frc.robot.subsystems.kicker;
 
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
@@ -13,33 +13,19 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 @SuppressWarnings("removal")
-public class IntakeDeploySubsystem extends SubsystemBase {
+public class KickerSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
-
-  SparkMax intakeDeploy = new SparkMax(59, MotorType.kBrushless);
+  SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
 
   /** Creates a new Subsystem. */
-  public IntakeDeploySubsystem() {
-
-    // lc.setRangingMode.LaserCan.RangingMode.SHORT lc; setRegionOfInterest(new
-    // LaserCan.RegionOfInterest(8, 8, 16, 16));
-    // lc.setTimingBudget(LaserCan.TimingBudget.TIMING_BUDGET_33MS ); lc.setRegionOfInterest(new
-    // LaserCan.RegionOfInterest(8, 8, 16, 16));
-    // lc.setTimingBudget(LaserCan.TimingBudget.TIMING_BUDGET_33MS getLaserMeasurement() {
-    // LaserCan.Measurement measurement = lc.getMeasurement();
-    // if (measurement != null && measurement.status == LaserCan.LASERCAN_STATUS_VALID_MEASUREMENT)
-    // {
-    // return measurement.distance_mm;);
-
-  }
+  public KickerSubsystem() {}
 
   {
-    SparkMaxConfig config3 = new SparkMaxConfig();
-    config3.inverted(true).idleMode(IdleMode.kBrake);
+    SparkMaxConfig config4 = new SparkMaxConfig();
+    config4.inverted(true).idleMode(IdleMode.kBrake);
 
     // Apply configs - reset old parameters, and persist through power-cycles.
-    intakeDeploy.configure(
-        config3, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
+    kicker.configure(config4, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
     {
     }
   }
@@ -49,17 +35,17 @@ public class IntakeDeploySubsystem extends SubsystemBase {
    *
    * @return a command
    */
-  public final Command IntakeDeployCommand(double speed) {
+  public final Command kickerCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return run(
         () -> {
-          runIntakeDeploy(speed);
+          kicker(speed);
         });
   }
 
-  public void runIntakeDeploy(double speed) {
-    intakeDeploy.set(speed);
+  public void kicker(double speed) {
+    kicker.set(speed);
   }
 
   /**
@@ -67,7 +53,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
    *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
-  public boolean IntakeDeployCondition() {
+  public boolean kickerCondition() {
     // Query some boolean state, such as a digital sensor.
     return false;
   }

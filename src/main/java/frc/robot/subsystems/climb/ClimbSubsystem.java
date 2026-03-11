@@ -1,33 +1,29 @@
 // This is being used by Team 6865, Manitoulin Metal
 // This was created by Team 6865, Manitoulin Metal
 
-package frc.robot.subsystems;
+package frc.robot.subsystems.climb;
 
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-@SuppressWarnings("removal")
-public class KickerSubsystem extends SubsystemBase {
+public class ClimbSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
-  SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
+
+  SparkFlex climb1 = new SparkFlex(60, MotorType.kBrushless);
 
   /** Creates a new Subsystem. */
-  public KickerSubsystem() {}
+  public ClimbSubsystem() {
+    SparkFlexConfig config4 = new SparkFlexConfig();
 
-  {
-    SparkMaxConfig config4 = new SparkMaxConfig();
-    config4.inverted(true).idleMode(IdleMode.kBrake);
+    config4.idleMode(IdleMode.kBrake);
 
-    // Apply configs - reset old parameters, and persist through power-cycles.
-    kicker.configure(config4, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
-    {
-    }
+    climb1.configure(config4, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 
   /**
@@ -35,17 +31,18 @@ public class KickerSubsystem extends SubsystemBase {
    *
    * @return a command
    */
-  public final Command kickerCommand(double speed) {
+  
+  public Command ClimbCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return run(
         () -> {
-          kicker(speed);
+          runClimber(speed);
         });
   }
 
-  public void kicker(double speed) {
-    kicker.set(speed);
+  public void runClimber(double speed) {
+    climb1.set(speed);
   }
 
   /**
@@ -53,10 +50,12 @@ public class KickerSubsystem extends SubsystemBase {
    *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
-  public boolean kickerCondition() {
-    // Query some boolean state, such as a digital sensor.
-    return false;
-  }
+
+  // public boolean IntakeDeployCondition() {
+  // Query some boolean state, such as a digital sensor.
+  // If needed add IntakeDeploy command.
+  // return false;
+  // }
 
   @Override
   public void periodic() {

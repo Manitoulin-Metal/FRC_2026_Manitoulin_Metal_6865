@@ -5,7 +5,7 @@ package frc.robot.commands;
 import static edu.wpi.first.wpilibj2.command.Commands.run;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.ClimbSubsystem;
+import frc.robot.subsystems.climb.ClimbSubsystem;
 
 /**
  * Command helpers for the climb subsystem. This class follows the same pattern as DriveCommands -
