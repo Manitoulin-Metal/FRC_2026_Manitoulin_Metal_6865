@@ -1180,7 +1180,7 @@ public class LimelightHelpers {
     return getLimelightNTTableEntry(tableName, entryName).getStringArray(new String[0]);
   }
 
-  /////
+  // |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
   /**
    * Does the Limelight have a valid target?
@@ -1466,8 +1466,7 @@ public class LimelightHelpers {
     return getLimelightNTStringArray(limelightName, "rawbarcodes");
   }
 
-  /////
-  /////
+  // ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
   public static Pose3d getBotPose3d(String limelightName) {
     double[] poseArray = getLimelightNTDoubleArray(limelightName, "botpose");
@@ -1650,8 +1649,7 @@ public class LimelightHelpers {
     return new IMUData(imuData);
   }
 
-  /////
-  /////
+  // |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
   public static void setPipelineIndex(String limelightName, int pipelineIndex) {
     setLimelightNTDouble(limelightName, "pipeline", pipelineIndex);
@@ -1915,8 +1913,7 @@ public class LimelightHelpers {
     setLimelightNTDoubleArray(limelightName, "camerapose_robotspace_set", entries);
   }
 
-  /////
-  /////
+  // |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
   public static void setPythonScriptData(String limelightName, double[] outgoingPythonData) {
     setLimelightNTDoubleArray(limelightName, "llrobot", outgoingPythonData);
@@ -1926,8 +1923,7 @@ public class LimelightHelpers {
     return getLimelightNTDoubleArray(limelightName, "llpython");
   }
 
-  /////
-  /////
+  // ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
   /**
    * Triggers a snapshot capture via NetworkTables by incrementing the snapshot counter.
@@ -2007,12 +2003,9 @@ public class LimelightHelpers {
 
   /**
    * Sets up port forwarding for a Limelight 3A/3G connected via USB. This allows access to the
-   * Limelight web interface and video stream when connected to the robot over USB.
-   *
-   * <p>For usbIndex 0: ports 5800-5809 forward to 172.29.0.1 For usbIndex 1: ports 5810-5819
-   * forward to 172.29.1.1 etc.
-   *
-   * <p>Call this method once during robot initialization. To access the interface of the camera
+   * Limelight web interface and video stream when connected to the robot over USB. For usbIndex 0:
+   * ports 5800-5809 forward to 172.29.0.1 For usbIndex 1: ports 5810-5819 forward to 172.29.1.1
+   * etc. Call this method once during robot initialization. To access the interface of the camera
    * with usbIndex0, you would go to roboRIO-(teamnum)-FRC.local:5801. Port 5811 for usb index 1
    *
    * @param usbIndex The USB index of the Limelight (0, 1, 2, etc.)

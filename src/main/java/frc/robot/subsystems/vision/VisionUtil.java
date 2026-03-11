@@ -1,4 +1,4 @@
-// Copyright (c) 2025 FRC 5712
+// Copyright (c) 2026 FRC 6865
 // This is being used by Team 6865, Manitoulin Metal
 
 // Use of this source code is governed by an MIT-style
