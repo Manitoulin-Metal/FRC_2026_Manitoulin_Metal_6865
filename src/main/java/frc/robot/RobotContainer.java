@@ -182,21 +182,23 @@ public class RobotContainer {
             DriveCommands.driveToClimb(
                 drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
-    // When A button pressed, deploy intake (For Operator Controller)
+    // When A button pressed, deploy intake
+    // (For Operator Controller)
     controller1.a().whileTrue(intakeDeploy.IntakeDeployCommand(0.5));
 
-    // When B button pressed, Raise intake (For Operator Controller)
+    // When B button pressed, Raise intake
+    // (For Operator Controller)
     controller1.b().whileTrue(intakeDeploy.IntakeDeployCommand(-0.5));
 
-    // When Right Trigger pressed/held, run intake rollers; when released, stop rollers (For
-    // Operator
-    // Controller)
+    // When Right Trigger pressed/held, run intake rollers; when released, stop rollers
+    // (For Operator Controller)
     controller1
         .rightTrigger(0.5)
         .whileTrue(intakeRoller.IntakeRollerCommand(0.5))
         .onFalse(intakeRoller.IntakeRollerCommand(0.0));
 
-    // Switch to X pattern when X button pressed (Driver Controller)
+    // Switch to X pattern when X button pressed
+    // (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // |||||||||||||||||||||||||||||||||||||||||||||||||
@@ -211,7 +213,8 @@ public class RobotContainer {
     // |TO-DO: Added a Kicker Command to a binding|
     // ||||||||||||||||||||||||||||||||||||||||||||
 
-    // Reset gyro to 0° when B pressed (Driver Controller)
+    // Reset gyro to 0° when B pressed
+    // (Driver Controller)
     controller
         .b()
         .onTrue(
@@ -219,13 +222,16 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
-    // When Left Bumper held, Climber pulls up (Driver Controller)
+    // When Left Bumper held, Climber pulls up
+    // (Driver Controller)
     controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
 
-    // When Left Bumper released, Climber stops (Driver Controller)
+    // When Left Bumper released, Climber stops
+    // (Driver Controller)
     controller.leftBumper().onFalse(climb1.ClimbCommand(0));
 
-    // When Right Bumper held, Climber Raises (Driver Controller)
+    // When Right Bumper held, Climber Raises
+    // (Driver Controller)
     controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
   }
 
