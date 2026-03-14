@@ -188,9 +188,13 @@ public class RobotContainer {
     // When B button pressed, Raise intake (For Operator Controller)
     controller1.b().whileTrue(intakeDeploy.IntakeDeployCommand(-0.5));
 
-    // When Right Trigger pressed, run intake rollers; when released, stop rollers (For Operator
+    // When Right Trigger pressed/held, run intake rollers; when released, stop rollers (For
+    // Operator
     // Controller)
-    controller1.rightTrigger(0.5).onTrue(intakeRoller.IntakeRollerCommand(0.5));
+    controller1
+        .rightTrigger(0.5)
+        .whileTrue(intakeRoller.IntakeRollerCommand(0.5))
+        .onFalse(intakeRoller.IntakeRollerCommand(0.0));
 
     // Switch to X pattern when X button pressed (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));

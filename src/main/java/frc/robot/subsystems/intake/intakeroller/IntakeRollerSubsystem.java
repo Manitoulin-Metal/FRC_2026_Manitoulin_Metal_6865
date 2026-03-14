@@ -5,28 +5,26 @@ package frc.robot.subsystems.intake.intakeroller;
 
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
-// import com.ctre.phoenix6.hardware.TalonFX;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeRollerSubsystem extends SubsystemBase {
-  @Deprecated
+  // Motor initialized in constructor
 
-  // Initialize the motor (Flex/MAX are setup the same way)
-  SparkFlex IntakeRoller = new SparkFlex(58, MotorType.kBrushless);
+  private SparkFlex intakeRoller;
 
   /** Creates a new Subsystem. */
-  @SuppressWarnings("removal")
   public IntakeRollerSubsystem() {
-    SparkMaxConfig config4 = new SparkMaxConfig();
-
-    config4.idleMode(IdleMode.kBrake);
-
-    IntakeRoller.configure(config4, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    intakeRoller = new SparkFlex(58, MotorType.kBrushless);
+    SparkFlexConfig config = new SparkFlexConfig();
+    config.idleMode(IdleMode.kBrake);
+    intakeRoller.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
   }
 
   /**
@@ -37,33 +35,24 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   public Command IntakeRollerCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return run(
+    return Commands.run(
         () -> {
           runIntakeRoller(speed);
         });
   }
 
   private void runIntakeRoller(double speed) {
-    IntakeRoller.set(speed);
+    intakeRoller.set(speed);
   }
-
-  // May need to add set speed code here
 
   /**
    * An example method querying a boolean state of the subsystem (for example, a digital sensor).
    *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
-
-  // public boolean IntakeDeployCondition() {
-  // Query some boolean state, such as a digital sensor.
-  // If needed add IntakeDeploy command.
-  // return false;
-  // }
-
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
+    SmartDashboard.putNumber("IntakeRoller/Velocity", intakeRoller.getEncoder().getVelocity());
   }
 
   @Override
