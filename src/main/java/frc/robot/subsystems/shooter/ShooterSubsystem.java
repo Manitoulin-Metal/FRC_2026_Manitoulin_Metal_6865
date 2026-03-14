@@ -14,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class ShooterSubsystem extends SubsystemBase {
 
   // Initialize the motor (Kraken direct drive CAN ID 61)
-  private static final CANBus kCANBus = new CANBus("canivore");
+  private static final CANBus kCANBus = new CANBus("CANivore");
   private final TalonFX shooter = new TalonFX(61, kCANBus);
   private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0);
 

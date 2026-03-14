@@ -95,10 +95,6 @@ public class Drive extends SubsystemBase {
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
 
-  // For calculating actual chassis speeds from position deltas (odometry-based velocities)
-  private Pose2d previousPose = Pose2d.kZero;
-  private double previousTimestamp = 0;
-
   public Drive(
       GyroIO gyroIO,
       ModuleIO flModuleIO,

@@ -9,7 +9,6 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -31,9 +30,9 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
   /**
    * Sets motor controllers to run-to-pos based off distance
+   *
    * @return a command
    */
-
   public final Command IntakeDeployCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
@@ -49,17 +48,16 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
   /**
    * An example method querying a boolean state of the subsystem (for example, a digital sensor).
+   *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
-
   public boolean IntakeDeployCondition() {
     // Query some boolean state, such as a digital sensor.
     return false;
   }
 
   @Override
-  public void periodic() {
-  }
+  public void periodic() {}
 
   @Override
   public void simulationPeriodic() {

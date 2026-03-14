@@ -283,5 +283,20 @@ public class RobotContainer {
     if (drive.isGyroDisconnected()) {
       led.gyroDisconnectedAlert();
     }
+
+    // ------------- Operator Controller Diagnostics ----------------
+    // Driver controller (port 0) for comparison
+    SmartDashboard.putNumber("Driver/LeftY", controller.getLeftY());
+    SmartDashboard.putNumber("Driver/RightX", controller.getRightX());
+
+    // Operator controller (port 1) diagnostics
+    SmartDashboard.putNumber("Operator/LeftY", controller1.getLeftY());
+    SmartDashboard.putNumber("Operator/LeftX", controller1.getLeftX());
+    SmartDashboard.putNumber("Operator/RightX", controller1.getRightX());
+    SmartDashboard.putNumber("Operator/LeftTrigger", controller1.getLeftTriggerAxis());
+    SmartDashboard.putNumber("Operator/RightTrigger", controller1.getRightTriggerAxis());
+    SmartDashboard.putBoolean("Operator/A", controller1.a().getAsBoolean());
+    SmartDashboard.putBoolean("Operator/B", controller1.b().getAsBoolean());
+    SmartDashboard.putBoolean("Operator/RightBumper", controller1.rightBumper().getAsBoolean());
   }
 }
