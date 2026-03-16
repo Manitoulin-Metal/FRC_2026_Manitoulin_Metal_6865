@@ -1,4 +1,4 @@
-// Copyright (c) 2025 FRC 5712
+// Copyright (c) 2026 FRC 6865
 // This is being used by Team 6865, Manitoulin Metal
 
 // Use of this source code is governed by an MIT-style
@@ -22,19 +22,21 @@ import java.util.List;
  * and data structures for vision measurements. Supports both MegaTag1 (MT1) and MegaTag2 (MT2)
  * vision systems.
  */
-public class VisionUtil 
+public class VisionUtil {
 
-{
   // Field margins and dimensions (meters)
-  public static final double FIELD_MARGIN_METERS = 0.5; // Meters beyond field boundaries to accept measurements
+  public static final double FIELD_MARGIN_METERS =
+      0.5; // Meters beyond field boundaries to accept measurements
 
-  public static final double Z_MARGIN_METERS = 0.5; // Meters above/below field to accept measurements
+  public static final double Z_MARGIN_METERS =
+      0.5; // Meters above/below field to accept measurements
 
   public static final double FIELD_LENGTH_METERS = 16.46; // Field length in meters
 
   public static final double FIELD_WIDTH_METERS = 8.02; // Field width in meters
 
-  public static final double MT2_SPIN_MAX_DPS = 40.0; // Maximum rotation speed for MT2 measurements (degrees/sec)
+  public static final double MT2_SPIN_MAX_DPS =
+      40.0; // Maximum rotation speed for MT2 measurements (degrees/sec)
 
   public static final double MIN_TAG_AREA = 0.05; // Minimum tag area to be accepted
 
@@ -49,33 +51,25 @@ public class VisionUtil
    * Enum defining different vision processing modes with unique validation and measurement
    * calculation implementations.
    */
+  public enum VisionMode {
 
-  public enum VisionMode 
-  
-  {
     /**
      * Mode that rejects all vision measurements. Useful for testing or when vision should be
      * temporarily disabled.
      */
-
-    NONE 
-    
-    {
+    NONE {
       @Override
-      public VisionMeasurement getVisionMeasurement(PoseEstimate mt) 
-      
-      {
+      public VisionMeasurement getVisionMeasurement(PoseEstimate mt) {
+
         return new VisionMeasurement(
             mt, VecBuilder.fill(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE));
       }
 
       @Override
-      public boolean acceptVisionMeasurement(PoseEstimate poseEst) 
-      
-      {
+      public boolean acceptVisionMeasurement(PoseEstimate poseEst) {
+
         return false;
       }
-
     },
 
     /**
@@ -83,21 +77,16 @@ public class VisionUtil
      * simple model where standard deviations increase quadratically with distance and decrease
      * linearly with the number of tags detected.
      */
-
-    MA 
-    
-    {
+    MA {
       @Override
-      public VisionMeasurement getVisionMeasurement(PoseEstimate mt) 
-      
-      {
+      public VisionMeasurement getVisionMeasurement(PoseEstimate mt) {
+
         double xyStdDev = calculateStdDev(mt, MA_VISION_STD_DEV_XY);
         // MT2 measurements don't provide reliable rotation data
 
         double thetaStdDev =
             mt.isMegaTag2() ? Double.MAX_VALUE : calculateStdDev(mt, MA_VISION_STD_DEV_THETA);
         return new VisionMeasurement(mt, VecBuilder.fill(xyStdDev, xyStdDev, thetaStdDev));
-
       }
 
       /**
@@ -107,13 +96,10 @@ public class VisionUtil
        * @param scaler Amount to scale trust by. Smaller is greater trust
        * @return Standard deviation scaled by distance squared and tag count
        */
+      private double calculateStdDev(PoseEstimate mt, double scaler) {
 
-      private double calculateStdDev(PoseEstimate mt, double scaler) 
-      
-      {
         return scaler * Math.pow(mt.avgTagDist(), 2.0) / mt.tagCount();
       }
-
     },
 
     /**
@@ -121,10 +107,7 @@ public class VisionUtil
      * how the distance should be similar from last game to this game (being feed vs cycling). You
      * will want to tune.
      */
-
-    POOF 
-    
-    {
+    POOF {
 
       /**
        * Calculates vision measurements using the POOF algorithm.
@@ -132,33 +115,27 @@ public class VisionUtil
        * @param mt The pose estimate to process
        * @return A VisionMeasurement with calculated standard deviations
        */
-
       @Override
-      public VisionMeasurement getVisionMeasurement(PoseEstimate mt) 
-      
-      {
+      public VisionMeasurement getVisionMeasurement(PoseEstimate mt) {
+
         var stdDevs = calculateStandardDeviations(mt);
         var xyStdDev = stdDevs.xyStdDev();
         var thetaStdDev = stdDevs.thetaStdDev();
 
         // MT2 measurements don't provide reliable rotation data
 
-        if (mt.isMegaTag2()) 
-        
-        {
+        if (mt.isMegaTag2()) {
+
           thetaStdDev = Double.MAX_VALUE;
         }
 
         return new VisionMeasurement(mt, VecBuilder.fill(xyStdDev, xyStdDev, thetaStdDev));
-
       }
 
       /** Custom implementation that take default behavior and add area filter */
-
       @Override
-      public boolean acceptVisionMeasurement(PoseEstimate poseEst) 
-      
-      {
+      public boolean acceptVisionMeasurement(PoseEstimate poseEst) {
+
         return baseAcceptVisionMeasurement(poseEst) && !invalidTagArea(poseEst);
       }
 
@@ -168,11 +145,7 @@ public class VisionUtil
        * @param xyStdDev Standard deviation for X and Y measurements
        * @param thetaStdDev Standard deviation for rotation measurements
        */
-
-      record VisionDevs(double xyStdDev, double thetaStdDev)
-      {
-
-      }
+      record VisionDevs(double xyStdDev, double thetaStdDev) {}
 
       /**
        * Calculates standard deviations based on the number of tags detected.
@@ -180,21 +153,15 @@ public class VisionUtil
        * @param mt The pose estimate containing tag detection information
        * @return VisionDevs containing calculated standard deviations
        */
-      private static VisionDevs calculateStandardDeviations(PoseEstimate mt) 
-      {
-        if (mt.tagCount() >= 2) 
-        {
+      private static VisionDevs calculateStandardDeviations(PoseEstimate mt) {
+        if (mt.tagCount() >= 2) {
           return calculateMultipleTagStdDevs(mt);
-        } 
-        
-        else if (mt.tagCount() == 1) 
-        {
+        } else if (mt.tagCount() == 1) {
           return calculateSingleTagStdDevs(mt);
         }
 
         // No tags detected - return maximum uncertainty
         return new VisionDevs(Double.MAX_VALUE, Double.MAX_VALUE);
-
       }
 
       /**
@@ -204,9 +171,7 @@ public class VisionUtil
        * @param mt The pose estimate containing tag detection information
        * @return VisionDevs with appropriate standard deviations
        */
-
-      private static VisionDevs calculateMultipleTagStdDevs(PoseEstimate mt) 
-      {
+      private static VisionDevs calculateMultipleTagStdDevs(PoseEstimate mt) {
         boolean hasLargeTagArea = mt.avgTagArea() > 0.1;
         // Higher confidence (smaller std devs) when tags appear larger in the image
         return hasLargeTagArea
@@ -221,9 +186,7 @@ public class VisionUtil
        * @param mt The pose estimate containing tag detection information
        * @return VisionDevs with appropriate standard deviations
        */
-
-      private static VisionDevs calculateSingleTagStdDevs(PoseEstimate mt) 
-      {
+      private static VisionDevs calculateSingleTagStdDevs(PoseEstimate mt) {
         // Calculate how far the measured pose is from the expected pose
         double poseDifference =
             mt.robotPose()
@@ -237,23 +200,17 @@ public class VisionUtil
         boolean hasLargeTagArea = mt.avgTagArea() > 0.1;
 
         // Assign standard deviations based on confidence levels
-        if (mt.avgTagArea() > 0.8 && isCloseToExpectedPose) 
-        {
+        if (mt.avgTagArea() > 0.8 && isCloseToExpectedPose) {
           // Highest confidence case
           return new VisionDevs(0.5, Units.degreesToRadians(12.0));
-        }
-
-        else if (hasLargeTagArea && isVeryCloseToExpectedPose) 
-        {
+        } else if (hasLargeTagArea && isVeryCloseToExpectedPose) {
           // Medium confidence case
           return new VisionDevs(1.0, Units.degreesToRadians(25.0));
         }
 
         // Low confidence case
         return new VisionDevs(2.0, Units.degreesToRadians(50.0));
-
       }
-
     };
 
     /**
@@ -262,7 +219,6 @@ public class VisionUtil
      * @param mt The pose estimate to process
      * @return A vision measurement with appropriate standard deviations
      */
-
     public abstract VisionMeasurement getVisionMeasurement(PoseEstimate mt);
 
     /**
@@ -272,11 +228,8 @@ public class VisionUtil
      * @param mt The pose observation to validate
      * @return True if the measurement should be accepted, false otherwise
      */
-
-    private static boolean baseAcceptVisionMeasurement(PoseEstimate poseEst) 
-    {
-      if (poseEst == null) 
-      {
+    private static boolean baseAcceptVisionMeasurement(PoseEstimate poseEst) {
+      if (poseEst == null) {
         return false;
       }
 
@@ -284,41 +237,30 @@ public class VisionUtil
           && !invalidMT2Time(poseEst)
           && !invalidRotationVelocity(poseEst)
           && !invalidAmbiguity(poseEst);
-
     }
 
-    public boolean acceptVisionMeasurement(PoseEstimate poseEst) 
-    {
+    public boolean acceptVisionMeasurement(PoseEstimate poseEst) {
       return baseAcceptVisionMeasurement(poseEst);
     }
-
   }
   /** Record containing a pose estimate and its associated standard deviations. */
-
-  public record VisionMeasurement(PoseEstimate poseEstimate, Vector<N3> visionMeasurementStdDevs) 
-  {
-
-  }
+  public record VisionMeasurement(PoseEstimate poseEstimate, Vector<N3> visionMeasurementStdDevs) {}
 
   /**
    * Record containing collections of vision measurements and poses, categorized by acceptance
    * status.
    */
-
   public record VisionData(
-
       List<VisionMeasurement> measurements,
       List<Pose3d> tagPoses,
       List<Pose3d> acceptedTagPoses,
       List<Pose3d> rejectedTagPoses,
       List<Pose3d> robotPoses,
       List<Pose3d> acceptedPoses,
-      List<Pose3d> rejectedPoses) 
-      {
+      List<Pose3d> rejectedPoses) {
 
     /** Creates an empty VisionData object. */
-    public static VisionData empty() 
-    {
+    public static VisionData empty() {
       return new VisionData(
           new ArrayList<>(),
           new ArrayList<>(),
@@ -330,8 +272,7 @@ public class VisionUtil
     }
 
     /** Merges two lists of the same type. */
-    private static <T> List<T> mergeLists(List<T> list1, List<T> list2) 
-    {
+    private static <T> List<T> mergeLists(List<T> list1, List<T> list2) {
       ArrayList<T> merged = new ArrayList<>(list1);
       merged.addAll(list2);
       return merged;
