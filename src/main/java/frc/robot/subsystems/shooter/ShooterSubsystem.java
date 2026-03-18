@@ -3,10 +3,8 @@
 
 package frc.robot.subsystems.shooter;
 
-import com.ctre.phoenix.motorcontrol.can.SlotConfiguration;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -17,38 +15,30 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class ShooterSubsystem extends SubsystemBase {
 
   // Initialize the motor (Kraken direct drive CAN ID 61)
-  private final SlotConfiguration slotConfiguration = new SlotConfiguration();
+
   private static final CANBus kCANBus = new CANBus("DriveCanivore");
   private final TalonFX shooter = new TalonFX(61, kCANBus);
-  private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0);
-  private VelocityVoltage velocityRequest = new VelocityVoltage(0).withSlot(0);
-  private VelocityVoltage stopRequest = new VelocityVoltage(0).withSlot(0).withVelocity(0);
+  private final VelocityVoltage velocityRequest = new VelocityVoltage(0);
+  private final VelocityVoltage stopRequest = new VelocityVoltage(0);
 
   public ShooterSubsystem() {
     Slot0Configs speedConfig = new Slot0Configs();
-    speedConfig.kS = 0.1;
-    speedConfig.kV = 0.3;
-    speedConfig.kP = 0.11;
+    speedConfig.kS = 0.05;
+    speedConfig.kV = 0.083;
+    speedConfig.kP = 0.1;
     speedConfig.kI = 0;
-    speedConfig.kD = 0;
+    speedConfig.kD = 0.02;
 
     shooter.getConfigurator().apply(speedConfig);
   }
 
-  /** Run shooter at percentage speed */
-  public void runShooter(double speed) {
-    shooter.setControl(dutyCycleRequest.withOutput(speed));
-
-    // create a velocity closed-loop request, voltage output, slot 0 configs
-
-    // set velocity to 45 rps
-    shooter.setControl(velocityRequest.withSlot(0).withVelocity(speed));
+  /** Run shooter at velocity RPS */
+  public void runShooter(double speedRps) {
+    shooter.setControl(velocityRequest.withVelocity(speedRps));
   }
 
   /** Stop shooter */
   public void stopShooter() {
-    shooter.setControl(dutyCycleRequest.withOutput(0));
-
     shooter.setControl(stopRequest);
   }
 

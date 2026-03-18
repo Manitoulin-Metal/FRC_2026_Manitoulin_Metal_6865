@@ -201,9 +201,10 @@ public class RobotContainer {
     // Switch to X pattern when X button pressed (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // When Y button held, Shooter shoots at -0.5 power; when released, stop shooter
-    // (Operator Controller)
-    controller1.y().whileTrue(shooter.shootCommand(0.5)).onFalse(shooter.shootCommand(0));
+    controller1
+        .y()
+        .whileTrue(Commands.run(() -> shooter.runShooter(Constants.SHOOTER_VELOCITY_RPS), shooter))
+        .onFalse(shooter.stopCommand());
 
     // |||||||||||||||||||||||||||||||||||||||||||||||||||
     // |TO-DO: Add Drive to Shoot Command to Left Trigger|
