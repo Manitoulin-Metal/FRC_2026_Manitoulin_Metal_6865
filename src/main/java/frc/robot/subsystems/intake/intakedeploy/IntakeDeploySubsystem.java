@@ -82,6 +82,18 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     return Commands.runOnce(this::stow).andThen(Commands.waitUntil(this::atStowPosition));
   }
 
+  /**
+   * Agitator deploy: raise slowly 0.8s, down 0.4s, then stow to PID.
+   * Faster to prevent stuck objects. Tune voltages/times on robot.
+   */
+  public Command deployAgitatorCommand() {
+    return Commands.sequence(
+      Commands.run(() -> intakeDeploy.setVoltage(-0.5), this).withTimeout(0.8),
+      Commands.run(() -> intakeDeploy.setVoltage(0.3), this).withTimeout(0.4),
+      stowCommand()
+    );
+  }
+
   @Override
   public void periodic() {
     // double position = intakeDeploy.getEncoder().getPosition() * 360.0;

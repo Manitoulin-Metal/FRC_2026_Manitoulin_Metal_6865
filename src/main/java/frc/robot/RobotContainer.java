@@ -211,9 +211,8 @@ public class RobotContainer {
     // |TO-DO: Add Drive to Shoot Command to Left Trigger|
     // |||||||||||||||||||||||||||||||||||||||||||||||||||
 
-    // ||||||||||||||||||||||||||||||||||||
-    // |TO-DO: Add Deploy Agitator Command|
-    // ||||||||||||||||||||||||||||||||||||
+    // Deploy agitator on X (fast shake then stow)
+    controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
 
     // Reset gyro to 0° when B pressed (Driver Controller)
     controller

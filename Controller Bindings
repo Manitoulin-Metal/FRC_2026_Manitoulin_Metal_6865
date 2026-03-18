@@ -15,10 +15,10 @@ Button Y: Starts Running Shooter Motor
 Right Trigger: Run IntakeRoller
 Button A: Deploy Intake (With PID)
 Button B: Stow Intake (With PID)
+Button X: Deploy Agitator
 
 **REMAINING BUTTONS THAT CAN BE BINDED FOR OPERATOR CONTROLLER**
-Button X (Going to be Deploy Agitator Binding)
+
 Left Trigger
 Right Bumper
 Left Bumper
-
