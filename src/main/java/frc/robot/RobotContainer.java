@@ -197,7 +197,8 @@ public class RobotContainer {
         .rightTrigger(0.1)
         .toggleOnTrue(intakeRoller.intakeCommand());
 
-    // Switch to X pattern when X button pressed (Driver Controller)
+    // Switch to X pattern when X button pressed
+    // (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // When Button Y held, Shooter Starts up (Operator Controller)
@@ -213,7 +214,8 @@ public class RobotContainer {
     // Deploy agitator on X (fast shake then stow)
     controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
 
-    // Reset gyro to 0° when B pressed (Driver Controller)
+    // Reset gyro to 0° when B pressed
+    // (Driver Controller)
     controller
         .b()
         .onTrue(
@@ -221,13 +223,16 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
-    // When Left Bumper held, Climber pulls up (Driver Controller)
+    // When Left Bumper held, Climber pulls up
+    // (Driver Controller)
     controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
 
-    // When Left Bumper released, Climber stops (Driver Controller)
+    // When Left Bumper released, Climber stops
+    // (Driver Controller)
     controller.leftBumper().onFalse(climb1.ClimbCommand(0));
 
-    // When Right Bumper held, Climber Raises (Driver Controller)
+    // When Right Bumper held, Climber Raises
+    // (Driver Controller)
     controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
 
     // Temporary: Driver LT runs kicker at -0.3 to test motor
@@ -288,5 +293,20 @@ public class RobotContainer {
     if (drive.isGyroDisconnected()) {
       led.gyroDisconnectedAlert();
     }
+
+    // ------------- Operator Controller Diagnostics ----------------
+    // Driver controller (port 0) for comparison
+    SmartDashboard.putNumber("Driver/LeftY", controller.getLeftY());
+    SmartDashboard.putNumber("Driver/RightX", controller.getRightX());
+
+    // Operator controller (port 1) diagnostics
+    SmartDashboard.putNumber("Operator/LeftY", controller1.getLeftY());
+    SmartDashboard.putNumber("Operator/LeftX", controller1.getLeftX());
+    SmartDashboard.putNumber("Operator/RightX", controller1.getRightX());
+    SmartDashboard.putNumber("Operator/LeftTrigger", controller1.getLeftTriggerAxis());
+    SmartDashboard.putNumber("Operator/RightTrigger", controller1.getRightTriggerAxis());
+    SmartDashboard.putBoolean("Operator/A", controller1.a().getAsBoolean());
+    SmartDashboard.putBoolean("Operator/B", controller1.b().getAsBoolean());
+    SmartDashboard.putBoolean("Operator/RightBumper", controller1.rightBumper().getAsBoolean());
   }
 }
