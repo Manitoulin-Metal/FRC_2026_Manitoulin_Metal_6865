@@ -6,9 +6,9 @@ Left Trigger: Runs Kicker **ONLY A TEST FOR THE MOTOR TO SEE IF IT WORKS**
 Right Trigger: Drive To Climb Command
 Button X: Switches to X Pattern
 
-**REMAINING BUTTONS THAT CAN BE BINDED FOR DRIVER CONTROLLER**
-Button Y
-Button A
+Button Y: Shooter open-loop test at 30% duty cycle (hardware test - hold to spin motor bypassing PID)
+Button A: (available)
+
 
 ***Controller1 (Operator Controller):***
 Button Y: Starts Running Shooter Motor

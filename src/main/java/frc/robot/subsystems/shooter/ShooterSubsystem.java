@@ -7,12 +7,15 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
+import edu.wpi.first.math.jni.*;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /** Creates a new Subsystem. */
 public class ShooterSubsystem extends SubsystemBase {
@@ -23,13 +26,14 @@ public class ShooterSubsystem extends SubsystemBase {
   private final TalonFX shooter = new TalonFX(61, kCANBus);
   private final VelocityVoltage velocityRequest = new VelocityVoltage(0);
   private final VelocityVoltage stopRequest = new VelocityVoltage(0);
-
   private final LoggedNetworkNumber kPEntry = Constants.Shooter.kPEntry;
   private final LoggedNetworkNumber kIEntry = Constants.Shooter.kIEntry;
   private final LoggedNetworkNumber kDEntry = Constants.Shooter.kDEntry;
   private final LoggedNetworkNumber kVEntry = Constants.Shooter.kVEntry;
   private final LoggedNetworkNumber kSEntry = Constants.Shooter.kSEntry;
-  private double targetRps = 0.0;
+  private double targetRps = 95.0;
+
+  private final StatusSignal<Integer> faultsSignal = shooter.getFaultField();
 
   public ShooterSubsystem() {
     Slot0Configs speedConfig = new Slot0Configs();
@@ -40,6 +44,8 @@ public class ShooterSubsystem extends SubsystemBase {
     speedConfig.kD = Constants.Shooter.kD;
 
     shooter.getConfigurator().apply(speedConfig);
+
+    BaseStatusSignal.setUpdateFrequencyForAll(50.0, faultsSignal);
   }
 
   /** Run shooter at velocity RPS */
@@ -52,8 +58,11 @@ public class ShooterSubsystem extends SubsystemBase {
   public void stopShooter() {
     shooter.setControl(stopRequest);
   }
-
-  /** One-shot command: immediately spins shooter at given speed */
+  public void runOpenLoop(double dutyCycle) {
+    // PercentOutput is not available in this environment; use VelocityVoltage as a fallback.
+    // Note: dutyCycle is interpreted here as a velocity value when PercentOutput is unavailable.
+    shooter.setControl(velocityRequest.withVelocity(dutyCycle));
+  }
   public Command shootCommand(double speed) {
     return Commands.runOnce(() -> runShooter(speed), this);
   }
@@ -73,19 +82,41 @@ public class ShooterSubsystem extends SubsystemBase {
     return Commands.runOnce(this::stopShooter, this);
   }
 
-@Override
+  @Override
   public void periodic() {
     // Live PID/FF tuning updates (like IntakeRoller)
     updatePIDIfChanged();
 
+    // Refresh faults signal
+    faultsSignal.refresh();
+
     double velocityRps = getVelocityRps();
     double error = Math.abs(targetRps - velocityRps);
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/VelocityRPS", velocityRps);
+    double motorVoltage = shooter.getMotorVoltage().getValueAsDouble();
+    double statorCurrent = shooter.getStatorCurrent().getValueAsDouble();
+    double supplyCurrent = shooter.getSupplyCurrent().getValueAsDouble();
+    int faultsRaw = faultsSignal.getValue();
+
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+        "Shooter/VelocityRPS", velocityRps);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/TargetRPS", targetRps);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/PIDError", error);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+        "Shooter/MotorVoltage", motorVoltage);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+        "Shooter/StatorCurrent", statorCurrent);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+        "Shooter/SupplyCurrent", supplyCurrent);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
+        "Shooter/Faults", Integer.toString(faultsRaw));
+    Logger.recordOutput("Shooter/VelocityRPS", velocityRps);
     Logger.recordOutput("Shooter/VelocityRPS", velocityRps);
     Logger.recordOutput("Shooter/TargetRPS", targetRps);
     Logger.recordOutput("Shooter/PIDError", error);
+    Logger.recordOutput("Shooter/MotorVoltage", motorVoltage);
+    Logger.recordOutput("Shooter/StatorCurrent", statorCurrent);
+    Logger.recordOutput("Shooter/SupplyCurrent", supplyCurrent);
+    Logger.recordOutput("Shooter/Faults", Integer.toString(faultsRaw));
   }
 
   private void updatePIDIfChanged() {
@@ -108,6 +139,16 @@ public class ShooterSubsystem extends SubsystemBase {
   /** Get current shooter velocity in rotations per second (RPS) */
   public double getVelocityRps() {
     return shooter.getVelocity().getValueAsDouble();
+  }
+
+  /** Open-loop test at 50% output */
+  public Command openLoopTestCommand() {
+    return Commands.runEnd(() -> runOpenLoop(0.5), this::stopShooter, this).withTimeout(5); 
+  }
+
+  /** Clear sticky faults */
+  public Command clearFaultsCommand() {
+    return Commands.runOnce(() -> shooter.clearStickyFaults(), this);
   }
 
   @Override

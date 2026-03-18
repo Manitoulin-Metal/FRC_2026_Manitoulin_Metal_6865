@@ -193,9 +193,7 @@ public class RobotContainer {
 
     // When Right Trigger pressed, run intake rollers; when released, stop rollers
     // (For Operator Controller)
-    controller1
-        .rightTrigger(0.1)
-        .toggleOnTrue(intakeRoller.intakeCommand());
+    controller1.rightTrigger(0.1).toggleOnTrue(intakeRoller.intakeCommand());
 
     // Switch to X pattern when X button pressed
     // (Driver Controller)
@@ -237,6 +235,12 @@ public class RobotContainer {
 
     // Temporary: Driver LT runs kicker at -0.3 to test motor
     controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(-0.3));
+
+    // Driver Y: Test shooter open-loop 30% duty (hardware test, previously unused)
+    controller
+        .y()
+        .whileTrue(Commands.run(() -> shooter.runOpenLoop(0.3), shooter))
+        .onFalse(shooter.stopCommand());
   }
 
   /** Returns the autonomous command selected on dashboard */
@@ -307,6 +311,7 @@ public class RobotContainer {
     SmartDashboard.putNumber("Operator/RightTrigger", controller1.getRightTriggerAxis());
     SmartDashboard.putBoolean("Operator/A", controller1.a().getAsBoolean());
     SmartDashboard.putBoolean("Operator/B", controller1.b().getAsBoolean());
+    SmartDashboard.putBoolean("Operator/Y", controller1.y().getAsBoolean());
     SmartDashboard.putBoolean("Operator/RightBumper", controller1.rightBumper().getAsBoolean());
   }
 }
