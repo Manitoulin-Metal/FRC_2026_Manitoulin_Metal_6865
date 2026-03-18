@@ -36,7 +36,7 @@ public class KickerSubsystem extends SubsystemBase {
    *
    * @return a command
    */
-  final Command kickerCommand(double speed) {
+  public final Command kickerCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return run(
@@ -60,11 +60,13 @@ public class KickerSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    if (kickerCondition()) {
-      kicker.set(-0.5);
-    } else {
-      kicker.set(0.0);
-    }
+    double shooterRps = m_shooter.getVelocityRps();
+    boolean condition = shooterRps * 60 > Constants.SHOOTER_KICKER_RPM_THRESHOLD;
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/ShooterRPS", shooterRps);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean("Kicker/Condition", condition);
+    double speed = condition ? -0.5 : 0.0;
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/SetSpeed", speed);
+    kicker.set(speed);
   }
 
   @Override

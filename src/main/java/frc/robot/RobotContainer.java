@@ -185,10 +185,10 @@ public class RobotContainer {
             DriveCommands.driveToClimb(
                 drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
-    // Deploy intake to PID setpoint (Operator A)
+    // Deploy intake to PID setpoint (Operator Controller)
     controller1.a().onTrue(intakeDeploy.deployCommand());
 
-    // Stow intake to PID setpoint (Operator B)
+    // Stow intake to PID setpoint (Operator Controller)
     controller1.b().onTrue(intakeDeploy.stowCommand());
 
     // When Right Trigger pressed, run intake rollers; when released, stop rollers
@@ -201,6 +201,7 @@ public class RobotContainer {
     // Switch to X pattern when X button pressed (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
+    // When Button Y held, Shooter Starts up (Operator Controller)
     controller1
         .y()
         .whileTrue(Commands.run(() -> shooter.runShooter(Constants.SHOOTER_VELOCITY_RPS), shooter))
@@ -230,6 +231,9 @@ public class RobotContainer {
 
     // When Right Bumper held, Climber Raises (Driver Controller)
     controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
+
+    // Temporary: Driver LT runs kicker at -0.3 to test motor
+    controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(-0.3));
   }
 
   /** Returns the autonomous command selected on dashboard */

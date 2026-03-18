@@ -64,7 +64,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/VelocityRPS", getVelocityRps());
   }
 
   /** Get current shooter velocity in rotations per second (RPS) */
