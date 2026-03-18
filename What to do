@@ -5,3 +5,6 @@ This is created for FRC Team 6865, Manitoulin Metal. This is to make sure everyo
 Notes:
 1. Talk with Lo Ellen Programmers to get help for Autos
 2. Use Limelights to redirect our position to auto-correct any messups during autos
+3. Software stop on IntakeDeploy
+4. PID on IntakeDeploy
+5. PID on Shooter

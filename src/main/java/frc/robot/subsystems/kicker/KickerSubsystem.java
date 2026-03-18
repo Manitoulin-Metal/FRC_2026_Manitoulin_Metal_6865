@@ -11,23 +11,24 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
 
 @SuppressWarnings("removal")
 public class KickerSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
   SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
+  private final ShooterSubsystem m_shooter;
 
   /** Creates a new Subsystem. */
-  public KickerSubsystem() {}
+  public KickerSubsystem(ShooterSubsystem shooterSubsystem) {
+    m_shooter = shooterSubsystem;
 
-  {
     SparkMaxConfig config4 = new SparkMaxConfig();
     config4.inverted(true).idleMode(IdleMode.kBrake);
 
     // Apply configs - reset old parameters, and persist through power-cycles.
     kicker.configure(config4, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
-    {
-    }
   }
 
   /**
@@ -35,7 +36,7 @@ public class KickerSubsystem extends SubsystemBase {
    *
    * @return a command
    */
-  public final Command kickerCommand(double speed) {
+  final Command kickerCommand(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return run(
@@ -54,13 +55,16 @@ public class KickerSubsystem extends SubsystemBase {
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
   public boolean kickerCondition() {
-    // Query some boolean state, such as a digital sensor.
-    return false;
+    return m_shooter.getVelocityRps() * 60 > Constants.SHOOTER_KICKER_RPM_THRESHOLD;
   }
 
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
+    if (kickerCondition()) {
+      kicker.set(-0.5);
+    } else {
+      kicker.set(0.0);
+    }
   }
 
   @Override

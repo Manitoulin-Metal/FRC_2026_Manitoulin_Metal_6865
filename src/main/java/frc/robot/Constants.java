@@ -21,7 +21,18 @@ public final class Constants {
   public static final double Y_ALIGN_P = 0;
   public static final double X_ALIGN_P = 0;
   public static final double ROT_ALIGN_P = 4.0;
+  public static final double SHOOTER_KICKER_RPM_THRESHOLD = 5600.0;
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
+
+  public static class IntakeDeploy {
+    public static final double kP = 0.1;
+    public static final double kI = 0.0;
+    public static final double kD = 0.0;
+    public static final double kFF = 0.0;
+    public static final double DEPLOY_SETPOINT_ROT = 5.0;
+    public static final double STOW_SETPOINT_ROT = 0.0;
+    public static final double POSITION_TOLERANCE_ROT = 0.05;
+  }
 
   public static enum Mode {
     /** Running on a real robot. */

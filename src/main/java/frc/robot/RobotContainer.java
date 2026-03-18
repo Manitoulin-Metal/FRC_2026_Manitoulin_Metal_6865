@@ -4,6 +4,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -41,9 +42,9 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
-  private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
-  private final KickerSubsystem kicker = new KickerSubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem();
+  private final KickerSubsystem kicker = new KickerSubsystem(shooter);
+  private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
 
@@ -144,6 +145,8 @@ public class RobotContainer {
 
     // Configure buttons
     configureButtonBindings();
+
+    CameraServer.startAutomaticCapture(0);
   }
 
   private void configureButtonBindings() {
@@ -182,30 +185,33 @@ public class RobotContainer {
             DriveCommands.driveToClimb(
                 drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
-    // When A button pressed, deploy intake (For Operator Controller)
-    controller1.a().whileTrue(intakeDeploy.IntakeDeployCommand(0.5));
+    // Deploy intake to PID setpoint (Operator A)
+    controller1.a().onTrue(intakeDeploy.deployCommand());
 
-    // When B button pressed, Raise intake (For Operator Controller)
-    controller1.b().whileTrue(intakeDeploy.IntakeDeployCommand(-0.5));
+    // Stow intake to PID setpoint (Operator B)
+    controller1.b().onTrue(intakeDeploy.stowCommand());
 
-    // When Right Trigger pressed, run intake rollers; when released, stop rollers (For Operator
-    // Controller)
-    controller1.rightTrigger(0.5).onTrue(intakeRoller.IntakeRollerCommand(0.5));
+    // When Right Trigger pressed, run intake rollers; when released, stop rollers
+    // (For Operator Controller)
+    controller1
+        .rightTrigger(0.5)
+        .whileTrue(intakeRoller.IntakeRollerCommand(-0.5))
+        .onFalse(intakeRoller.IntakeRollerCommand(0));
 
     // Switch to X pattern when X button pressed (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // |||||||||||||||||||||||||||||||||||||||||||||||||
-    // |TO-DO: Add shooter command and bind to a button|
-    // |||||||||||||||||||||||||||||||||||||||||||||||||
+    // When Y button held, Shooter shoots at -0.5 power; when released, stop shooter
+    // (Operator Controller)
+    controller1.y().whileTrue(shooter.shootCommand(0.5)).onFalse(shooter.shootCommand(0));
 
     // |||||||||||||||||||||||||||||||||||||||||||||||||||
     // |TO-DO: Add Drive to Shoot Command to Left Trigger|
     // |||||||||||||||||||||||||||||||||||||||||||||||||||
 
-    // ||||||||||||||||||||||||||||||||||||||||||||
-    // |TO-DO: Added a Kicker Command to a binding|
-    // ||||||||||||||||||||||||||||||||||||||||||||
+    // ||||||||||||||||||||||||||||||||||||
+    // |TO-DO: Add Deploy Agitator Command|
+    // ||||||||||||||||||||||||||||||||||||
 
     // Reset gyro to 0° when B pressed (Driver Controller)
     controller

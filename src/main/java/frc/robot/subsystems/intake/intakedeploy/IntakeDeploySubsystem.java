@@ -3,67 +3,75 @@
 
 package frc.robot.subsystems.intake.intakedeploy;
 
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMax.ControlType;
-import com.revrobotics.CANSparkMax.IdleMode;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkMaxPIDController;
-import com.revrobotics.jni.CANSparkJNI;
-import com.revrobotics.spark.SparkMax;
-
-import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkFlexConfig;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.networktables.DoubleEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
 @SuppressWarnings("removal")
 public class IntakeDeploySubsystem extends SubsystemBase {
-  // Initialize the motor (Flex/MAX are setup the same way)
-  SparkMax intakeDeploy = new SparkMax(59, MotorType.kBrushless);
+  // Initialize the motor (Flex API - matches IntakeRollerSubsystem)
+  private final SparkFlex intakeDeploy = new SparkFlex(59, MotorType.kBrushless);
 
-  private final RelativeEncoder encoder;
-  private final SparkMaxPIDController pidController;
+  public static final double STOW_POSITION = 0.0;
+  public static final double DEPLOY_POSITION = 10000.0; // degrees, tune
+  private final DoubleEntry kP;
+  private final DoubleEntry kI;
+  private final DoubleEntry kD;
+  private final PIDController pid = new PIDController(0.005, 0, 0); // P, I, D gains - tune
 
   /** Creates a new Subsystem. */
   public IntakeDeploySubsystem() {
-    intakeDeploy.restoreFactoryDefaults();
-    intakeDeploy.setInverted(true);
-    intakeDeploy.setIdleMode(IdleMode.kBrake);
+    SparkFlexConfig config = new SparkFlexConfig();
+    config.idleMode(IdleMode.kBrake);
 
-    // PID setup
-    encoder = intakeDeploy.getEncoder();
+    intakeDeploy.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    encoder.setPositionConversionFactor(1.0); // Assume 1:1, tune gearing
+    pid.setTolerance(3.0); // position tolerance (degrees)
+    var table = NetworkTableInstance.getDefault().getTable("Tuning/Deploy");
 
-    encoder.setVelocityConversionFactor(1.0 / 60.0); // RPS
+    kP = table.getDoubleTopic("kP").getEntry(0.005);
+    kI = table.getDoubleTopic("kI").getEntry(0.0);
+    kD = table.getDoubleTopic("kD").getEntry(0.0);
 
-    pidController = intakeDeploy.getPIDController();
-    pidController.setP(Constants.IntakeDeploy.kP);
-    pidController.setI(Constants.IntakeDeploy.kI);
-    pidController.setD(Constants.IntakeDeploy.kD);
-    pidController.setFF(Constants.IntakeDeploy.kFF);
-    pidController.setFeedbackDevice(encoder);
+    kP.set(0.005);
+    kI.set(0.0);
+    kD.set(0.0);
   }
 
+  private double goalPosition = 0.0;
+
   public void deploy() {
-    pidController.setReference(Constants.IntakeDeploy.DEPLOY_SETPOINT_ROT, ControlType.kPosition);
+    goalPosition = DEPLOY_POSITION;
   }
 
   public void stow() {
-    pidController.setReference(Constants.IntakeDeploy.STOW_SETPOINT_ROT, ControlType.kPosition);
+    goalPosition = STOW_POSITION;
   }
 
+  // private void runPID() {
+  //   double position = intakeDeploy.getEncoder().getPosition() * 360.0; // rotations to degrees
+  //   pid.setSetpoint(goalPosition);
+  //   double output = pid.calculate(position);
+  //   intakeDeploy.setVoltage(output);
+  // }
+
   public boolean atDeployPosition() {
-    return Math.abs(encoder.getPosition() - Constants.IntakeDeploy.DEPLOY_SETPOINT_ROT)
-        <= Constants.IntakeDeploy.POSITION_TOLERANCE_ROT;
+    return Math.abs(pid.getPositionError()) < 3.0;
   }
 
   public boolean atStowPosition() {
-    return Math.abs(encoder.getPosition() - Constants.IntakeDeploy.STOW_SETPOINT_ROT)
-        <= Constants.IntakeDeploy.POSITION_TOLERANCE_ROT;
+    return Math.abs(pid.getPositionError()) < 3.0;
   }
 
   public Command deployCommand() {
@@ -74,20 +82,34 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     return Commands.runOnce(this::stow).andThen(Commands.waitUntil(this::atStowPosition));
   }
 
-  // Legacy speed control
-  @Deprecated
-  public void runIntakeDeploy(double speed) {
-    intakeDeploy.set(speed);
-  }
-
   @Override
   public void periodic() {
-    Logger.recordOutput("IntakeDeploy/PositionRot", encoder.getPosition());
-    Logger.recordOutput("IntakeDeploy/VelocityRPS", encoder.getVelocity());
+    // double position = intakeDeploy.getEncoder().getPosition() * 360.0;
+    // runPID();
+    double position = intakeDeploy.getEncoder().getPosition() * 360.0; // rotations to degrees
+    pid.setSetpoint(goalPosition);
+
+    pid.setP(kP.get());
+    pid.setI(kI.get());
+    pid.setD(kD.get());
+
+    double output = pid.calculate(position);
+    intakeDeploy.setVoltage(output);
+
+    Logger.recordOutput("IntakeDeploy/Position", position);
+    SmartDashboard.putNumber("IntakeDeploy/Position", position);
+    Logger.recordOutput("IntakeDeploy/PIDError", pid.getPositionError());
+    SmartDashboard.putNumber("IntakeDeploy/PIDError", pid.getPositionError());
+    Logger.recordOutput(
+        "IntakeDeploy/PIDOutput", 0.0); // Capture from runPID if needed: store output var
+    SmartDashboard.putNumber(
+        "IntakeDeploy/PIDOutput", 0.0); // Capture from runPID if needed: store output var
+    Logger.recordOutput("IntakeDeploy/Goal", goalPosition);
+    SmartDashboard.putNumber("IntakeDeploy/Goal", goalPosition);
   }
 
   @Override
   public void simulationPeriodic() {
-    // Simulation
+    // Simulation handled by WPILib sim
   }
 }
