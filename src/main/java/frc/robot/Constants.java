@@ -9,6 +9,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
  * This class defines the runtime mode used by AdvantageKit. The mode is always \"real\" when
@@ -24,6 +25,19 @@ public final class Constants {
   public static final double SHOOTER_VELOCITY_RPS = 95.0; // Tune this RPS (~5700 RPM)
   public static final double SHOOTER_KICKER_RPM_THRESHOLD = 5600.0;
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
+
+  public static class Shooter {
+    public static final double kP = 0.1;
+    public static final double kI = 0.0;
+    public static final double kD = 0.02;
+    public static final double kV = 0.083;
+    public static final double kS = 0.05;
+    public static LoggedNetworkNumber kPEntry = new LoggedNetworkNumber("Tuning/Shooter/kP", kP);
+    public static LoggedNetworkNumber kIEntry = new LoggedNetworkNumber("Tuning/Shooter/kI", kI);
+    public static LoggedNetworkNumber kDEntry = new LoggedNetworkNumber("Tuning/Shooter/kD", kD);
+    public static LoggedNetworkNumber kVEntry = new LoggedNetworkNumber("Tuning/Shooter/kV", kV);
+    public static LoggedNetworkNumber kSEntry = new LoggedNetworkNumber("Tuning/Shooter/kS", kS);
+  }
 
   public static class IntakeDeploy {
     public static final double kP = 0.1;

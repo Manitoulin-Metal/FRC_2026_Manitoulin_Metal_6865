@@ -10,6 +10,9 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
+import org.littletonrobotics.junction.Logger;
 
 /** Creates a new Subsystem. */
 public class ShooterSubsystem extends SubsystemBase {
@@ -21,19 +24,27 @@ public class ShooterSubsystem extends SubsystemBase {
   private final VelocityVoltage velocityRequest = new VelocityVoltage(0);
   private final VelocityVoltage stopRequest = new VelocityVoltage(0);
 
+  private final LoggedNetworkNumber kPEntry = Constants.Shooter.kPEntry;
+  private final LoggedNetworkNumber kIEntry = Constants.Shooter.kIEntry;
+  private final LoggedNetworkNumber kDEntry = Constants.Shooter.kDEntry;
+  private final LoggedNetworkNumber kVEntry = Constants.Shooter.kVEntry;
+  private final LoggedNetworkNumber kSEntry = Constants.Shooter.kSEntry;
+  private double targetRps = 0.0;
+
   public ShooterSubsystem() {
     Slot0Configs speedConfig = new Slot0Configs();
-    speedConfig.kS = 0.05;
-    speedConfig.kV = 0.083;
-    speedConfig.kP = 0.1;
-    speedConfig.kI = 0;
-    speedConfig.kD = 0.02;
+    speedConfig.kS = Constants.Shooter.kS;
+    speedConfig.kV = Constants.Shooter.kV;
+    speedConfig.kP = Constants.Shooter.kP;
+    speedConfig.kI = Constants.Shooter.kI;
+    speedConfig.kD = Constants.Shooter.kD;
 
     shooter.getConfigurator().apply(speedConfig);
   }
 
   /** Run shooter at velocity RPS */
   public void runShooter(double speedRps) {
+    targetRps = speedRps;
     shooter.setControl(velocityRequest.withVelocity(speedRps));
   }
 
@@ -62,9 +73,36 @@ public class ShooterSubsystem extends SubsystemBase {
     return Commands.runOnce(this::stopShooter, this);
   }
 
-  @Override
+@Override
   public void periodic() {
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/VelocityRPS", getVelocityRps());
+    // Live PID/FF tuning updates (like IntakeRoller)
+    updatePIDIfChanged();
+
+    double velocityRps = getVelocityRps();
+    double error = Math.abs(targetRps - velocityRps);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/VelocityRPS", velocityRps);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/TargetRPS", targetRps);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/PIDError", error);
+    Logger.recordOutput("Shooter/VelocityRPS", velocityRps);
+    Logger.recordOutput("Shooter/TargetRPS", targetRps);
+    Logger.recordOutput("Shooter/PIDError", error);
+  }
+
+  private void updatePIDIfChanged() {
+    double newKP = kPEntry.get();
+    double newKI = kIEntry.get();
+    double newKD = kDEntry.get();
+    double newKV = kVEntry.get();
+    double newKS = kSEntry.get();
+
+    Slot0Configs config = new Slot0Configs();
+    config.kP = newKP;
+    config.kI = newKI;
+    config.kD = newKD;
+    config.kV = newKV;
+    config.kS = newKS;
+
+    shooter.getConfigurator().apply(config);
   }
 
   /** Get current shooter velocity in rotations per second (RPS) */
