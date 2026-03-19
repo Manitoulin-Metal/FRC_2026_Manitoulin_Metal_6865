@@ -28,7 +28,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   // ================= LIVE TUNING ================= \\
   private final LoggedNetworkNumber kP = new LoggedNetworkNumber("/Intake/kP", 0.00025);
   private final LoggedNetworkNumber kFF = new LoggedNetworkNumber("/Intake/kFF", 0.00017);
-  private final LoggedNetworkNumber targetRPM = new LoggedNetworkNumber("/Intake/TargetRPM", 3500);
+  private final LoggedNetworkNumber targetRPM = new LoggedNetworkNumber("/Intake/TargetRPM", -3500);
 
   private double lastKP = -1;
   private double lastKFF = -1;
