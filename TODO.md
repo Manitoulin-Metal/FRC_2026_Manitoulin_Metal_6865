@@ -1,9 +1,15 @@
-# Fix Invalid Phoenix6 Faults Import Task
+# Fix Shooter Y Button Issue
+## Status: Code debug updates applied
+- Lowered shooter speed to 50 RPS (test).
+- Added operator LB: clear sticky faults.
 
-## Plan Steps:
-1. [x] Edit ShooterSubsystem.java: Remove invalid import and fix clearFaultsCommand()
-2. [x] Run ./gradlew build to verify compilation
-3. [x] Test in sim/AdvantageScope for faults logging (search confirms no more invalid imports)
-4. [x] Complete task
+## Next Steps
+- [x] Deploy code.
+- [ ] Press operator LB to clear faults.
+- [ ] Press operator Y: check VelocityRPS, Faults, Current in AdvantageScope.
+- [ ] Test driver Y open-loop.
+- [ ] If still no: check CAN wiring, motor power, Kraken config.
 
-Current progress: All steps complete. Invalid import fixed and no longer appears in codebase.
+**Test now!**
+
+

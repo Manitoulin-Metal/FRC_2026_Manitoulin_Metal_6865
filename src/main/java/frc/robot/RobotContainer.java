@@ -199,11 +199,14 @@ public class RobotContainer {
     // (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // When Button Y held, Shooter Starts up (Operator Controller)
+    // When Button Y held, Shooter Starts up (Operator Controller) - lowered to 50 RPS for testing
     controller1
         .y()
-        .whileTrue(Commands.run(() -> shooter.runShooter(Constants.SHOOTER_VELOCITY_RPS), shooter))
+        .whileTrue(Commands.run(() -> shooter.runShooter(50.0), shooter))
         .onFalse(shooter.stopCommand());
+
+    // Operator LeftBumper: Clear shooter sticky faults
+    controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
 
     // |||||||||||||||||||||||||||||||||||||||||||||||||||
     // |TO-DO: Add Drive to Shoot Command to Left Trigger|

@@ -109,16 +109,22 @@ public class ShooterSubsystem extends SubsystemBase {
         "Shooter/StatorCurrent", statorCurrent);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
         "Shooter/SupplyCurrent", supplyCurrent);
+    String faultSummary = faultsRaw == 0 ? "OK" : "0x" + Integer.toHexString(faultsRaw);
+    if ((faultsRaw & 1) != 0) faultSummary += " SupplyCurrLimit";
+    if ((faultsRaw & 2) != 0) faultSummary += " HardwareCurrLimit";
+    if ((faultsRaw & 16) != 0) faultSummary += " UnderVoltage";
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString("Shooter/FaultSummary", faultSummary);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
-        "Shooter/Faults", Integer.toString(faultsRaw));
-    Logger.recordOutput("Shooter/VelocityRPS", velocityRps);
+        "Shooter/Faults", Integer.toHexString(faultsRaw));
     Logger.recordOutput("Shooter/VelocityRPS", velocityRps);
     Logger.recordOutput("Shooter/TargetRPS", targetRps);
+
     Logger.recordOutput("Shooter/PIDError", error);
     Logger.recordOutput("Shooter/MotorVoltage", motorVoltage);
     Logger.recordOutput("Shooter/StatorCurrent", statorCurrent);
     Logger.recordOutput("Shooter/SupplyCurrent", supplyCurrent);
-    Logger.recordOutput("Shooter/Faults", Integer.toString(faultsRaw));
+    Logger.recordOutput("Shooter/Faults", Integer.toHexString(faultsRaw));
+    Logger.recordOutput("Shooter/FaultSummary", faultSummary);
   }
 
   private void updatePIDIfChanged() {

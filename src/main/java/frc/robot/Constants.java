@@ -22,7 +22,8 @@ public final class Constants {
   public static final double Y_ALIGN_P = 0;
   public static final double X_ALIGN_P = 0;
   public static final double ROT_ALIGN_P = 4.0;
-  public static final double SHOOTER_VELOCITY_RPS = 95.0; // Tune this RPS (~5700 RPM)
+  public static final double TEST_SHOOTER_RPS = 50.0; // Temporary test speed
+  public static final double SHOOTER_VELOCITY_RPS = TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
   public static final double SHOOTER_KICKER_RPM_THRESHOLD = 5600.0;
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
