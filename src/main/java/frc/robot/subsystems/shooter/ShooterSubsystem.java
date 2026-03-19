@@ -9,6 +9,7 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.jni.*;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -22,7 +23,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   // Initialize the motor (Kraken direct drive CAN ID 61)
 
-  private static final CANBus kCANBus = new CANBus("DriveCanivore");
+  private static final CANBus kCANBus = new CANBus("rio");
   private final TalonFX shooter = new TalonFX(61, kCANBus);
   private final VelocityVoltage velocityRequest = new VelocityVoltage(0.1);
   private final VelocityVoltage stopRequest = new VelocityVoltage(0);
@@ -32,6 +33,7 @@ public class ShooterSubsystem extends SubsystemBase {
   private final LoggedNetworkNumber kVEntry = Constants.Shooter.kVEntry;
   private final LoggedNetworkNumber kSEntry = Constants.Shooter.kSEntry;
   private double targetRps = 95.0;
+  private double currentRps = 0.0;
 
   private final StatusSignal<Integer> faultsSignal = shooter.getFaultField();
 
@@ -51,7 +53,13 @@ public class ShooterSubsystem extends SubsystemBase {
   /** Run shooter at velocity RPS */
   public void runShooter(double speedRps) {
     targetRps = speedRps;
-    shooter.setControl(velocityRequest.withVelocity(speedRps));
+    double rampRate = 25.0; // RPS/sec
+    currentRps =
+        MathUtil.clamp(
+            currentRps + Math.copySign(rampRate * (1.0 / 50.0), speedRps - currentRps),
+            -Math.abs(speedRps),
+            Math.abs(speedRps));
+    shooter.setControl(velocityRequest.withVelocity(currentRps));
   }
 
   /** Stop shooter */
@@ -60,9 +68,7 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   public void runOpenLoop(double dutyCycle) {
-    // PercentOutput is not available in this environment; use VelocityVoltage as a fallback.
-    // Note: dutyCycle is interpreted here as a velocity value when PercentOutput is unavailable.
-    shooter.setControl(velocityRequest.withVelocity(dutyCycle));
+    shooter.setControl(new VelocityVoltage(dutyCycle));
   }
 
   public Command shootCommand(double speed) {
@@ -113,7 +119,8 @@ public class ShooterSubsystem extends SubsystemBase {
     if ((faultsRaw & 1) != 0) faultSummary += " SupplyCurrLimit";
     if ((faultsRaw & 2) != 0) faultSummary += " HardwareCurrLimit";
     if ((faultsRaw & 16) != 0) faultSummary += " UnderVoltage";
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString("Shooter/FaultSummary", faultSummary);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
+        "Shooter/FaultSummary", faultSummary);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
         "Shooter/Faults", Integer.toHexString(faultsRaw));
     Logger.recordOutput("Shooter/VelocityRPS", velocityRps);

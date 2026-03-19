@@ -31,7 +31,6 @@ import frc.robot.subsystems.led.LEDSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionConstants.*;
 import frc.robot.subsystems.vision.VisionIO.*;
-import java.util.Set;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -153,29 +152,30 @@ public class RobotContainer {
 
     // Hold left trigger to drive to AprilTag 26
     // (Driver Controller)
-    controller
-        .leftTrigger(0.5)
-        .whileTrue(
-            Commands.defer(
-                () -> {
-                  // Get Pose2d for Tag 26
-                  var tagOptional = fieldLayout.getTagPose(26);
-                  if (tagOptional.isEmpty()) {
-                    return Commands.none(); // Do nothing if tag not found
-                  }
-                  Pose2d tag26Pose = tagOptional.get().toPose2d();
+    /* controller
+    .leftTrigger(0.5)
+    .whileTrue(
+        Commands.defer(
+            () -> {
+              // Get Pose2d for Tag 26
+              var tagOptional = fieldLayout.getTagPose(26);
+              if (tagOptional.isEmpty()) {
+                return Commands.none(); // Do nothing if tag not found
+              }
+              Pose2d tag26Pose = tagOptional.get().toPose2d();
 
-                  // Return the driveToShoot command
-                  return DriveCommands.driveToShoot(
-                      drive,
-                      tag26Pose,
-                      1.5, // kP linear
-                      3.0, // kP rotation
-                      fieldLayout,
-                      !edu.wpi.first.wpilibj.RobotBase.isSimulation());
-                },
-                Set.of(drive) // <-- required subsystem set
-                ));
+              // Return the driveToShoot command
+              return DriveCommands.driveToShoot(
+                  drive,
+                  tag26Pose,
+                  1.5, // kP linear
+                  3.0, // kP rotation
+                  fieldLayout,
+                  !edu.wpi.first.wpilibj.RobotBase.isSimulation());
+            },
+            Set.of(drive) // <-- required subsystem set
+            ));
+            */
 
     // (Driver Controller)
     // Hold right trigger to drive to climb position (Tag 31)
@@ -193,7 +193,10 @@ public class RobotContainer {
 
     // When Right Trigger pressed, run intake rollers; when released, stop rollers
     // (For Operator Controller)
-    controller1.rightTrigger(0.1).toggleOnTrue(intakeRoller.intakeCommand());
+    controller1
+        .rightTrigger(0.1)
+        .whileTrue(intakeRoller.intakeCommand())
+        .onFalse(intakeRoller.idleCommand());
 
     // Switch to X pattern when X button pressed
     // (Driver Controller)
@@ -202,11 +205,18 @@ public class RobotContainer {
     // When Button Y held, Shooter Starts up (Operator Controller) - lowered to 50 RPS for testing
     controller1
         .y()
-        .whileTrue(Commands.run(() -> shooter.runShooter(50.0), shooter))
+        .whileTrue(Commands.run(() -> shooter.runShooter(70.0), shooter))
         .onFalse(shooter.stopCommand());
 
     // Operator LeftBumper: Clear shooter sticky faults
     controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
+
+    // Operator RightBumper + Y: High speed shooter test (75 RPS)
+    controller1
+        .rightBumper()
+        .and(controller1.y())
+        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
+        .onFalse(shooter.stopCommand());
 
     // |||||||||||||||||||||||||||||||||||||||||||||||||||
     // |TO-DO: Add Drive to Shoot Command to Left Trigger|
@@ -316,5 +326,8 @@ public class RobotContainer {
     SmartDashboard.putBoolean("Operator/B", controller1.b().getAsBoolean());
     SmartDashboard.putBoolean("Operator/Y", controller1.y().getAsBoolean());
     SmartDashboard.putBoolean("Operator/RightBumper", controller1.rightBumper().getAsBoolean());
+    SmartDashboard.putBoolean(
+        "Operator/Y+RB",
+        controller1.y().getAsBoolean() && controller1.rightBumper().getAsBoolean());
   }
 }

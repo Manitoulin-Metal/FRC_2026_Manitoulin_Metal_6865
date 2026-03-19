@@ -23,16 +23,17 @@ public final class Constants {
   public static final double X_ALIGN_P = 0;
   public static final double ROT_ALIGN_P = 4.0;
   public static final double TEST_SHOOTER_RPS = 50.0; // Temporary test speed
-  public static final double SHOOTER_VELOCITY_RPS = TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
+  public static final double SHOOTER_VELOCITY_RPS =
+      TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
   public static final double SHOOTER_KICKER_RPM_THRESHOLD = 5600.0;
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
   public static class Shooter {
-    public static final double kP = 0.1;
+    public static final double kP = 0.2;
     public static final double kI = 0.0;
     public static final double kD = 0.02;
     public static final double kV = 0.13;
-    public static final double kS = 0.05;
+    public static final double kS = 0.1;
     public static LoggedNetworkNumber kPEntry = new LoggedNetworkNumber("Tuning/Shooter/kP", kP);
     public static LoggedNetworkNumber kIEntry = new LoggedNetworkNumber("Tuning/Shooter/kI", kI);
     public static LoggedNetworkNumber kDEntry = new LoggedNetworkNumber("Tuning/Shooter/kD", kD);

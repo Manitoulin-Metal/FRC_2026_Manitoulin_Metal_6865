@@ -1,15 +1,13 @@
-# Fix Shooter Y Button Issue
-## Status: Code debug updates applied
-- Lowered shooter speed to 50 RPS (test).
-- Added operator LB: clear sticky faults.
+# Shooter Fix TODO
 
-## Next Steps
-- [x] Deploy code.
-- [ ] Press operator LB to clear faults.
-- [ ] Press operator Y: check VelocityRPS, Faults, Current in AdvantageScope.
-- [ ] Test driver Y open-loop.
-- [ ] If still no: check CAN wiring, motor power, Kraken config.
+## Steps:
+- [x] Step 1: Update ShooterSubsystem.java - Add true PercentOutput open-loop control, increase default targetRps to 75.0, add ramp to runShooter.
+- [x] Step 2: Update RobotContainer.java - Add high-speed shooter test binding (Operator RightBumper + Y for 75 RPS).
+- [x] Step 3: Optionally bump Constants.java initial PID gains (kP=0.2, kS=0.1).
 
-**Test now!**
+- [ ] Step 4: Build & deploy: `gradlew build deploy`
+- [ ] Step 5: Test: Press Operator Y (50 RPS closed-loop), RightBumper+Y (75 RPS), Driver Y (open-loop 0.3). Monitor SmartDashboard Shooter/*.
+- [ ] Step 6: Tune PID live via Shuffleboard "Tuning/Shooter/*", clear faults with LeftBumper.
+- [ ] Complete: Update this file, attempt_completion.
 
-
+Current: Starting Step 1.
