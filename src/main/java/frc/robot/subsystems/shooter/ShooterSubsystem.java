@@ -3,12 +3,12 @@
 
 package frc.robot.subsystems.shooter;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
 import edu.wpi.first.math.jni.*;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -24,7 +24,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   private static final CANBus kCANBus = new CANBus("DriveCanivore");
   private final TalonFX shooter = new TalonFX(61, kCANBus);
-  private final VelocityVoltage velocityRequest = new VelocityVoltage(0);
+  private final VelocityVoltage velocityRequest = new VelocityVoltage(0.1);
   private final VelocityVoltage stopRequest = new VelocityVoltage(0);
   private final LoggedNetworkNumber kPEntry = Constants.Shooter.kPEntry;
   private final LoggedNetworkNumber kIEntry = Constants.Shooter.kIEntry;
@@ -58,11 +58,13 @@ public class ShooterSubsystem extends SubsystemBase {
   public void stopShooter() {
     shooter.setControl(stopRequest);
   }
+
   public void runOpenLoop(double dutyCycle) {
     // PercentOutput is not available in this environment; use VelocityVoltage as a fallback.
     // Note: dutyCycle is interpreted here as a velocity value when PercentOutput is unavailable.
     shooter.setControl(velocityRequest.withVelocity(dutyCycle));
   }
+
   public Command shootCommand(double speed) {
     return Commands.runOnce(() -> runShooter(speed), this);
   }
@@ -143,7 +145,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /** Open-loop test at 50% output */
   public Command openLoopTestCommand() {
-    return Commands.runEnd(() -> runOpenLoop(0.5), this::stopShooter, this).withTimeout(5); 
+    return Commands.runEnd(() -> runOpenLoop(0.5), this::stopShooter, this).withTimeout(5);
   }
 
   /** Clear sticky faults */
