@@ -25,7 +25,7 @@ public final class Constants {
   public static final double TEST_SHOOTER_RPS = 50.0; // Temporary test speed
   public static final double SHOOTER_VELOCITY_RPS =
       TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
-  public static final double SHOOTER_KICKER_RPM_THRESHOLD = 5600.0;
+public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4500.0;  // Triggers kicker at shooter 75.0 RPS (75 * 60)
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
   public static class Shooter {
