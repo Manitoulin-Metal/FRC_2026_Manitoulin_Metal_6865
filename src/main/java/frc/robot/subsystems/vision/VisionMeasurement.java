@@ -24,7 +24,7 @@ public class VisionMeasurement {
   public static List<VisionUtil.VisionMeasurement> processLimelightData(VisionIOInputs inputs) {
     List<VisionUtil.VisionMeasurement> measurements = new ArrayList<>();
 
-    if (!inputs.connected || inputs.poseObservations == null || inputs.rawFiducials == null) {
+    if (!inputs.connected || inputs.poseObservations == null) {
       SmartDashboard.putNumber("Vision/NumMeasurements", 0);
       return measurements;
     }
@@ -33,7 +33,7 @@ public class VisionMeasurement {
     PoseEstimate botPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
     if (botPoseEstimate.tagCount > 0) {
       VisionUtil.VisionMeasurement measurement = mode.getVisionMeasurement(botPoseEstimate);
-        if (mode.acceptVisionMeasurement(botPoseEstimate)) { // Fixed: direct PoseEstimate
+      if (mode.acceptVisionMeasurement(botPoseEstimate)) { // Fixed: direct PoseEstimate
         measurements.add(measurement);
       }
     }
@@ -52,7 +52,7 @@ public class VisionMeasurement {
                 0, // span
                 obs.averageTagDistance(),
                 0, // area (use rawFiducials avg if needed)
-                inputs.rawFiducials,
+                new LimelightHelpers.RawFiducial[0],
                 obs.type() == VisionIO.PoseObservationType.MEGATAG_2);
         VisionUtil.VisionMeasurement measurement = mode.getVisionMeasurement(syntheticEst);
         if (mode.acceptVisionMeasurement(syntheticEst)) {

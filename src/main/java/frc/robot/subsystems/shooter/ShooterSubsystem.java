@@ -15,11 +15,10 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.LimelightHelpers;
+import frc.robot.subsystems.vision.VisionSubsystem;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-import frc.robot.subsystems.vision.VisionSubsystem;
-import frc.robot.LimelightHelpers;
-import edu.wpi.first.math.MathShared;
 
 /** Creates a new Subsystem. */
 @SuppressWarnings("unused")
@@ -162,6 +161,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /**
    * Calculate target RPS based on distance to shooting target using interpolation table.
+   *
    * @param distanceMeters Distance to AprilTag (25 or 26)
    * @return Interpolated target RPS
    */
@@ -185,12 +185,14 @@ public class ShooterSubsystem extends SubsystemBase {
     if (index == distances.length - 1) {
       return rpsValues[index]; // Past last point
     }
-    double fraction = (distanceMeters - distances[index]) / (distances[index + 1] - distances[index]);
+    double fraction =
+        (distanceMeters - distances[index]) / (distances[index + 1] - distances[index]);
     return MathUtil.interpolate(rpsValues[index], rpsValues[index + 1], fraction);
   }
 
   /**
    * Get average distance to valid shooting targets (tags 25/26) from Limelight.
+   *
    * @param vision VisionSubsystem instance
    * @return Average distToRobot in meters, or -1 if no valid targets
    */
@@ -204,9 +206,10 @@ public class ShooterSubsystem extends SubsystemBase {
     int validCount = 0;
 
     for (var fiducial : rawFiducials) {
-      if ((fiducial.id == Constants.SHOOTING_TAG_IDS[0] || fiducial.id == Constants.SHOOTING_TAG_IDS[1]) &&
-          fiducial.distToRobot > Constants.MIN_SHOOT_DISTANCE_METERS &&
-          fiducial.distToRobot <= Constants.MAX_SHOOT_DISTANCE_METERS) {
+      if ((fiducial.id == Constants.SHOOTING_TAG_IDS[0]
+              || fiducial.id == Constants.SHOOTING_TAG_IDS[1])
+          && fiducial.distToRobot > Constants.MIN_SHOOT_DISTANCE_METERS
+          && fiducial.distToRobot <= Constants.MAX_SHOOT_DISTANCE_METERS) {
         totalDist += fiducial.distToRobot;
         validCount++;
       }
@@ -217,6 +220,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /**
    * Run shooter using vision distance. Automatically calculates and ramps to target RPS.
+   *
    * @param vision VisionSubsystem
    */
   public void runVisionShooter(VisionSubsystem vision) {
@@ -224,8 +228,10 @@ public class ShooterSubsystem extends SubsystemBase {
     if (distance > 0) {
       double targetRps = calculateTargetRPS(distance);
       runShooter(targetRps);
-      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/TargetDistanceM", distance);
-      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/VisionTargetRPS", targetRps);
+      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+          "Shooter/TargetDistanceM", distance);
+      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+          "Shooter/VisionTargetRPS", targetRps);
       Logger.recordOutput("Shooter/TargetDistanceM", distance);
       Logger.recordOutput("Shooter/VisionTargetRPS", targetRps);
     } else {

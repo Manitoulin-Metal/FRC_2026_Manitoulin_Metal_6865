@@ -14,9 +14,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.auto.Shoot3BallsCommand;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
-import frc.robot.commands.auto.Shoot3BallsCommand;
 import frc.robot.subsystems.climb.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -138,6 +138,8 @@ public class RobotContainer {
     autoChooser.addOption("Simple Drive + Spin", new SimpleDriveAndSpinAuto(drive));
     autoChooser.addOption("Drive to Shoot", driveToShoot());
     autoChooser.addOption(
+        "Vision Shoot3 Positioned", new Shoot3BallsCommand(shooter, kicker, drive));
+    autoChooser.addOption(
         "Drive to Climb (coordinates)",
         DriveCommands.driveToClimb(
             drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
@@ -147,13 +149,13 @@ public class RobotContainer {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
 
-// Register NamedCommands FIRST
-NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
-NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
-NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
-NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(5.0));
-NamedCommands.registerCommand("startClimb", climb1.ClimbCommand(0.5));
-NamedCommands.registerCommand("shoot3Balls", new Shoot3BallsCommand(shooter, kicker));
+    // Register NamedCommands FIRST
+    NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
+    NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
+    NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
+    NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
+    NamedCommands.registerCommand("startClimb", climb1.ClimbCommand(0.5));
+    NamedCommands.registerCommand("shoot3Balls", new Shoot3BallsCommand(shooter, kicker, drive));
 
     // Configure buttons
     configureButtonBindings();

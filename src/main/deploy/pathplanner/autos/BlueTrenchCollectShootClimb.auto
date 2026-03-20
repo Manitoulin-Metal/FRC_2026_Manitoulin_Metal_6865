@@ -51,7 +51,7 @@
         {
           "type": "wait",
           "data": {
-            "period": 1.0
+            "period": 0.5
           }
         },
         {

@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
+
 @SuppressWarnings("deprecated")
 public class IntakeRollerSubsystem extends SubsystemBase {
   // Motor initialized in constructor

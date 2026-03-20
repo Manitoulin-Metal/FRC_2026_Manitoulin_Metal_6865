@@ -4,15 +4,13 @@ package frc.robot.subsystems.kicker;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
-@SuppressWarnings({ "unused" })
 
+@SuppressWarnings({"unused"})
 public class KickerSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
   SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
@@ -44,9 +42,7 @@ public class KickerSubsystem extends SubsystemBase {
     kicker.set(speed);
   }
 
-  /**
-   * Stop command to set kicker speed to 0.
-   */
+  /** Stop command to set kicker speed to 0. */
   public Command stopCommand() {
     return Commands.runOnce(() -> kicker(0.0), this);
   }

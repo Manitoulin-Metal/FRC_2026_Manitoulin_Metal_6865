@@ -34,6 +34,11 @@ public final class Constants {
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 70.0;
 
+  // Vision auto positioning
+  public static final int SPEAKER_TAG_ID = 26;
+  public static final double AUTO_VISION_KP_LINEAR = 2.0;
+  public static final double AUTO_VISION_KP_ANGULAR = 4.0;
+
   // Dynamic shooter RPM by distance to shooting tags
   public static final double[] SHOOTER_DISTANCE_BREAKPOINTS_METERS = {1.5, 2.5, 3.5, 4.5, 5.5};
   public static final double[] SHOOTER_TARGET_RPS_BY_DISTANCE = {65.0, 68.0, 70.0, 72.0, 75.0};

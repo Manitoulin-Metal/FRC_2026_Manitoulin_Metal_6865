@@ -1,11 +1,1 @@
-# FRC 2026 Blue Trench Collect-Shoot-Climb Auto
-
-## Overview
-Blue alliance auto: Start under ID26/25 speaker -> left trench -> mid collect (intake 5s) -> trench shoot 3 balls -> right climber bar -> climb start.
-
-**Status: ✅ COMPLETE (code ready, paths manual)**
-
-## Completed Steps
-### ✅ Step 0: TODO.md
-### ✅ Step 2: NamedCommands (intake, shoot3Balls, climb)
-### ✅
+# Task Progress: Fix VisionIO.VisionIOInputsAutoLogged import error&#10;&#10;## TODO Steps:&#10;1. [x] Create TODO.md with steps (done)&#10;2. Edit VisionSubsystem.java to use VisionIOInputs instead of VisionIOInputsAutoLogged&#10;3. Run `./gradlew clean build` to regenerate classes and verify&#10;4. Test subsystem in sim/teleop&#10;5. attempt_completion&#10;

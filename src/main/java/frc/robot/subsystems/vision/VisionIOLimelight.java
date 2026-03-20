@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 public class VisionIOLimelight implements VisionIO {
 
   private final Supplier<Rotation2d> rotationSupplier;
-
+  
   private final DoubleArrayPublisher orientationPublisher;
 
   private final DoubleSubscriber latencySubscriber;
@@ -161,6 +161,17 @@ public class VisionIOLimelight implements VisionIO {
       inputs.poseObservations[i] = poseObservations.get(i);
     }
 
+
+
+    // Get raw fiducials for shooting range check
+    var rawFiducials = frc.robot.LimelightHelpers.getRawFiducials("limelight");
+    inputs.rawFiducialCount = rawFiducials.length;
+    inputs.rawFiducialIDs = new int[rawFiducials.length];
+    inputs.rawFiducialDistances = new double[rawFiducials.length];
+    for (int j = 0; j < rawFiducials.length; j++) {
+      inputs.rawFiducialIDs[j] = rawFiducials[j].id;
+      inputs.rawFiducialDistances[j] = rawFiducials[j].distToRobot;
+    }
     // Save tag IDs to inputs objects
 
     inputs.tagIds = new int[tagIds.size()];
@@ -170,9 +181,6 @@ public class VisionIOLimelight implements VisionIO {
     for (int id : tagIds) {
       inputs.tagIds[i++] = id;
     }
-
-    // Get raw fiducials for shooting range check
-    inputs.rawFiducials = frc.robot.LimelightHelpers.getRawFiducials("limelight");
   }
 
   /** Parses the 3D pose from a Limelight botpose array. */
@@ -188,3 +196,4 @@ public class VisionIOLimelight implements VisionIO {
             Units.degreesToRadians(rawLLArray[5])));
   }
 }
+
