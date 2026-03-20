@@ -7,6 +7,7 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
@@ -41,6 +42,13 @@ public class KickerSubsystem extends SubsystemBase {
 
   public void kicker(double speed) {
     kicker.set(speed);
+  }
+
+  /**
+   * Stop command to set kicker speed to 0.
+   */
+  public Command stopCommand() {
+    return Commands.runOnce(() -> kicker(0.0), this);
   }
 
   /**

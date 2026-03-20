@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
+import frc.robot.commands.auto.Shoot3BallsCommand;
 import frc.robot.subsystems.climb.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -146,8 +147,13 @@ public class RobotContainer {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
 
-    // Register NamedCommands FIRST
-    NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
+// Register NamedCommands FIRST
+NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
+NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
+NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
+NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(5.0));
+NamedCommands.registerCommand("startClimb", climb1.ClimbCommand(0.5));
+NamedCommands.registerCommand("shoot3Balls", new Shoot3BallsCommand(shooter, kicker));
 
     // Configure buttons
     configureButtonBindings();
@@ -209,20 +215,10 @@ public class RobotContainer {
     // (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // When Button Y held, Auto-shoot when target 25/26 in range (Operator Controller)
+    // When Button Y held, Vision-distance adjusted auto-shoot (Operator Controller)
     controller1
         .y()
-        .whileTrue(
-            Commands.run(
-                () -> {
-                  if (vision.hasTargetInRange()) {
-                    shooter.runShooter(Constants.AUTO_SHOOT_RPS);
-                  } else {
-                    shooter.stopShooter();
-                  }
-                },
-                vision,
-                shooter))
+        .whileTrue(Commands.run(() -> shooter.runVisionShooter(vision), vision, shooter))
         .onFalse(shooter.stopCommand());
 
     // Operator LeftBumper: Clear shooter sticky faults

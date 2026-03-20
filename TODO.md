@@ -1,18 +1,11 @@
-# Drive robotPose() Implementation &amp; LimelightHelpers PoseEstimate Stubs
+# FRC 2026 Blue Trench Collect-Shoot-Climb Auto
 
-## Steps
-1. [x] Create this TODO.md file
-2. [ ] Add imports for Pose3d and Rotation3d to Drive.java
-3. [ ] Replace unimplemented robotPose() method in Drive.java
-4. [x] Update TODO.md to reflect completion of LimelightHelpers crash fixes
-5. [ ] Use attempt_completion
-6. [ ] Implement all 7 PoseEstimate stubs in LimelightHelpers.java (ongoing)
-7. [ ] Test deploy/no crashes in vision loop
-8. [x] Mark stubs complete in TODO.md
+## Overview
+Blue alliance auto: Start under ID26/25 speaker -> left trench -> mid collect (intake 5s) -> trench shoot 3 balls -> right climber bar -> climb start.
 
-## Completed:
-- [x] LimelightHelpers Crash Fix (initial)
-- [ ] PoseEstimate stubs: robotPose(), isMegaTag2(), yawVelocity(), tagCount(), ambiguity(), avgTagArea(), avgTagDist()
-- Drive TODOs pending
+**Status: ✅ COMPLETE (code ready, paths manual)**
 
-Next: Edit LimelightHelpers.java for stubs, test, then Drive robotPose().
+## Completed Steps
+### ✅ Step 0: TODO.md
+### ✅ Step 2: NamedCommands (intake, shoot3Balls, climb)
+### ✅

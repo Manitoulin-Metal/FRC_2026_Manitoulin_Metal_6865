@@ -17,6 +17,9 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
+import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.LimelightHelpers;
+import edu.wpi.first.math.MathShared;
 
 /** Creates a new Subsystem. */
 @SuppressWarnings("unused")
@@ -155,6 +158,83 @@ public class ShooterSubsystem extends SubsystemBase {
   /** Get current shooter velocity in rotations per second (RPS) */
   public double getVelocityRps() {
     return shooter.getVelocity().getValueAsDouble();
+  }
+
+  /**
+   * Calculate target RPS based on distance to shooting target using interpolation table.
+   * @param distanceMeters Distance to AprilTag (25 or 26)
+   * @return Interpolated target RPS
+   */
+  public double calculateTargetRPS(double distanceMeters) {
+    double[] distances = Constants.SHOOTER_DISTANCE_BREAKPOINTS_METERS;
+    double[] rpsValues = Constants.SHOOTER_TARGET_RPS_BY_DISTANCE;
+
+    // Clamp distance to valid range
+    distanceMeters = MathUtil.clamp(distanceMeters, distances[0], distances[distances.length - 1]);
+
+    // Find interval
+    int index = 0;
+    for (int i = 0; i < distances.length - 1; i++) {
+      if (distanceMeters <= distances[i + 1]) {
+        index = i;
+        break;
+      }
+    }
+
+    // Linear interpolation
+    if (index == distances.length - 1) {
+      return rpsValues[index]; // Past last point
+    }
+    double fraction = (distanceMeters - distances[index]) / (distances[index + 1] - distances[index]);
+    return MathUtil.interpolate(rpsValues[index], rpsValues[index + 1], fraction);
+  }
+
+  /**
+   * Get average distance to valid shooting targets (tags 25/26) from Limelight.
+   * @param vision VisionSubsystem instance
+   * @return Average distToRobot in meters, or -1 if no valid targets
+   */
+  public double getTargetDistance(VisionSubsystem vision) {
+    var rawFiducials = LimelightHelpers.getRawFiducials("limelight");
+    if (rawFiducials.length == 0) {
+      return -1.0;
+    }
+
+    double totalDist = 0.0;
+    int validCount = 0;
+
+    for (var fiducial : rawFiducials) {
+      if ((fiducial.id == Constants.SHOOTING_TAG_IDS[0] || fiducial.id == Constants.SHOOTING_TAG_IDS[1]) &&
+          fiducial.distToRobot > Constants.MIN_SHOOT_DISTANCE_METERS &&
+          fiducial.distToRobot <= Constants.MAX_SHOOT_DISTANCE_METERS) {
+        totalDist += fiducial.distToRobot;
+        validCount++;
+      }
+    }
+
+    return validCount > 0 ? totalDist / validCount : -1.0;
+  }
+
+  /**
+   * Run shooter using vision distance. Automatically calculates and ramps to target RPS.
+   * @param vision VisionSubsystem
+   */
+  public void runVisionShooter(VisionSubsystem vision) {
+    double distance = getTargetDistance(vision);
+    if (distance > 0) {
+      double targetRps = calculateTargetRPS(distance);
+      runShooter(targetRps);
+      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/TargetDistanceM", distance);
+      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/VisionTargetRPS", targetRps);
+      Logger.recordOutput("Shooter/TargetDistanceM", distance);
+      Logger.recordOutput("Shooter/VisionTargetRPS", targetRps);
+    } else {
+      stopShooter();
+      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/TargetDistanceM", -1);
+      edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/VisionTargetRPS", 0);
+      Logger.recordOutput("Shooter/TargetDistanceM", -1.0);
+      Logger.recordOutput("Shooter/VisionTargetRPS", 0.0);
+    }
   }
 
   /** Open-loop test at 50% output */

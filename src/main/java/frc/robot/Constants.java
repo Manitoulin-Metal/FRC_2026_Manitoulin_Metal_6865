@@ -34,6 +34,10 @@ public final class Constants {
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 70.0;
 
+  // Dynamic shooter RPM by distance to shooting tags
+  public static final double[] SHOOTER_DISTANCE_BREAKPOINTS_METERS = {1.5, 2.5, 3.5, 4.5, 5.5};
+  public static final double[] SHOOTER_TARGET_RPS_BY_DISTANCE = {65.0, 68.0, 70.0, 72.0, 75.0};
+
   public static class Shooter {
     public static final double kP = 0.2;
     public static final double kI = 0.0;
