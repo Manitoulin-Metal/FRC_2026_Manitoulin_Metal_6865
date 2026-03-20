@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.auto.Shoot3BallsCommand;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.climb.ClimbSubsystem;
@@ -31,6 +32,8 @@ import frc.robot.subsystems.led.LEDSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionConstants.*;
 import frc.robot.subsystems.vision.VisionIO.*;
+import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.subsystems.vision.VisionSubsystem;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -46,6 +49,8 @@ public class RobotContainer {
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
+
+  private VisionSubsystem vision;
 
   // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -117,6 +122,9 @@ public class RobotContainer {
         break;
     }
 
+    // Instantiate vision subsystem
+    vision = new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+
     // Configure default drive command
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
@@ -130,6 +138,8 @@ public class RobotContainer {
     autoChooser.addOption("Simple Drive + Spin", new SimpleDriveAndSpinAuto(drive));
     autoChooser.addOption("Drive to Shoot", driveToShoot());
     autoChooser.addOption(
+        "Vision Shoot3 Positioned", new Shoot3BallsCommand(shooter, kicker, drive));
+    autoChooser.addOption(
         "Drive to Climb (coordinates)",
         DriveCommands.driveToClimb(
             drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
@@ -141,6 +151,11 @@ public class RobotContainer {
 
     // Register NamedCommands FIRST
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
+    NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
+    NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
+    NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
+    NamedCommands.registerCommand("startClimb", climb1.ClimbCommand(0.5));
+    NamedCommands.registerCommand("shoot3Balls", new Shoot3BallsCommand(shooter, kicker, drive));
 
     // Configure buttons
     configureButtonBindings();
@@ -202,10 +217,10 @@ public class RobotContainer {
     // (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // When Button Y held, Shooter Starts up (Operator Controller) - lowered to 50 RPS for testing
+    // When Button Y held, Vision-distance adjusted auto-shoot (Operator Controller)
     controller1
         .y()
-        .whileTrue(Commands.run(() -> shooter.runShooter(70.0), shooter))
+        .whileTrue(Commands.run(() -> shooter.runVisionShooter(vision), vision, shooter))
         .onFalse(shooter.stopCommand());
 
     // Operator LeftBumper: Clear shooter sticky faults
@@ -217,10 +232,6 @@ public class RobotContainer {
         .and(controller1.y())
         .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
         .onFalse(shooter.stopCommand());
-
-    // |||||||||||||||||||||||||||||||||||||||||||||||||||
-    // |TO-DO: Add Drive to Shoot Command to Left Trigger|
-    // |||||||||||||||||||||||||||||||||||||||||||||||||||
 
     // Deploy agitator on X (fast shake then stow)
     controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
@@ -247,7 +258,7 @@ public class RobotContainer {
     controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
 
     // Temporary: Driver LT runs kicker at -0.3 to test motor
-    controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(-0.3));
+    controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
 
     // Driver Y: Test shooter open-loop 30% duty (hardware test, previously unused)
     controller

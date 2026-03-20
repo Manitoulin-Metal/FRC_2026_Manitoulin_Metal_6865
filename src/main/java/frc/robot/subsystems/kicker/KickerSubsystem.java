@@ -1,34 +1,26 @@
 // This is being used by Team 6865, Manitoulin Metal
 // This was created by Team 6865, Manitoulin Metal
-
 package frc.robot.subsystems.kicker;
 
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 
-@SuppressWarnings("removal")
 public class KickerSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
   SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
   private final ShooterSubsystem m_shooter;
 
   /** Creates a new Subsystem. */
+  @SuppressWarnings("deprecation")
   public KickerSubsystem(ShooterSubsystem shooterSubsystem) {
     m_shooter = shooterSubsystem;
 
-    SparkMaxConfig config4 = new SparkMaxConfig();
-    config4.inverted(true).idleMode(IdleMode.kBrake);
-
-    // Apply configs - reset old parameters, and persist through power-cycles.
-    kicker.configure(config4, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
+    kicker.setInverted(true);
   }
 
   /**
@@ -47,6 +39,11 @@ public class KickerSubsystem extends SubsystemBase {
 
   public void kicker(double speed) {
     kicker.set(speed);
+  }
+
+  /** Stop command to set kicker speed to 0. */
+  public Command stopCommand() {
+    return Commands.runOnce(() -> kicker(0.0), this);
   }
 
   /**

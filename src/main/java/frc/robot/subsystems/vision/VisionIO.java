@@ -24,6 +24,10 @@ public interface VisionIO {
     public PoseObservation[] poseObservations = new PoseObservation[0];
 
     public int[] tagIds = new int[0];
+
+    public int rawFiducialCount = 0;
+    public int[] rawFiducialIDs = new int[0];
+    public double[] rawFiducialDistances = new double[0];
   }
 
   /** Represents the angle to a simple target, not used for pose estimation. */

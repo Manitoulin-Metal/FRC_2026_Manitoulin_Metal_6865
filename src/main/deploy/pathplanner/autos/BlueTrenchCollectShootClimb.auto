@@ -1,0 +1,75 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "BlueStartToLeftTrench",
+            "resetPose": true
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "startIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "LeftTrenchToMidCollect",
+            "holonomicRotation": 270.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "collectFuel"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "stopIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "MidCollectToTrenchShoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "shoot3Balls"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "period": 0.5
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "TrenchShootToBlueClimb"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "startClimb"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

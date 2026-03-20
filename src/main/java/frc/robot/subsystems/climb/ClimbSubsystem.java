@@ -18,6 +18,7 @@ public class ClimbSubsystem extends SubsystemBase {
   SparkFlex climb1 = new SparkFlex(60, MotorType.kBrushless);
 
   /** Creates a new Subsystem. */
+  @SuppressWarnings("removal")
   public ClimbSubsystem() {
     SparkFlexConfig config4 = new SparkFlexConfig();
 

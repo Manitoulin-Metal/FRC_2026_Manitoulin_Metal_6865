@@ -754,38 +754,36 @@ public class LimelightHelpers {
     }
 
     public Pose3d robotPose() {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'robotPose'");
+      return new Pose3d();
     }
 
     public boolean isMegaTag2() {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'isMegaTag2'");
+      return this.isMegaTag2;
     }
 
     public int yawVelocity() {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'yawVelocity'");
+      return 0;
     }
 
     public int tagCount() {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'tagCount'");
+      return this.tagCount;
     }
 
     public double ambiguity() {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'ambiguity'");
+      if (rawFiducials == null || rawFiducials.length == 0) return 1.0;
+      double sum = 0;
+      for (RawFiducial f : rawFiducials) {
+        sum += f.ambiguity;
+      }
+      return sum / rawFiducials.length;
     }
 
     public double avgTagArea() {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'avgTagArea'");
+      return this.avgTagArea;
     }
 
     public double avgTagDist() {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'avgTagDist'");
+      return this.avgTagDist;
     }
   }
 
@@ -1968,6 +1966,7 @@ public class LimelightHelpers {
    * @param limelightName Name of the Limelight camera
    * @return LimelightResults object containing all current target data
    */
+  @SuppressWarnings("null")
   public static LimelightResults getLatestResults(String limelightName) {
 
     long start = System.nanoTime();
