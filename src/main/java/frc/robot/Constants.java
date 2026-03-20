@@ -9,11 +9,12 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
- * This class defines the runtime mode used by AdvantageKit. The mode is always "real" when running
- * on a roboRIO. Change the value of "simMode" to switch between "sim" (physics sim) and "replay"
- * (log replay from a file).
+ * This class defines the runtime mode used by AdvantageKit. The mode is always \"real\" when
+ * running on a roboRIO. Change the value of \"simMode\" to switch between \"sim\" (physics sim) and
+ * \"replay\" (log replay from a file).
  */
 public final class Constants {
   public static final Mode simMode = Mode.SIM;
@@ -21,7 +22,34 @@ public final class Constants {
   public static final double Y_ALIGN_P = 0;
   public static final double X_ALIGN_P = 0;
   public static final double ROT_ALIGN_P = 4.0;
+  public static final double TEST_SHOOTER_RPS = 50.0; // Temporary test speed
+  public static final double SHOOTER_VELOCITY_RPS =
+      TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
+public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4500.0;  // Triggers kicker at shooter 75.0 RPS (75 * 60)
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
+
+  public static class Shooter {
+    public static final double kP = 0.2;
+    public static final double kI = 0.0;
+    public static final double kD = 0.02;
+    public static final double kV = 0.13;
+    public static final double kS = 0.1;
+    public static LoggedNetworkNumber kPEntry = new LoggedNetworkNumber("Tuning/Shooter/kP", kP);
+    public static LoggedNetworkNumber kIEntry = new LoggedNetworkNumber("Tuning/Shooter/kI", kI);
+    public static LoggedNetworkNumber kDEntry = new LoggedNetworkNumber("Tuning/Shooter/kD", kD);
+    public static LoggedNetworkNumber kVEntry = new LoggedNetworkNumber("Tuning/Shooter/kV", kV);
+    public static LoggedNetworkNumber kSEntry = new LoggedNetworkNumber("Tuning/Shooter/kS", kS);
+  }
+
+  public static class IntakeDeploy {
+    public static final double kP = 0.1;
+    public static final double kI = 0.0;
+    public static final double kD = 0.0;
+    public static final double kFF = 0.0;
+    public static final double DEPLOY_SETPOINT_ROT = 5.0;
+    public static final double STOW_SETPOINT_ROT = 0.0;
+    public static final double POSITION_TOLERANCE_ROT = 0.05;
+  }
 
   public static enum Mode {
     /** Running on a real robot. */

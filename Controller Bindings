@@ -1,0 +1,24 @@
+***Controller (Driver Controller):***
+Button B: Reset Gyro
+Left Bumper: Pulls Climber Down
+Right Bumper: Lifts Climber Up
+Left Trigger: Runs Kicker **ONLY A TEST FOR THE MOTOR TO SEE IF IT WORKS**
+Right Trigger: Drive To Climb Command
+Button X: Switches to X Pattern
+
+Button Y: Shooter open-loop test at 30% duty cycle (hardware test - hold to spin motor bypassing PID)
+Button A: (available)
+
+
+***Controller1 (Operator Controller):***
+Button Y: Starts Running Shooter Motor
+Right Trigger: Run IntakeRoller
+Button A: Deploy Intake (With PID)
+Button B: Stow Intake (With PID)
+Button X: Deploy Agitator
+
+**REMAINING BUTTONS THAT CAN BE BINDED FOR OPERATOR CONTROLLER**
+
+Left Trigger
+Right Bumper
+Left Bumper

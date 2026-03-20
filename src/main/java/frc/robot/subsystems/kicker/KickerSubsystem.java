@@ -11,23 +11,24 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
 
 @SuppressWarnings("removal")
 public class KickerSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
   SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
+  private final ShooterSubsystem m_shooter;
 
   /** Creates a new Subsystem. */
-  public KickerSubsystem() {}
+  public KickerSubsystem(ShooterSubsystem shooterSubsystem) {
+    m_shooter = shooterSubsystem;
 
-  {
     SparkMaxConfig config4 = new SparkMaxConfig();
     config4.inverted(true).idleMode(IdleMode.kBrake);
 
     // Apply configs - reset old parameters, and persist through power-cycles.
     kicker.configure(config4, ResetMode.kNoResetSafeParameters, PersistMode.kPersistParameters);
-    {
-    }
   }
 
   /**
@@ -54,13 +55,18 @@ public class KickerSubsystem extends SubsystemBase {
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
   public boolean kickerCondition() {
-    // Query some boolean state, such as a digital sensor.
-    return false;
+    return m_shooter.getVelocityRps() * 60 > Constants.SHOOTER_KICKER_RPM_THRESHOLD;
   }
 
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
+    double shooterRps = m_shooter.getVelocityRps();
+    boolean condition = shooterRps * 60 > Constants.SHOOTER_KICKER_RPM_THRESHOLD;
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/ShooterRPS", shooterRps);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean("Kicker/Condition", condition);
+    double speed = condition ? -0.5 : 0.0;
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/SetSpeed", speed);
+    kicker.set(speed);
   }
 
   @Override

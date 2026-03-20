@@ -1,0 +1,1 @@
+- [x] User approved plan to set Constants.SHOOTER_KICKER_RPM_THRESHOLD = 4500.0 RPM\n- [x] Edit Constants.java with threshold change (SHOOTER_KICKER_RPM_THRESHOLD = 4500.0)\n- [ ] Rebuild and deploy code\n- [ ] Test: Run shooter to 75 RPS, verify kicker activates (Kicker/Condition true, SetSpeed -0.5)\n- [ ] Update TODO with test results
