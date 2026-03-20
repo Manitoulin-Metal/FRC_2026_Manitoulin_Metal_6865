@@ -22,13 +22,14 @@ public final class Constants {
   public static final double Y_ALIGN_P = 0;
   public static final double X_ALIGN_P = 0;
   public static final double ROT_ALIGN_P = 4.0;
-  public static final double TEST_SHOOTER_RPS = 50.0; // Temporary test speed
+  public static final double TEST_SHOOTER_RPS = 10.0; // Temporary test speed
   public static final double SHOOTER_VELOCITY_RPS =
       TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
   public static final double SHOOTER_KICKER_RPM_THRESHOLD =
       4200.0; // Triggers kicker at shooter 70.0 RPS (70 * 60)
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
+  // public static final int[] SHOOTING_TAG_IDS = {};
   public static final int[] SHOOTING_TAG_IDS = {25, 26};
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
@@ -36,6 +37,7 @@ public final class Constants {
 
   // Vision auto positioning
   public static final int SPEAKER_TAG_ID = 26;
+  // public static final int SPEAKER_TAG_ID = 0;
   public static final double AUTO_VISION_KP_LINEAR = 2.0;
   public static final double AUTO_VISION_KP_ANGULAR = 4.0;
 
@@ -48,10 +50,10 @@ public final class Constants {
   public static final double[] SHOOTER_TARGET_RPS_BY_DISTANCE = {65.0, 68.0, 70.0, 72.0, 75.0};
 
   public static class Shooter {
-    public static final double kP = 0.2;
-    public static final double kI = 0.0;
-    public static final double kD = 0.02;
-    public static final double kV = 0.13;
+    public static final double kP = 0.0; // Disabled (set 0) to troubleshoot not moving
+    public static final double kI = 0.0; // Disabled (set 0) to troubleshoot not moving
+    public static final double kD = 0.0; // Disabled (set 0) to troubleshoot not moving
+    public static final double kV = 0.12;
     public static final double kS = 0.1;
     public static LoggedNetworkNumber kPEntry = new LoggedNetworkNumber("Tuning/Shooter/kP", kP);
     public static LoggedNetworkNumber kIEntry = new LoggedNetworkNumber("Tuning/Shooter/kI", kI);

@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 public class VisionIOLimelight implements VisionIO {
 
   private final Supplier<Rotation2d> rotationSupplier;
-  
+
   private final DoubleArrayPublisher orientationPublisher;
 
   private final DoubleSubscriber latencySubscriber;
@@ -161,8 +161,6 @@ public class VisionIOLimelight implements VisionIO {
       inputs.poseObservations[i] = poseObservations.get(i);
     }
 
-
-
     // Get raw fiducials for shooting range check
     var rawFiducials = frc.robot.LimelightHelpers.getRawFiducials("limelight");
     inputs.rawFiducialCount = rawFiducials.length;
@@ -196,4 +194,3 @@ public class VisionIOLimelight implements VisionIO {
             Units.degreesToRadians(rawLLArray[5])));
   }
 }
-

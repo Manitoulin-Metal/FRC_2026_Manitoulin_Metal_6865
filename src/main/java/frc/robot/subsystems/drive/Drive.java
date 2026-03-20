@@ -217,13 +217,14 @@ public class Drive extends SubsystemBase {
     double clampedX = MathUtil.clamp(x, 0.0, fieldLength);
     double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
 
-  // Bump detection and vision reset during autonomous
+    // Bump detection and vision reset during autonomous
     if (DriverStation.isAutonomous() && m_vision != null && m_vision.hasValidVision()) {
       Pose2d estPose = poseEstimator.getEstimatedPosition();
       Pose2d visionPose = m_vision.getLatestValidPose();
       double dx = estPose.getTranslation().getDistance(visionPose.getTranslation());
       double dyaw = Math.abs(estPose.getRotation().minus(visionPose.getRotation()).getDegrees());
-      if (dx > frc.robot.Constants.AUTO_BUMP_ERROR_METERS || dyaw > frc.robot.Constants.AUTO_BUMP_YAW_DEG) {
+      if (dx > frc.robot.Constants.AUTO_BUMP_ERROR_METERS
+          || dyaw > frc.robot.Constants.AUTO_BUMP_YAW_DEG) {
         setPose(visionPose);
         Logger.recordOutput("Drive/BumpReset", true);
       }

@@ -208,10 +208,10 @@ public class RobotContainer {
 
     // When Right Trigger pressed, run intake rollers; when released, stop rollers
     // (For Operator Controller)
-    controller1
-        .rightTrigger(0.1)
-        .whileTrue(intakeRoller.intakeCommand())
-        .onFalse(intakeRoller.idleCommand());
+    // controller1
+    //     .rightTrigger(0.1)
+    //     .whileTrue(intakeRoller.intakeCommand())
+    //     .onFalse(intakeRoller.idleCommand());
 
     // Switch to X pattern when X button pressed
     // (Driver Controller)
@@ -227,11 +227,11 @@ public class RobotContainer {
     controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
 
     // Operator RightBumper + Y: High speed shooter test (75 RPS)
-    controller1
-        .rightBumper()
-        .and(controller1.y())
-        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
-        .onFalse(shooter.stopCommand());
+    // controller1
+    //     .rightBumper()
+    //     .and(controller1.y())
+    //     .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
+    //     .onFalse(shooter.stopCommand());
 
     // Deploy agitator on X (fast shake then stow)
     controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
@@ -245,7 +245,7 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
-    // When Left Bumper held, Climber pulls up
+    // When Left Bumper held, Climber moves downward (climbs)
     // (Driver Controller)
     controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
 
@@ -261,9 +261,23 @@ public class RobotContainer {
     controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
 
     // Driver Y: Test shooter open-loop 30% duty (hardware test, previously unused)
-    controller
-        .y()
-        .whileTrue(Commands.run(() -> shooter.runOpenLoop(0.3), shooter))
+    // controller
+    //     .y()
+    //     .whileTrue(Commands.run(() -> shooter.runOpenLoop(0.2), shooter))
+    //     .onFalse(shooter.stopCommand());
+
+    // -------- New controls as of 3/20 based on driver input ----------
+
+    // (Operator) Left Trigger: Spin Intake Rollers
+    controller1
+        .leftTrigger(0.1)
+        .whileTrue(intakeRoller.intakeCommand())
+        .onFalse(intakeRoller.idleCommand());
+
+    // (Operator) Right Trigger: Shooter + Kicker
+    controller1
+        .rightTrigger(0.1)
+        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
         .onFalse(shooter.stopCommand());
   }
 

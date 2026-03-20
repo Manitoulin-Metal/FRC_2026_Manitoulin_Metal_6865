@@ -15,4 +15,3 @@ Progress: Step 2 next
 - [ ] 6. Test: Manual verification, suggest sim bump test
 
 Progress: Starting Step 1
-

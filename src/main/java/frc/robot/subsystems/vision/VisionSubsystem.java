@@ -6,14 +6,11 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-
-import frc.robot.LimelightHelpers.RawFiducial;
 import frc.robot.subsystems.drive.Drive;
-import edu.wpi.first.wpilibj.Timer;
 import frc.robot.subsystems.vision.VisionIO.PoseObservation;
-
 import java.util.List;
 
 @SuppressWarnings("unused")
@@ -21,7 +18,7 @@ public class VisionSubsystem extends SubsystemBase {
 
   private final VisionIO io;
   private final Drive drive;
-private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
+  private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
 
   private Pose2d latestValidPose = new Pose2d();
   private boolean hasValidVision = false;
@@ -73,7 +70,7 @@ private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
 
           // Feed to Drive estimator
           drive.addVisionMeasurement(visionPose, observation.timestamp(), stdDevs);
-          
+
           // Track latest valid pose for bump correction
           latestValidPose = visionPose;
           hasValidVision = true;
@@ -96,8 +93,8 @@ private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
   }
 
   /**
-   * Checks if Limelight detects shooting tags {25,26} within shooting range [1.5-5.5m].
-   * Refactored to use List.contains for robustness if more tags added.
+   * Checks if Limelight detects shooting tags {25,26} within shooting range [1.5-5.5m]. Refactored
+   * to use List.contains for robustness if more tags added.
    */
   @SuppressWarnings("unlikely-arg-type")
   public boolean hasTargetInRange() {
@@ -115,9 +112,7 @@ private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
     return false;
   }
 
-  /**
-   * Gets average distance to valid shooting targets (tags 25/26 in range), or -1 if none.
-   */
+  /** Gets average distance to valid shooting targets (tags 25/26 in range), or -1 if none. */
   @SuppressWarnings("unlikely-arg-type")
   public double getShootingTargetDistance() {
     if (inputs.rawFiducialCount == 0) {
@@ -148,6 +143,4 @@ private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
   public boolean hasValidVision() {
     return hasValidVision;
   }
-  }
-
-
+}

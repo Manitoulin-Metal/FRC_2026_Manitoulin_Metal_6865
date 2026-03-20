@@ -24,7 +24,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final SparkFlex intakeDeploy = new SparkFlex(59, MotorType.kBrushless);
 
   public static final double STOW_POSITION = 0.0;
-  public static final double DEPLOY_POSITION = 16650.0; // degrees, tune
+  public static final double DEPLOY_POSITION = 16550.0; // degrees, tune
   private final DoubleEntry kP;
   private final DoubleEntry kI;
   private final DoubleEntry kD;

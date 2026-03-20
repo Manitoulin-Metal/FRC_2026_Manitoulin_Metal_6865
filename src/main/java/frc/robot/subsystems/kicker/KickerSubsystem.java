@@ -61,7 +61,7 @@ public class KickerSubsystem extends SubsystemBase {
     boolean condition = shooterRps * 60 > Constants.SHOOTER_KICKER_RPM_THRESHOLD;
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/ShooterRPS", shooterRps);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean("Kicker/Condition", condition);
-    double speed = condition ? -0.5 : 0.0;
+    double speed = condition ? 0.5 : 0.0;
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/SetSpeed", speed);
     kicker.set(speed);
   }
