@@ -19,6 +19,7 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /** Creates a new Subsystem. */
+@SuppressWarnings("unused")
 public class ShooterSubsystem extends SubsystemBase {
 
   // Initialize the motor (Kraken direct drive CAN ID 61)

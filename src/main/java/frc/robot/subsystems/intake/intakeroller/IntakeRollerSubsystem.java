@@ -16,7 +16,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-
+@SuppressWarnings("deprecated")
 public class IntakeRollerSubsystem extends SubsystemBase {
   // Motor initialized in constructor
 
@@ -56,6 +56,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   private final Timer jamTimer = new Timer();
 
   /** Creates a new Subsystem. */
+  @SuppressWarnings("removal")
   public IntakeRollerSubsystem() {
     SparkMaxConfig config = new SparkMaxConfig();
 
@@ -98,6 +99,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   }
 
   // --------- Live PID Tuning Updates --------- \\
+  @SuppressWarnings("removal")
   private void updatePIDIfChanged() {
     double newKP = kP.get();
     double newKFF = kFF.get();

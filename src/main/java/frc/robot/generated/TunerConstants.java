@@ -106,13 +106,17 @@ public class TunerConstants {
 
   private static final boolean kInvertLeftSide = false;
   private static final boolean kInvertRightSide = true;
-
   private static final int kPigeonId = 2;
-  private static final int kCANivore = 4;
-  private static final int ThriftyNova1 = 55;
-  private static final int ThriftyNova2 = 56;
-  private static final int kShooterMoter = 61;
-  private static final int kCANDle = 3;
+  @SuppressWarnings("unused")
+private static final int kCANivore = 4;
+  @SuppressWarnings("unused")
+private static final int ThriftyNova1 = 55;
+  @SuppressWarnings("unused")
+private static final int ThriftyNova2 = 56;
+  @SuppressWarnings("unused")
+private static final int kShooterMoter = 61;
+  @SuppressWarnings("unused")
+private static final int kCANDle = 3;
 
   // These are only used for simulation
 
