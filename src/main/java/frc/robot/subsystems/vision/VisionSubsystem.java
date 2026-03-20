@@ -1,17 +1,12 @@
 package frc.robot.subsystems.vision;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.vision.VisionConstants;
-import frc.robot.subsystems.vision.VisionIO.VisionIOInputs;
 import frc.robot.subsystems.vision.VisionIO.PoseObservation;
 
 public class VisionSubsystem extends SubsystemBase {
@@ -29,20 +24,21 @@ public class VisionSubsystem extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
 
-
     // Fuse valid AprilTag poses to Drive pose estimator
     if (inputs.poseObservations != null) {
       for (PoseObservation observation : inputs.poseObservations) {
         // Filter valid observations: low ambiguity, multiple tags, reasonable distance
-        if (observation.ambiguity() < VisionConstants.maxAmbiguity &&
-            observation.tagCount() >= 2 &&
-            observation.averageTagDistance() > 0.1 && // Avoid zero/too-close
+        if (observation.ambiguity() < VisionConstants.maxAmbiguity
+            && observation.tagCount() >= 2
+            && observation.averageTagDistance() > 0.1
+            && // Avoid zero/too-close
             observation.averageTagDistance() < 10.0) { // Max field distance
 
           // Convert Pose3d to Pose2d (XY + yaw)
-          Pose2d visionPose = new Pose2d(
-              observation.pose().getTranslation().toTranslation2d(),
-              observation.pose().getRotation().toRotation2d());
+          Pose2d visionPose =
+              new Pose2d(
+                  observation.pose().getTranslation().toTranslation2d(),
+                  observation.pose().getRotation().toRotation2d());
 
           // Dynamic standard deviations (meters translation, radians rotation)
           // Scale by distance and 1/sqrt(tagCount)
@@ -73,9 +69,7 @@ public class VisionSubsystem extends SubsystemBase {
     return inputs.latestTargetObservation.ty().getDegrees();
   }
 
-  /**
-   * Checks if Limelight detects shooting tags 25/26 within shooting range
-   */
+  /** Checks if Limelight detects shooting tags 25/26 within shooting range */
   public boolean hasTargetInRange() {
     if (inputs.rawFiducials == null || inputs.rawFiducials.length == 0) {
       return false;
@@ -86,13 +80,13 @@ public class VisionSubsystem extends SubsystemBase {
       double dist = fiducial.distToRobot;
 
       // Check if it's a shooting tag and within range
-      if ((id == frc.robot.Constants.SHOOTING_TAG_IDS[0] || id == frc.robot.Constants.SHOOTING_TAG_IDS[1]) &&
-          dist >= frc.robot.Constants.MIN_SHOOT_DISTANCE_METERS &&
-          dist <= frc.robot.Constants.MAX_SHOOT_DISTANCE_METERS) {
+      if ((id == frc.robot.Constants.SHOOTING_TAG_IDS[0]
+              || id == frc.robot.Constants.SHOOTING_TAG_IDS[1])
+          && dist >= frc.robot.Constants.MIN_SHOOT_DISTANCE_METERS
+          && dist <= frc.robot.Constants.MAX_SHOOT_DISTANCE_METERS) {
         return true;
       }
     }
     return false;
   }
 }
-

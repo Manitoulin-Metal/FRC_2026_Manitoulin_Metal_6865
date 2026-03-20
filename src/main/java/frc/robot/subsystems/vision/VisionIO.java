@@ -25,9 +25,9 @@ public interface VisionIO {
 
     public int[] tagIds = new int[0];
 
-    public frc.robot.LimelightHelpers.RawFiducial[] rawFiducials = new frc.robot.LimelightHelpers.RawFiducial[0];
+    public frc.robot.LimelightHelpers.RawFiducial[] rawFiducials =
+        new frc.robot.LimelightHelpers.RawFiducial[0];
   }
-
 
   /** Represents the angle to a simple target, not used for pose estimation. */
   public static record TargetObservation(Rotation2d tx, Rotation2d ty) {}

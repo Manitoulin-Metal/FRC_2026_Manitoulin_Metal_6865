@@ -175,7 +175,6 @@ public class VisionIOLimelight implements VisionIO {
     inputs.rawFiducials = frc.robot.LimelightHelpers.getRawFiducials("limelight");
   }
 
-
   /** Parses the 3D pose from a Limelight botpose array. */
   private static Pose3d parsePose(double[] rawLLArray) {
 

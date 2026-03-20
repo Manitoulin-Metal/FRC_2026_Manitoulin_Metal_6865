@@ -10,8 +10,6 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-import frc.robot.LimelightHelpers.RawFiducial;
-
 
 /**
  * This class defines the runtime mode used by AdvantageKit. The mode is always \"real\" when
@@ -27,14 +25,14 @@ public final class Constants {
   public static final double TEST_SHOOTER_RPS = 50.0; // Temporary test speed
   public static final double SHOOTER_VELOCITY_RPS =
       TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
-public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4200.0;  // Triggers kicker at shooter 70.0 RPS (70 * 60)
+  public static final double SHOOTER_KICKER_RPM_THRESHOLD =
+      4200.0; // Triggers kicker at shooter 70.0 RPS (70 * 60)
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
   public static final int[] SHOOTING_TAG_IDS = {25, 26};
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 70.0;
-
 
   public static class Shooter {
     public static final double kP = 0.2;
