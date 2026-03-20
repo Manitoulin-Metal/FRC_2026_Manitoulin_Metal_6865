@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 
-@SuppressWarnings({"unused"})
 public class KickerSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
   SparkMax kicker = new SparkMax(62, MotorType.kBrushless);

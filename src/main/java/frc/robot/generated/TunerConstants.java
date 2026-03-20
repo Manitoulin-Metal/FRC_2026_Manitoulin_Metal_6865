@@ -121,6 +121,9 @@ public class TunerConstants {
   private static final int kShooterMoter = 61;
 
   @SuppressWarnings("unused")
+  private static final int kKickerMotor = 62;
+
+  @SuppressWarnings("unused")
   private static final int kCANDle = 3;
 
   // These are only used for simulation

@@ -39,12 +39,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-@SuppressWarnings("unused")
 public class Drive extends SubsystemBase {
   // TunerConstants doesn't include these constants, so they are declared locally
   static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
@@ -95,6 +95,8 @@ public class Drive extends SubsystemBase {
       };
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
+
+  private VisionSubsystem m_vision;
 
   public Drive(
       GyroIO gyroIO,
@@ -214,6 +216,18 @@ public class Drive extends SubsystemBase {
 
     double clampedX = MathUtil.clamp(x, 0.0, fieldLength);
     double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
+
+  // Bump detection and vision reset during autonomous
+    if (DriverStation.isAutonomous() && m_vision != null && m_vision.hasValidVision()) {
+      Pose2d estPose = poseEstimator.getEstimatedPosition();
+      Pose2d visionPose = m_vision.getLatestValidPose();
+      double dx = estPose.getTranslation().getDistance(visionPose.getTranslation());
+      double dyaw = Math.abs(estPose.getRotation().minus(visionPose.getRotation()).getDegrees());
+      if (dx > frc.robot.Constants.AUTO_BUMP_ERROR_METERS || dyaw > frc.robot.Constants.AUTO_BUMP_YAW_DEG) {
+        setPose(visionPose);
+        Logger.recordOutput("Drive/BumpReset", true);
+      }
+    }
 
     if (x != clampedX || y != clampedY) {
       poseEstimator.resetPosition(
@@ -343,6 +357,11 @@ public class Drive extends SubsystemBase {
   }
 
   /** Resets the current odometry pose. */
+  /** Set vision subsystem reference for bump correction. */
+  public void setVision(VisionSubsystem vision) {
+    m_vision = vision;
+  }
+
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
   }

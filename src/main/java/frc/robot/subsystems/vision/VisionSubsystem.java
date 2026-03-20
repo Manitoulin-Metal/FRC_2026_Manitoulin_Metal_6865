@@ -11,6 +11,7 @@ import frc.robot.Constants;
 
 import frc.robot.LimelightHelpers.RawFiducial;
 import frc.robot.subsystems.drive.Drive;
+import edu.wpi.first.wpilibj.Timer;
 import frc.robot.subsystems.vision.VisionIO.PoseObservation;
 
 import java.util.List;
@@ -22,6 +23,10 @@ public class VisionSubsystem extends SubsystemBase {
   private final Drive drive;
 private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
 
+  private Pose2d latestValidPose = new Pose2d();
+  private boolean hasValidVision = false;
+  private double lastValidTime = 0.0;
+
   public VisionSubsystem(VisionIO io, Drive drive) {
     this.io = io;
     this.drive = drive;
@@ -31,7 +36,12 @@ private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
   public void periodic() {
     io.updateInputs(inputs);
 
-    // Fuse valid AprilTag poses to Drive pose estimator
+    // Decay valid vision if stale (>1s)
+    if (Timer.getFPGATimestamp() - lastValidTime > 1.0) {
+      hasValidVision = false;
+    }
+
+    // Fuse valid AprilTag poses to Drive pose estimator & track latest
     if (inputs.poseObservations != null) {
       for (PoseObservation observation : inputs.poseObservations) {
         // Filter valid observations: low ambiguity, multiple tags, reasonable distance
@@ -63,6 +73,11 @@ private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
 
           // Feed to Drive estimator
           drive.addVisionMeasurement(visionPose, observation.timestamp(), stdDevs);
+          
+          // Track latest valid pose for bump correction
+          latestValidPose = visionPose;
+          hasValidVision = true;
+          lastValidTime = Timer.getFPGATimestamp();
         }
       }
     }
@@ -123,5 +138,16 @@ private final VisionIO.VisionIOInputs inputs = new VisionIO.VisionIOInputs();
 
     return validCount > 0 ? totalDist / validCount : -1.0;
   }
-}
+
+  /** Latest vision pose that passed validation for bump correction. */
+  public Pose2d getLatestValidPose() {
+    return latestValidPose;
+  }
+
+  /** Whether we have recent valid vision pose (<1s old). */
+  public boolean hasValidVision() {
+    return hasValidVision;
+  }
+  }
+
 
