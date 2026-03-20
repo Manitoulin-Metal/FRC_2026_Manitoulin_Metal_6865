@@ -17,6 +17,8 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.climb.ClimbSubsystem;
+import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
@@ -38,6 +40,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 @SuppressWarnings("unused")
 public class RobotContainer {
 
+
   // Subsystems
   private final Drive drive;
   private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
@@ -46,6 +49,10 @@ public class RobotContainer {
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
+
+  private VisionSubsystem vision;
+
+
 
   // Controllers
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -91,7 +98,7 @@ public class RobotContainer {
                 new ModuleIOSim(TunerConstants.BackRight));
         break;
 
-      default: // REPLAY
+    default: // REPLAY
         drive =
             new Drive(
                 new GyroIO() {
@@ -116,6 +123,11 @@ public class RobotContainer {
                 });
         break;
     }
+
+    // Instantiate vision subsystem
+    vision = new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+
+
 
     // Configure default drive command
     drive.setDefaultCommand(
@@ -202,11 +214,18 @@ public class RobotContainer {
     // (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // When Button Y held, Shooter Starts up (Operator Controller) - lowered to 50 RPS for testing
+    // When Button Y held, Auto-shoot when target 25/26 in range (Operator Controller)
     controller1
         .y()
-        .whileTrue(Commands.run(() -> shooter.runShooter(70.0), shooter))
+        .whileTrue(Commands.run(() -> {
+          if (vision.hasTargetInRange()) {
+            shooter.runShooter(Constants.AUTO_SHOOT_RPS);
+          } else {
+            shooter.stopShooter();
+          }
+        }, vision, shooter))
         .onFalse(shooter.stopCommand());
+
 
     // Operator LeftBumper: Clear shooter sticky faults
     controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
@@ -217,10 +236,6 @@ public class RobotContainer {
         .and(controller1.y())
         .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
         .onFalse(shooter.stopCommand());
-
-    // |||||||||||||||||||||||||||||||||||||||||||||||||||
-    // |TO-DO: Add Drive to Shoot Command to Left Trigger|
-    // |||||||||||||||||||||||||||||||||||||||||||||||||||
 
     // Deploy agitator on X (fast shake then stow)
     controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());

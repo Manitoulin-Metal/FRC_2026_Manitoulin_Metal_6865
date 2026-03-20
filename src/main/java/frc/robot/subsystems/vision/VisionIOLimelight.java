@@ -170,7 +170,11 @@ public class VisionIOLimelight implements VisionIO {
     for (int id : tagIds) {
       inputs.tagIds[i++] = id;
     }
+
+    // Get raw fiducials for shooting range check
+    inputs.rawFiducials = frc.robot.LimelightHelpers.getRawFiducials("limelight");
   }
+
 
   /** Parses the 3D pose from a Limelight botpose array. */
   private static Pose3d parsePose(double[] rawLLArray) {
