@@ -35,6 +35,10 @@ public final class Constants {
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 70.0;
 
+  public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0;
+
+  public static final double WHIP_SLOW_SPEED = -0.15;
+
   // Vision auto positioning
   public static final int SPEAKER_TAG_ID = 26;
   // public static final int SPEAKER_TAG_ID = 0;

@@ -17,6 +17,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.auto.Shoot3BallsCommand;
 import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.Whip.WhipSubsystem;
 import frc.robot.subsystems.climb.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -46,9 +47,12 @@ public class RobotContainer {
   private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
   private final ShooterSubsystem shooter = new ShooterSubsystem();
   private final KickerSubsystem kicker = new KickerSubsystem(shooter);
+  private final WhipSubsystem whip = new WhipSubsystem(shooter);
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
+
+  private boolean whipSlowActive = false;
 
   private VisionSubsystem vision;
 
@@ -206,13 +210,6 @@ public class RobotContainer {
     // Stow intake to PID setpoint (Operator Controller)
     controller1.b().onTrue(intakeDeploy.stowCommand());
 
-    // When Right Trigger pressed, run intake rollers; when released, stop rollers
-    // (For Operator Controller)
-    // controller1
-    //     .rightTrigger(0.1)
-    //     .whileTrue(intakeRoller.intakeCommand())
-    //     .onFalse(intakeRoller.idleCommand());
-
     // Switch to X pattern when X button pressed
     // (Driver Controller)
     controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
@@ -226,15 +223,13 @@ public class RobotContainer {
     // Operator LeftBumper: Clear shooter sticky faults
     controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
 
-    // Operator RightBumper + Y: High speed shooter test (75 RPS)
-    // controller1
-    //     .rightBumper()
-    //     .and(controller1.y())
-    //     .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
-    //     .onFalse(shooter.stopCommand());
-
     // Deploy agitator on X (fast shake then stow)
+    // (Operator Controller)
     controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
+
+    // When Right Bumper pressed, Whip starts up
+    // (Operator Controller)
+    controller1.rightBumper().onTrue(whip.whipSlowCommand());
 
     // Reset gyro to 0° when B pressed
     // (Driver Controller)
@@ -245,17 +240,17 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
-    // When Left Bumper held, Climber moves downward (climbs)
-    // (Driver Controller)
-    controller.leftBumper().whileTrue(climb1.ClimbCommand(0.5));
+    // When D Pad Up held, Climber moves downward (climbs)
+    // (Operator Controller)
+    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.5));
 
-    // When Left Bumper released, Climber stops
-    // (Driver Controller)
-    controller.leftBumper().onFalse(climb1.ClimbCommand(0));
+    // When D Pad Up released, Climber stops
+    // (Operator Controller)
+    controller1.pov(-1).onTrue(climb1.ClimbCommand(0));
 
-    // When Right Bumper held, Climber Raises
-    // (Driver Controller)
-    controller.rightBumper().onTrue(climb1.ClimbCommand(-0.5));
+    // When D Pad Down held, Climber Raises
+    // (Operator Controller)
+    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.5));
 
     // Temporary: Driver LT runs kicker at -0.3 to test motor
     controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
