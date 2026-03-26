@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.6750071326676175,
-        "y": 7.276134094151213
+        "x": 3.5302951388888886,
+        "y": 3.987760416666667
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.0076890156918683,
-        "y": 7.250256776034237
+        "x": 2.554010416666667,
+        "y": 4.192465277777778
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 1.9171184022824534,
-        "y": 4.675463623395149
+        "x": 1.0738368055555556,
+        "y": 4.74359375
       },
       "prevControl": {
-        "x": 0.9171184022824534,
-        "y": 4.675463623395149
+        "x": 2.8852499551492707,
+        "y": 4.6400999032800865
       },
       "nextControl": null,
       "isLocked": false,
@@ -31,7 +31,14 @@
   "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "ClimbAutoDown",
+      "waypointRelativePos": 1.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
   "globalConstraints": {
     "maxVelocity": 2.5,
     "maxAcceleration": 2.5,
@@ -42,7 +49,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -14.036243467926408
+    "rotation": 0.0
   },
   "reversed": false,
   "folder": null,

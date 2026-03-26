@@ -158,8 +158,9 @@ public class RobotContainer {
     NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
     NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
     NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
-    NamedCommands.registerCommand("startClimb", climb1.ClimbCommand(0.5));
     NamedCommands.registerCommand("shoot3Balls", new Shoot3BallsCommand(shooter, kicker, drive));
+    NamedCommands.registerCommand("ClimbAutoDown", intakeRoller.intakeCommand().withTimeout(5.0));
+    // NamedCommands.registerCommand("ClimbAutoUp", climb1.ClimbCommand(-0.5).withTimeout(4.5));
 
     // Configure buttons
     configureButtonBindings();

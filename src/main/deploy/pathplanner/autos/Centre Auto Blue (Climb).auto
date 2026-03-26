@@ -7,7 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Climber Path"
+            "pathName": "Centre Path Blue"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbAutoDown"
           }
         }
       ]
