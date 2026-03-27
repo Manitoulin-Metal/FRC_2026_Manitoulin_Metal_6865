@@ -1,17 +1,11 @@
-# Whip Direction Fix TODO - COMPLETE ✅
+# Make Autos Use Commands for Real
 
-## Steps Completed:
-- [x] 1. Create TODO.md
-- [x] 2. Update Constants.java (threshold → 4000 RPM)
-- [x] 3. Enhance WhipSubsystem.java (tunable AutoSpeed=-0.5, manualMode flag)
-- [x] 4. New whipSlowCommand() with .finallyDo() → auto-resume periodic
-- [x] 5. Update RobotContainer RB binding → whipSlowCommand()
-- [x] 6. Test: Deploy, run shooter (Op RT), verify Whip rotates opposite dir at -0.5 duty when >66 RPS. Tune /Tuning/Whip/AutoSpeed in Shuffleboard.
-- [x] 7. Update TODO.md
+## Steps:
+- [ ] 1. Move NamedCommands registrations BEFORE the PathPlanner auto loading loop in RobotContainer.java constructor
+- [ ] 2. Add missing NamedCommands like "timedShootCommand"
+- [ ] 3. Verify build with `gradlew build`
+- [ ] 4. Test PathPlanner autos on robot (e.g. Centre Auto Blue verifies ClimbAutoDown runs)
+- [ ] 5. Add more NamedCommands for other events as needed (intake, shoot etc.)
 
-**Changes:**
-- Auto whip now negative duty (opposite dir) when shooter >66 RPS (higher threshold).
-- New dashboard: Whip/ManualMode, Tuning/Whip/AutoSpeed.
-- RB toggle: Manual slow (-0.15) overrides auto, resumes on release.
+Current status: Starting edits.
 
-Ready for robot test! Monitor Whip/SetSpeed, ShooterRPS, Condition.
