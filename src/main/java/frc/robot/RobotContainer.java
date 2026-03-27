@@ -148,28 +148,32 @@ public class RobotContainer {
         DriveCommands.driveToClimb(
             drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
-    // Register NamedCommands BEFORE loading PathPlanner autos (required for event markers to use real commands)
-    
+    // Register NamedCommands BEFORE loading PathPlanner autos (required for event markers to use
+    // real commands)
+
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
     NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
     NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
     NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
     NamedCommands.registerCommand("shoot3Balls", new Shoot3BallsCommand(shooter, kicker, drive));
-    NamedCommands.registerCommand("ClimbAutoDown", intakeRoller.intakeCommand().withTimeout(5.0));
-    NamedCommands.registerCommand("timedShootCommand", 
-      Commands.parallel(
-        Commands.run(() -> shooter.runShooter(Constants.AUTO_SHOOT_RPS), shooter),
-        kicker.kickerCommand(0.3)
-      ).withTimeout(1.5).andThen(shooter.stopCommand().andThen(kicker.stopCommand()))
-    );
-    // NamedCommands.registerCommand("ClimbAutoUp", climb1.ClimbCommand(-0.5).withTimeout(4.5));
-    
+    NamedCommands.registerCommand(
+        "ClimbAutoDown",
+        Commands.parallel(Commands.run(() -> climb1.ClimbCommand(0.5).withTimeout(5.0))));
+    NamedCommands.registerCommand(
+        "timedShootCommand",
+        Commands.parallel(
+                Commands.run(() -> shooter.runShooter(Constants.AUTO_SHOOT_RPS), shooter),
+                kicker.kickerCommand(0.3))
+            .withTimeout(1.5)
+            .andThen(shooter.stopCommand().andThen(kicker.stopCommand())));
+    NamedCommands.registerCommand(
+        "ClimbAutoUp",
+        Commands.parallel(Commands.run(() -> climb1.ClimbCommand(-0.5).withTimeout(4.5))));
+
     // This automatically loads ALL autos from the deploy folder
     for (String autoName : AutoBuilder.getAllAutoNames()) {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
-
-
 
     // Configure buttons
     configureButtonBindings();
