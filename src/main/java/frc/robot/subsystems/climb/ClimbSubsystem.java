@@ -33,6 +33,7 @@ public class ClimbSubsystem extends SubsystemBase {
    * @return a command
    */
   public Command ClimbCommand(double speed) {
+    System.out.println("Climb Is Running");
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return run(

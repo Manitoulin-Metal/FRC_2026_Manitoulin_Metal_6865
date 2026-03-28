@@ -13,6 +13,18 @@
         {
           "type": "named",
           "data": {
+            "name": "driveToClimb"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbAutoUp"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
             "name": "ClimbAutoDown"
           }
         }

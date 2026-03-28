@@ -423,7 +423,7 @@ public class DriveCommands {
               // Hub scoring direction (front face only)
               // ---------------------------------------------------
 
-              Rotation2d hubForward = tagPose.getRotation().plus(Rotation2d.fromDegrees(180));
+              Rotation2d hubForward = tagPose.getRotation().plus(Rotation2d.fromDegrees(0));
 
               // ---------------------------------------------------
               // Vector from tag to robot

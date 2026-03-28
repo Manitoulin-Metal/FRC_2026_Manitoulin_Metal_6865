@@ -52,7 +52,7 @@ public class RobotContainer {
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
 
- // private boolean whipSlowActive = true;
+  // private boolean whipSlowActive = true;
 
   private VisionSubsystem vision;
 
@@ -150,7 +150,8 @@ public class RobotContainer {
 
     // Register NamedCommands BEFORE loading PathPlanner autos (required for event markers to use
     // real commands)
-
+    NamedCommands.registerCommand("driveToShoot", DriveCommands.driveToShoot(drive, fieldLayout, 1.5, 3.0, true));
+    NamedCommands.registerCommand("driveToClimb", DriveCommands.driveToClimb(drive, fieldLayout, 1.5, 3.0, true));
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
     NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
     NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
@@ -177,9 +178,6 @@ public class RobotContainer {
                 kicker.kickerCommand(0.3))
             .withTimeout(1.5)
             .andThen(shooter.stopCommand().andThen(kicker.stopCommand())));
-    NamedCommands.registerCommand(
-        "ClimbAutoUp",
-        Commands.parallel(Commands.run(() -> climb1.ClimbCommand(-0.5).withTimeout(4.5))));
 
     // This automatically loads ALL autos from the deploy folder
     for (String autoName : AutoBuilder.getAllAutoNames()) {
@@ -194,32 +192,6 @@ public class RobotContainer {
 
   private void configureButtonBindings() {
 
-    // Hold left trigger to drive to AprilTag 26
-    // (Driver Controller)
-    /* controller
-    .leftTrigger(0.5)
-    .whileTrue(
-        Commands.defer(
-            () -> {
-              // Get Pose2d for Tag 26
-              var tagOptional = fieldLayout.getTagPose(26);
-              if (tagOptional.isEmpty()) {
-                return Commands.none(); // Do nothing if tag not found
-              }
-              Pose2d tag26Pose = tagOptional.get().toPose2d();
-
-              // Return the driveToShoot command
-              return DriveCommands.driveToShoot(
-                  drive,
-                  tag26Pose,
-                  1.5, // kP linear
-                  3.0, // kP rotation
-                  fieldLayout,
-                  !edu.wpi.first.wpilibj.RobotBase.isSimulation());
-            },
-            Set.of(drive) // <-- required subsystem set
-            ));
-            */
 
     // (Driver Controller)
     // Hold right trigger to drive to climb position (Tag 31)
@@ -254,7 +226,7 @@ public class RobotContainer {
 
     // When Right Bumper pressed, Whip starts up
     // (Operator Controller)
-    controller1.rightBumper().onTrue(whip.whipSlowCommand());
+    controller1.rightBumper().toggleOnTrue(whip.whipSlowCommand());
 
     // Reset gyro to 0° when B pressed
     // (Driver Controller)

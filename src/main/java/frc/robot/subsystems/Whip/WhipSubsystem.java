@@ -27,6 +27,7 @@ public class WhipSubsystem extends SubsystemBase {
    * @return a command
    */
   public final Command whipSlowCommand() {
+    System.out.println("Whip is Running");
     setManualMode(true);
     return Commands.run(() -> whip(Constants.WHIP_SLOW_SPEED), this).finallyDo(this::stopWhip);
   }
@@ -37,6 +38,7 @@ public class WhipSubsystem extends SubsystemBase {
   }
 
   public Command whipStopCommand() {
+    System.out.println("Whip Has Stopped");
     setManualMode(false);
     return stopCommand();
   }
