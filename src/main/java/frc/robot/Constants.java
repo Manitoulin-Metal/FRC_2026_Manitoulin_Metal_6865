@@ -33,7 +33,7 @@ public final class Constants {
   public static final int[] SHOOTING_TAG_IDS = {25, 26};
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
-  public static final double AUTO_SHOOT_RPS = 70.0;
+  public static final double AUTO_SHOOT_RPS = 75.0;
 
   public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0;
 

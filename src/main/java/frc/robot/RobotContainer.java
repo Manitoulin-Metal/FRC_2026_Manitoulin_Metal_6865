@@ -7,6 +7,7 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -150,8 +151,10 @@ public class RobotContainer {
 
     // Register NamedCommands BEFORE loading PathPlanner autos (required for event markers to use
     // real commands)
-    NamedCommands.registerCommand("driveToShoot", DriveCommands.driveToShoot(drive, fieldLayout, 1.5, 3.0, true));
-    NamedCommands.registerCommand("driveToClimb", DriveCommands.driveToClimb(drive, fieldLayout, 1.5, 3.0, true));
+    NamedCommands.registerCommand(
+        "driveToShoot", DriveCommands.driveToShoot(drive, fieldLayout, 1.5, 3.0, true));
+    NamedCommands.registerCommand(
+        "driveToClimb", DriveCommands.driveToClimb(drive, fieldLayout, 1.5, 3.0, true));
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
     NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
     NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
@@ -191,7 +194,6 @@ public class RobotContainer {
   }
 
   private void configureButtonBindings() {
-
 
     // (Driver Controller)
     // Hold right trigger to drive to climb position (Tag 31)
@@ -237,20 +239,31 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
+    controller
+        .rightBumper()
+        .whileTrue(
+            DriveCommands.positionFromTagCommand(
+                new Pose2d(new Translation2d(-35.36, 4.55), new Rotation2d(0)), null, drive, null));
+
     // When D Pad Up held, Climber moves downward (climbs)
     // (Operator Controller)
-    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.5));
+    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75));
 
     // When D Pad Up released, Climber stops
     // (Operator Controller)
     controller1.pov(-1).onTrue(climb1.ClimbCommand(0));
 
+    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75));
+
     // When Left Bumper held, RobotCentric Command
-    controller.leftBumper().whileTrue(DriveCommands.robotRelativeCommand(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+    controller
+        .leftBumper()
+        .whileTrue(
+            DriveCommands.robotRelativeCommand(
+                drive,
+                () -> -controller.getLeftY(),
+                () -> -controller.getLeftX(),
+                () -> -controller.getRightX()));
 
     // When D Pad Down held, Climber Raises
     // (Operator Controller)

@@ -7,20 +7,12 @@
 
 package frc.robot.commands;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
-
-import org.littletonrobotics.junction.Logger;
-
-// All imports between: Line 9 - Line 30
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathConstraints;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -33,13 +25,23 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.LimelightHelpers;
 import frc.robot.subsystems.drive.Drive;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
@@ -51,6 +53,22 @@ public class DriveCommands {
   private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
   private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
+
+  static boolean onTargetLL = false;
+
+  // Create varibles for autoalign
+  static double x = 0;
+  static double y = 0;
+  static double d = 0;
+
+  // PID loops for autoalign
+  private static final PIDController xController = new PIDController(2.3, 0, 0.1);
+  private static final PIDController yController = new PIDController(2.3, 0, 0.1);
+  private static final PIDController deltaController = new PIDController(2.3, 0, 0.1);
+
+  private static double vx;
+  private static double vy;
+  private static double vd;
 
   private DriveCommands() {
     // Put all DriveCommands here
@@ -70,47 +88,40 @@ public class DriveCommands {
         .getTranslation();
   }
   // Robot Relative For Target
-  public static void RobotRelativeDrive(
-      Drive drive,
-      double x,
-      double y,
-      double omega) {
-          // Get linear velocity
-          Translation2d linearVelocity = new Translation2d(x,y);
+  public static void RobotRelativeDrive(Drive drive, double x, double y, double omega) {
+    // Get linear velocity
+    Translation2d linearVelocity = new Translation2d(x, y);
 
-          // Apply rotation deadband
-          double rotVelocity = MathUtil.applyDeadband(omega, DEADBAND);
+    // Apply rotation deadband
+    double rotVelocity = MathUtil.applyDeadband(omega, DEADBAND);
 
-          // Convert to field relative speeds & send command
-          ChassisSpeeds speeds =
-              new ChassisSpeeds(
-                  linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-                  linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-                  rotVelocity * drive.getMaxAngularSpeedRadPerSec());
-                drive.runVelocity(speeds);
- 
+    // Convert to field relative speeds & send command
+    ChassisSpeeds speeds =
+        new ChassisSpeeds(
+            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+            rotVelocity * drive.getMaxAngularSpeedRadPerSec());
+    drive.runVelocity(speeds);
   }
 
   // RobotRelative command
-  public static Command robotRelativeCommand(Drive drive,
+  public static Command robotRelativeCommand(
+      Drive drive,
       DoubleSupplier xSupplier,
       DoubleSupplier ySupplier,
-      DoubleSupplier omegaSupplier)
-      {
-        return Commands.run(
-            () -> 
-        {
-            Translation2d linearVelocity =
+      DoubleSupplier omegaSupplier) {
+    return Commands.run(
+        () -> {
+          Translation2d linearVelocity =
               getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
           // Apply rotation deadband
-            double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
-            omega = Math.copySign(omega * omega, omega);
+          double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+          omega = Math.copySign(omega * omega, omega);
 
-            RobotRelativeDrive(drive, linearVelocity.getX(), linearVelocity.getY(), omega);
-        }
-    );
-      }
+          RobotRelativeDrive(drive, linearVelocity.getX(), linearVelocity.getY(), omega);
+        });
+  }
   /**
    * Field relative drive command using two joysticks (controlling linear and angular velocities).
    */
@@ -586,7 +597,7 @@ public class DriveCommands {
 
               // Vision update for real robot
               if (useLimelight
-                  && LimelightHelpers.getTV("limelight")
+                  && LimelightHelpers.getTV("limelight0")
                   && LimelightHelpers.getFiducialID("limelight") == 26) {
                 var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
                 if (estimate != null && estimate.pose != null) {
@@ -768,5 +779,73 @@ public class DriveCommands {
               return distance < 0.05 && angleError < 0.05;
             })
         .andThen(Commands.runOnce(drive::stop));
+  }
+
+  public Command path_find_to(Pose2d pose, LinearVelocity endVelocity) {
+    // Drive torward specified field-relative position with given constraints
+    return AutoBuilder.pathfindToPose(
+        pose,
+        new PathConstraints(
+            2,
+            1,
+            // angular speeds and acceleration parameters
+            0.5 * 3.141592,
+            0.25 * 3.141592),
+        endVelocity);
+  }
+
+  public static Command positionFromTagCommand(
+      Pose2d targetOffset, String limelight, Drive drive, int[] ids) {
+    return Commands.run(
+            () -> {
+
+              // Get values of target position
+              double tx = targetOffset.getX();
+              double ty = targetOffset.getY();
+              double td = targetOffset.getRotation().getRadians();
+
+              // Retrive limelight data
+              LimelightHelpers.SetFiducialIDFiltersOverride(limelight, ids);
+              Pose3d position = LimelightHelpers.getBotPose3d_TargetSpace(limelight);
+
+              // Get values from Limelight
+              x = position.getX();
+              y = position.getZ();
+              d = position.getRotation().getY();
+
+              // Calulate velocities with PID
+              vx = xController.calculate(x, tx);
+              vy = yController.calculate(y, ty);
+              vd = deltaController.calculate(d, td);
+
+              // Push numbers to smartDasboard
+              SmartDashboard.putNumber("VX: ", vx);
+              SmartDashboard.putNumber("VY: ", vy);
+              SmartDashboard.putNumber("VD: ", vd);
+
+              SmartDashboard.putNumber("measured rotation to target: ", d);
+
+              SmartDashboard.putNumber("tagID", LimelightHelpers.getFiducialID(limelight));
+
+              // Check to see if:
+              // 1: not seeing Apriltag or disconnected limelight
+              // (as all values from invalid tags are either -1 or null)
+              if (!(LimelightHelpers.getFiducialID(limelight) > -1)) {
+                vx = 0;
+                vy = 0;
+                vd = 0;
+              }
+              // 2: if on target
+              else if (Math.abs(vx) < 0.04 && Math.abs(vy) < 0.04 && Math.abs(vd) < 0.1) {
+                onTargetLL = true;
+              } else {
+                onTargetLL = false;
+              }
+
+              // Run swerve with calculated velocities
+              RobotRelativeDrive(drive, vx, vy, vd);
+            })
+        // Turn off onTarget flag when finished with autotargeting
+        .finallyDo(() -> onTargetLL = false);
   }
 }
