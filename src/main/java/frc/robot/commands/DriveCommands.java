@@ -7,6 +7,16 @@
 
 package frc.robot.commands;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+
+import org.littletonrobotics.junction.Logger;
+
 // All imports between: Line 9 - Line 30
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.MathUtil;
@@ -30,14 +40,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.LimelightHelpers;
 import frc.robot.subsystems.drive.Drive;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
-import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
@@ -67,7 +69,48 @@ public class DriveCommands {
         .transformBy(new Transform2d(linearMagnitude, 0.0, Rotation2d.kZero))
         .getTranslation();
   }
+  // Robot Relative For Target
+  public static void RobotRelativeDrive(
+      Drive drive,
+      double x,
+      double y,
+      double omega) {
+          // Get linear velocity
+          Translation2d linearVelocity = new Translation2d(x,y);
 
+          // Apply rotation deadband
+          double rotVelocity = MathUtil.applyDeadband(omega, DEADBAND);
+
+          // Convert to field relative speeds & send command
+          ChassisSpeeds speeds =
+              new ChassisSpeeds(
+                  linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                  linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                  rotVelocity * drive.getMaxAngularSpeedRadPerSec());
+                drive.runVelocity(speeds);
+ 
+  }
+
+  // RobotRelative command
+  public static Command robotRelativeCommand(Drive drive,
+      DoubleSupplier xSupplier,
+      DoubleSupplier ySupplier,
+      DoubleSupplier omegaSupplier)
+      {
+        return Commands.run(
+            () -> 
+        {
+            Translation2d linearVelocity =
+              getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+
+          // Apply rotation deadband
+            double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+            omega = Math.copySign(omega * omega, omega);
+
+            RobotRelativeDrive(drive, linearVelocity.getX(), linearVelocity.getY(), omega);
+        }
+    );
+      }
   /**
    * Field relative drive command using two joysticks (controlling linear and angular velocities).
    */

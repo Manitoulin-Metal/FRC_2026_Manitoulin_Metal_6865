@@ -245,18 +245,19 @@ public class RobotContainer {
     // (Operator Controller)
     controller1.pov(-1).onTrue(climb1.ClimbCommand(0));
 
+    // When Left Bumper held, RobotCentric Command
+    controller.leftBumper().whileTrue(DriveCommands.robotRelativeCommand(
+            drive,
+            () -> -controller.getLeftY(),
+            () -> -controller.getLeftX(),
+            () -> -controller.getRightX()));
+
     // When D Pad Down held, Climber Raises
     // (Operator Controller)
     controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.5));
 
     // Temporary: Driver LT runs kicker at -0.3 to test motor
     controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
-
-    // Driver Y: Test shooter open-loop 30% duty (hardware test, previously unused)
-    // controller
-    //     .y()
-    //     .whileTrue(Commands.run(() -> shooter.runOpenLoop(0.2), shooter))
-    //     .onFalse(shooter.stopCommand());
 
     // -------- New controls as of 3/20 based on driver input ----------
 
