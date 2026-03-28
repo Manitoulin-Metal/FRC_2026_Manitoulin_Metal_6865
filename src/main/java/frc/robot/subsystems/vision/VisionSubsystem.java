@@ -13,7 +13,6 @@ import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionIO.PoseObservation;
 import java.util.List;
 
-@SuppressWarnings("unused")
 public class VisionSubsystem extends SubsystemBase {
 
   private final VisionIO io;

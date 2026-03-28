@@ -52,7 +52,7 @@ public class RobotContainer {
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
   private final LEDSubsystem led = new LEDSubsystem();
 
-  private boolean whipSlowActive = false;
+ // private boolean whipSlowActive = true;
 
   private VisionSubsystem vision;
 
@@ -157,8 +157,19 @@ public class RobotContainer {
     NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
     NamedCommands.registerCommand("shoot3Balls", new Shoot3BallsCommand(shooter, kicker, drive));
     NamedCommands.registerCommand(
+        "ClimbAutoUp",
+        Commands.runOnce(
+            () -> {
+              System.out.println("RaiseClimber TRIGGERED");
+              climb1.ClimbCommand(0.5).withTimeout(4).schedule();
+            }));
+    NamedCommands.registerCommand(
         "ClimbAutoDown",
-        Commands.parallel(Commands.run(() -> climb1.ClimbCommand(0.5).withTimeout(5.0))));
+        Commands.runOnce(
+            () -> {
+              System.out.println("Raising Robot");
+              climb1.ClimbCommand(-0.5).withTimeout(6).schedule();
+            }));
     NamedCommands.registerCommand(
         "timedShootCommand",
         Commands.parallel(
