@@ -69,19 +69,20 @@ public class TunerConstants {
                   .withStatorCurrentLimit(Amps.of(75))
                   .withStatorCurrentLimitEnable(true));
   private static final CANcoderConfiguration encoderInitialConfigs = new CANcoderConfiguration();
-  // Configs for the Pigeon 2; leave this null to skip applying Pigeon 2 configs
+
+  // Configs for the Pigeon 2, leave this null to skip applying Pigeon 2 configs
   private static final Pigeon2Configuration pigeonConfigs = null;
 
-  // CAN bus that the devices are located on;
+  // CAN bus that the devices are located on
   // All swerve devices must share the same CAN bus
   public static final CANBus kCANBus = new CANBus("DriveCanivore", "./logs/example.hoot");
 
-  // Theoretical free speed (m/s) at 12 V applied output;
-  // This needs to be tuned to your individual robot
-  public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(5.45);
+  // Theoretical free speed (m/s) at 12 V applied output.
+  // This needs to be tuned to your individual robot.
+  public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(5.21);
 
-  // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
-  // This may need to be tuned to your individual robot
+  // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns.
+  // This may need to be tuned to your individual robot.
   private static final double kCoupleRatio = 3.5714285714285716;
 
   private static final double kDriveGearRatio = 6.122448979591837;
@@ -94,8 +95,8 @@ public class TunerConstants {
   private static final int kPigeonId = 2;
 
   // These are only used for simulation
-  private static final MomentOfInertia kSteerInertia = KilogramSquareMeters.of(0.01);
-  private static final MomentOfInertia kDriveInertia = KilogramSquareMeters.of(0.01);
+  private static final MomentOfInertia kSteerInertia = KilogramSquareMeters.of(0.004);
+  private static final MomentOfInertia kDriveInertia = KilogramSquareMeters.of(0.025);
   // Simulated voltage necessary to overcome friction
   private static final Voltage kSteerFrictionVoltage = Volts.of(0.2);
   private static final Voltage kDriveFrictionVoltage = Volts.of(0.2);

@@ -27,21 +27,19 @@ public final class Constants {
       TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
   public static final double SHOOTER_KICKER_RPM_THRESHOLD =
       4200.0; // Triggers kicker at shooter 70.0 RPS (70 * 60)
-  public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
+  public static final String DONT_SEE_TAG_TIMEOUT_SECS =
+      null; // Set to null to disable timeout and keep using last known tag data indefinitely
 
-  // public static final int[] SHOOTING_TAG_IDS = {};
-  public static final int[] SHOOTING_TAG_IDS = {25, 26};
+  public static final int[] SHOOTING_TAG_IDS = {25, 26}; // Add Red Alliance Tag IDs into this array
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 75.0;
-
   public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0;
-
-  public static final double WHIP_SLOW_SPEED = -0.15;
+  public static final double WHIP_SLOW_SPEED =
+      -0.15; // Debate over whether this should be negative or positive, but it is negative for now.
 
   // Vision auto positioning
   public static final int SPEAKER_TAG_ID = 26;
-  // public static final int SPEAKER_TAG_ID = 0;
   public static final double AUTO_VISION_KP_LINEAR = 2.0;
   public static final double AUTO_VISION_KP_ANGULAR = 4.0;
 

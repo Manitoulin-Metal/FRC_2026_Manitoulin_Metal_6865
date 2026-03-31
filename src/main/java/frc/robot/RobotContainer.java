@@ -195,31 +195,37 @@ public class RobotContainer {
 
   private void configureButtonBindings() {
 
-    // (Driver Controller)
-    // Hold right trigger to drive to climb position (Tag 31)
-    controller
-        .rightTrigger(0.5)
-        .whileTrue(
-            DriveCommands.driveToClimb(
-                drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
-
-    // Deploy intake to PID setpoint (Operator Controller)
+    // Deploy intake to PID setpoint
+    // (Operator Controller)
     controller1.a().onTrue(intakeDeploy.deployCommand());
 
-    // Stow intake to PID setpoint (Operator Controller)
+    // Stow intake to PID setpoint
+    // (Operator Controller)
     controller1.b().onTrue(intakeDeploy.stowCommand());
 
-    // Switch to X pattern when X button pressed
-    // (Driver Controller)
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
-
-    // When Button Y held, Vision-distance adjusted auto-shoot (Operator Controller)
+    // When Button Y held, Vision-distance adjusted auto-shoot
+    // (Operator Controller)
     controller1
         .y()
         .whileTrue(Commands.run(() -> shooter.runVisionShooter(vision), vision, shooter))
         .onFalse(shooter.stopCommand());
 
-    // Operator LeftBumper: Clear shooter sticky faults
+    // When Left Trigger held, Spin Intake Rollers
+    // (Operator Controller)
+    controller1
+        .leftTrigger(0.1)
+        .whileTrue(intakeRoller.intakeCommand())
+        .onFalse(intakeRoller.idleCommand());
+
+    // When Right Trigger held, run Shooter + Kicker
+    // (Operator Controller)
+    controller1
+        .rightTrigger(0.1)
+        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
+        .onFalse(shooter.stopCommand());
+
+    // When LeftBumper pressed, Clear shooter sticky faults
+    // (Operator Controller)
     controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
 
     // Deploy agitator on X (fast shake then stow)
@@ -230,6 +236,18 @@ public class RobotContainer {
     // (Operator Controller)
     controller1.rightBumper().toggleOnTrue(whip.whipSlowCommand());
 
+    // When D Pad Up held, Climber moves downward (climbs)
+    // (Operator Controller)
+    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75));
+
+    // When D Pad Up released, Climber stops
+    // (Operator Controller)
+    controller1.pov(-1).onTrue(climb1.ClimbCommand(0));
+
+    // When D Pad Down held, Climber moves upward (lowers robot)
+    // (Operator Controller)
+    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75));
+
     // Reset gyro to 0° when B pressed
     // (Driver Controller)
     controller
@@ -239,23 +257,28 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
+    // Switch to X pattern when X button pressed
+    // (Driver Controller)
+    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+
+    // When Right Bumper held, The limelights get position from AprilTags and drive to it
+    // (Driver Controller)
     controller
         .rightBumper()
         .whileTrue(
             DriveCommands.positionFromTagCommand(
                 new Pose2d(new Translation2d(-35.36, 4.55), new Rotation2d(0)), null, drive, null));
 
-    // When D Pad Up held, Climber moves downward (climbs)
-    // (Operator Controller)
-    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75));
-
-    // When D Pad Up released, Climber stops
-    // (Operator Controller)
-    controller1.pov(-1).onTrue(climb1.ClimbCommand(0));
-
-    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75));
+    // Hold right trigger to drive to climb position (Tag 31)
+    // (Driver Controller)
+    controller
+        .rightTrigger(0.5)
+        .whileTrue(
+            DriveCommands.driveToClimb(
+                drive, fieldLayout, 1.5, 3.0, !edu.wpi.first.wpilibj.RobotBase.isSimulation()));
 
     // When Left Bumper held, RobotCentric Command
+    // (Driver Controller)
     controller
         .leftBumper()
         .whileTrue(
@@ -265,26 +288,9 @@ public class RobotContainer {
                 () -> -controller.getLeftX(),
                 () -> -controller.getRightX()));
 
-    // When D Pad Down held, Climber Raises
-    // (Operator Controller)
-    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.5));
-
     // Temporary: Driver LT runs kicker at -0.3 to test motor
-    controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
+    // controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
 
-    // -------- New controls as of 3/20 based on driver input ----------
-
-    // (Operator) Left Trigger: Spin Intake Rollers
-    controller1
-        .leftTrigger(0.1)
-        .whileTrue(intakeRoller.intakeCommand())
-        .onFalse(intakeRoller.idleCommand());
-
-    // (Operator) Right Trigger: Shooter + Kicker
-    controller1
-        .rightTrigger(0.1)
-        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
-        .onFalse(shooter.stopCommand());
   }
 
   /** Returns the autonomous command selected on dashboard */
