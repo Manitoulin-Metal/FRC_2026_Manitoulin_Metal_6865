@@ -12,16 +12,21 @@ import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.networktables.DoubleEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
 @SuppressWarnings("removal")
 public class IntakeDeploySubsystem extends SubsystemBase {
   // Initialize the motor (Flex API - matches IntakeRollerSubsystem)
   private final SparkFlex intakeDeploy = new SparkFlex(59, MotorType.kBrushless);
+
+  // Hall effect sensor to indicate when intake is in stowed position.
+  private final DigitalInput hallSensor = new DigitalInput(9); // On DIO Port 9
 
   public static final double STOW_POSITION = 0.0;
   public static final double DEPLOY_POSITION = 16550.0; // degrees, tune
@@ -40,13 +45,13 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     pid.setTolerance(3.0); // position tolerance (degrees)
     var table = NetworkTableInstance.getDefault().getTable("Tuning/Deploy");
 
-    kP = table.getDoubleTopic("kP").getEntry(0.005);
+    kP = table.getDoubleTopic("kP").getEntry(0.);
     kI = table.getDoubleTopic("kI").getEntry(0.0);
     kD = table.getDoubleTopic("kD").getEntry(0.0);
 
-    kP.set(0.005);
-    kI.set(0.0);
-    kD.set(0.0);
+    kP.set(Constants.IntakeDeploy.kP);
+    kI.set(Constants.IntakeDeploy.kI);
+    kD.set(Constants.IntakeDeploy.kD);
   }
 
   private double goalPosition = 0.0;
@@ -57,6 +62,10 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
   public void stow() {
     goalPosition = STOW_POSITION;
+  }
+
+  public boolean isDeployed() {
+    return hallSensor.get();
   }
 
   // private void runPID() {
@@ -72,10 +81,16 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
   public boolean atStowPosition() {
     return Math.abs(pid.getPositionError()) < 3.0;
+
+    // Insert code to check magnet
   }
 
   public Command deployCommand() {
-    return Commands.runOnce(this::deploy).andThen(Commands.waitUntil(this::atDeployPosition));
+    return Commands.either(
+        Commands.runOnce(this::deploy)
+            .andThen(Commands.waitUntil(this::atDeployPosition)), // This runs if condition is true
+        Commands.none(), // This runs if condition is false
+        () -> !isDeployed()); // This is the condition to check
   }
 
   public Command stowCommand() {
@@ -108,8 +123,10 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     intakeDeploy.setVoltage(output);
 
     Logger.recordOutput("IntakeDeploy/Position", position);
-    SmartDashboard.putNumber("IntakeDeploy/Position", position);
     Logger.recordOutput("IntakeDeploy/PIDError", pid.getPositionError());
+
+    SmartDashboard.putBoolean("IntakeDeploy/isDeployed", isDeployed());
+    SmartDashboard.putNumber("IntakeDeploy/Position", position);
     SmartDashboard.putNumber("IntakeDeploy/PIDError", pid.getPositionError());
     Logger.recordOutput(
         "IntakeDeploy/PIDOutput", 0.0); // Capture from runPID if needed: store output var
