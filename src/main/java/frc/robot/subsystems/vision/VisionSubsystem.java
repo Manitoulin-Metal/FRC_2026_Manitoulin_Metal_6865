@@ -6,12 +6,14 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionIO.PoseObservation;
 import java.util.List;
+import java.util.Set;
 
 public class VisionSubsystem extends SubsystemBase {
 
@@ -22,6 +24,17 @@ public class VisionSubsystem extends SubsystemBase {
   private Pose2d latestValidPose = new Pose2d();
   private boolean hasValidVision = false;
   private double lastValidTime = 0.0;
+  private static final Set<Integer> SHOOTING_TAGS = Set.of(9, 25);
+
+  public int getTargetTagId() {
+    var alliance = DriverStation.getAlliance();
+
+    if (alliance.isPresent() && alliance.get() == Alliance.Red) {
+      return 9;
+    }
+
+    return 25; // Blue default
+  }
 
   public VisionSubsystem(VisionIO io, Drive drive) {
     this.io = io;
@@ -79,16 +92,36 @@ public class VisionSubsystem extends SubsystemBase {
     }
   }
 
-  public boolean hasTag(int id) {
-    return inputs.latestTargetObservation != null;
-  }
-
-  public double getTX() {
+  public double getTxDegrees() {
+    if (inputs.latestTargetObservation == null) return 0.0;
     return inputs.latestTargetObservation.tx().getDegrees();
   }
 
-  public double getTY() {
+  public double getTyDegrees() {
+    if (inputs.latestTargetObservation == null) return 0.0;
     return inputs.latestTargetObservation.ty().getDegrees();
+  }
+
+  public boolean hasTarget() {
+    return inputs.latestTargetObservation != null;
+  }
+
+  public boolean hasTag(int id) {
+    for (int i = 0; i < inputs.rawFiducialCount; i++) {
+      if (inputs.rawFiducialIDs[i] == id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public boolean hasShootingTag() {
+    for (int i = 0; i < inputs.rawFiducialCount; i++) {
+      if (SHOOTING_TAGS.contains(inputs.rawFiducialIDs[i])) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -112,7 +145,24 @@ public class VisionSubsystem extends SubsystemBase {
   }
 
   /** Gets average distance to valid shooting targets (tags 25/26 in range), or -1 if none. */
-  @SuppressWarnings("unlikely-arg-type")
+  public double getDistanceToTarget() {
+    if (inputs.latestTargetObservation == null) return -1.0;
+
+    double bestDist = Double.MAX_VALUE;
+
+    for (int i = 0; i < inputs.rawFiducialCount; i++) {
+      if (SHOOTING_TAGS.contains(inputs.rawFiducialIDs[i])) {
+        bestDist = Math.min(bestDist, inputs.rawFiducialDistances[i]);
+      }
+    }
+
+    return bestDist == Double.MAX_VALUE ? -1.0 : bestDist;
+  }
+
+  public boolean isReadyToShoot() {
+    return hasShootingTag() && Math.abs(getTxDegrees()) < 1.0 && getDistanceToTarget() > 0;
+  }
+
   public double getShootingTargetDistance() {
     if (inputs.rawFiducialCount == 0) {
       return -1.0;

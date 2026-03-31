@@ -26,6 +26,8 @@ import java.util.function.Supplier;
 /** IO implementation for real Limelight hardware. */
 public class VisionIOLimelight implements VisionIO {
 
+  private final String name;
+
   private final Supplier<Rotation2d> rotationSupplier;
 
   private final DoubleArrayPublisher orientationPublisher;
@@ -47,6 +49,7 @@ public class VisionIOLimelight implements VisionIO {
    * @param rotationSupplier Supplier for the current estimated rotation, used for MegaTag 2.
    */
   public VisionIOLimelight(String name, Supplier<Rotation2d> rotationSupplier) {
+    this.name = name;
 
     var table = NetworkTableInstance.getDefault().getTable(name);
 
@@ -162,7 +165,7 @@ public class VisionIOLimelight implements VisionIO {
     }
 
     // Get raw fiducials for shooting range check
-    var rawFiducials = frc.robot.LimelightHelpers.getRawFiducials("limelight");
+    var rawFiducials = frc.robot.LimelightHelpers.getRawFiducials(name);
     inputs.rawFiducialCount = rawFiducials.length;
     inputs.rawFiducialIDs = new int[rawFiducials.length];
     inputs.rawFiducialDistances = new double[rawFiducials.length];

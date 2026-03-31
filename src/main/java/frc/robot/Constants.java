@@ -39,9 +39,16 @@ public final class Constants {
 
   public static final double WHIP_SLOW_SPEED = -0.15;
 
+  public static double getRPMForDistance(double distance) {
+    if (distance < 2.0) return 2500;
+    if (distance < 3.0) return 3000;
+    if (distance < 4.0) return 3500;
+    return 4000;
+  }
+
   // Vision auto positioning
-  public static final int SPEAKER_TAG_ID = 26;
-  // public static final int SPEAKER_TAG_ID = 0;
+  public static final int HUB_TAG_ID = 25;
+  // public static final int HUB_TAG_ID = 0;
   public static final double AUTO_VISION_KP_LINEAR = 2.0;
   public static final double AUTO_VISION_KP_ANGULAR = 4.0;
 
