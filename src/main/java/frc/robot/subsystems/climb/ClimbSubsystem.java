@@ -9,13 +9,17 @@ import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 
 public class ClimbSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
 
   SparkFlex climb1 = new SparkFlex(60, MotorType.kBrushless);
+  private final DigitalInput limitSwitch = new DigitalInput(Constants.Climb.LIMIT_SWITCH_CHANNEL);
 
   /** Creates a new Subsystem. */
   @SuppressWarnings("removal")
@@ -32,8 +36,20 @@ public class ClimbSubsystem extends SubsystemBase {
    *
    * @return a command
    */
+  public Command StopClimbCommand(double speed) {
+    return run(
+        () -> {
+          stopClimber(0);
+        });
+  }
+
   public Command ClimbCommand(double speed) {
     System.out.println("Climb Is Running");
+    if (speed > 0 && !limitSwitch.get()) { // !get() = pressed (active low)
+      climb1.set(0);
+    } else {
+      climb1.set(speed);
+    }
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return run(
@@ -43,7 +59,20 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void runClimber(double speed) {
-    climb1.set(speed);
+    if (speed > 0 && !limitSwitch.get()) { // !get() = pressed (active low)
+      climb1.set(0);
+    } else {
+      climb1.set(speed);
+    }
+  }
+
+  public void stopClimber(double speed) {
+    // Stop the climber motor immediately
+    climb1.set(0);
+  }
+
+  public boolean isLimitSwitchPressed() {
+    return !limitSwitch.get();
   }
 
   /**
@@ -60,7 +89,7 @@ public class ClimbSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
+    SmartDashboard.putBoolean("Climb/LimitSwitchPressed", isLimitSwitchPressed());
   }
 
   @Override

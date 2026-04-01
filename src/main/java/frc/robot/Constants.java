@@ -83,6 +83,10 @@ public final class Constants {
     public static final double POSITION_TOLERANCE_ROT = 0.05;
   }
 
+  public static class Climb {
+    public static final int LIMIT_SWITCH_CHANNEL = 8;
+  }
+
   public static enum Mode {
     /** Running on a real robot. */
     REAL,

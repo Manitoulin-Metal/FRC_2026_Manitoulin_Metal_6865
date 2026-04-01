@@ -246,8 +246,8 @@ public class RobotContainer {
                 }));
 
     // Climb controls
-    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75));
-    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75));
+    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75)).onFalse(climb1.ClimbCommand(0));
+    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75)).onFalse(climb1.ClimbCommand(0));
 
     // Intake controls
     controller1
