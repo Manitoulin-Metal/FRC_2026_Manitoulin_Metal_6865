@@ -76,7 +76,7 @@ public final class Constants {
   public static class IntakeDeploy {
     public static final double kP = 0.005;
     public static final double kI = 0.0;
-    public static final double kD = 0.0;
+    public static final double kD = 0.000;
     public static final double kFF = 0.0;
     public static final double DEPLOY_SETPOINT_ROT = 5.0;
     public static final double STOW_SETPOINT_ROT = 0.0;
