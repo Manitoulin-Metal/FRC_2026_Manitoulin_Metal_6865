@@ -27,32 +27,28 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   public static final double DEPLOY_POSITION = 16550.0;
 
   // NetworkTables tunables
-  private final DoubleEntry deployPositionEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("deployPosition")
-          .getEntry(DEPLOY_POSITION);
+  private final DoubleEntry deployPositionEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("deployPosition")
+      .getEntry(DEPLOY_POSITION);
 
   private final DoubleEntry kPEntry;
   private final DoubleEntry kIEntry;
   private final DoubleEntry kDEntry;
-  private final DoubleEntry holdVoltageEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("holdVoltage")
-          .getEntry(0.35);
+  private final DoubleEntry holdVoltageEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("holdVoltage")
+      .getEntry(0.2);
 
-  private final DoubleEntry rampThresholdEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("rampThreshold")
-          .getEntry(50.0);
+  private final DoubleEntry rampThresholdEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("rampThreshold")
+      .getEntry(1500);
 
-  private final DoubleEntry positionThresholdEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("positionThreshold")
-          .getEntry(3.0);
+  private final DoubleEntry positionThresholdEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("positionThreshold")
+      .getEntry(75);
 
   private double getDeployPosition() {
     return deployPositionEntry.get();
@@ -120,9 +116,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     return Commands.runOnce(this::stow)
         .andThen(
             Commands.waitUntil(
-                () ->
-                    Math.abs(intakeDeploy.getEncoder().getPosition() * 360.0 - STOW_POSITION)
-                        < positionThresholdEntry.get()));
+                () -> Math.abs(intakeDeploy.getEncoder().getPosition() * 360.0 - STOW_POSITION) < positionThresholdEntry
+                    .get()));
   }
 
   public Command deployAgitatorCommand() {
