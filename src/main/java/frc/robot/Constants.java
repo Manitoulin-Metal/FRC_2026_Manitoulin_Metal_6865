@@ -34,7 +34,7 @@ public final class Constants {
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 75.0;
-
+  public static final double KICKER_SPEED = 0.8;
   public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0;
 
   public static final double WHIP_SLOW_SPEED = -0.15;
@@ -81,6 +81,10 @@ public final class Constants {
     public static final double DEPLOY_SETPOINT_ROT = 5.0;
     public static final double STOW_SETPOINT_ROT = 0.0;
     public static final double POSITION_TOLERANCE_ROT = 0.05;
+  }
+
+  public static class Climb {
+    public static final int LIMIT_SWITCH_CHANNEL = 8;
   }
 
   public static enum Mode {

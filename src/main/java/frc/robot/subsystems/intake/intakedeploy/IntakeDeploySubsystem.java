@@ -36,11 +36,10 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final DoubleEntry kPEntry;
   private final DoubleEntry kIEntry;
   private final DoubleEntry kDEntry;
-  private final DoubleEntry holdVoltageEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("holdVoltage")
-          .getEntry(0.8);
+  private final DoubleEntry holdVoltageEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("holdVoltage")
+      .getEntry(0.2);
 
   private final DoubleEntry rampThresholdEntry =
       NetworkTableInstance.getDefault()
@@ -48,11 +47,10 @@ public class IntakeDeploySubsystem extends SubsystemBase {
           .getDoubleTopic("rampThreshold")
           .getEntry(1500);
 
-  private final DoubleEntry positionThresholdEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("positionThreshold")
-          .getEntry(50);
+  private final DoubleEntry positionThresholdEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("positionThreshold")
+      .getEntry(75);
 
   private double getDeployPosition() {
     return deployPositionEntry.get();
@@ -101,6 +99,10 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   public boolean isDeployed() {
+    return hallSensor.get();
+  }
+
+  public boolean isStowed() {
     return hallSensor.get();
   }
 
