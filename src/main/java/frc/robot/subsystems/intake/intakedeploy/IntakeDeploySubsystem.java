@@ -27,25 +27,29 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   public static final double DEPLOY_POSITION = 18000.0;
 
   // NetworkTables tunables
-  private final DoubleEntry deployPositionEntry = NetworkTableInstance.getDefault()
-      .getTable("Tuning/Deploy")
-      .getDoubleTopic("deployPosition")
-      .getEntry(DEPLOY_POSITION);
+  private final DoubleEntry deployPositionEntry =
+      NetworkTableInstance.getDefault()
+          .getTable("Tuning/Deploy")
+          .getDoubleTopic("deployPosition")
+          .getEntry(DEPLOY_POSITION);
 
-  private final DoubleEntry holdVoltageEntry = NetworkTableInstance.getDefault()
-      .getTable("Tuning/Deploy")
-      .getDoubleTopic("holdVoltage")
-      .getEntry(0.2);
+  private final DoubleEntry holdVoltageEntry =
+      NetworkTableInstance.getDefault()
+          .getTable("Tuning/Deploy")
+          .getDoubleTopic("holdVoltage")
+          .getEntry(0.2);
 
-  private final DoubleEntry rampThresholdEntry = NetworkTableInstance.getDefault()
-      .getTable("Tuning/Deploy")
-      .getDoubleTopic("rampThreshold")
-      .getEntry(1500);
+  private final DoubleEntry rampThresholdEntry =
+      NetworkTableInstance.getDefault()
+          .getTable("Tuning/Deploy")
+          .getDoubleTopic("rampThreshold")
+          .getEntry(1500);
 
-  private final DoubleEntry positionThresholdEntry = NetworkTableInstance.getDefault()
-      .getTable("Tuning/Deploy")
-      .getDoubleTopic("positionThreshold")
-      .getEntry(500); // start with bigger threshold
+  private final DoubleEntry positionThresholdEntry =
+      NetworkTableInstance.getDefault()
+          .getTable("Tuning/Deploy")
+          .getDoubleTopic("positionThreshold")
+          .getEntry(500); // start with bigger threshold
 
   private final DoubleEntry kPEntry;
   private final DoubleEntry kIEntry;
@@ -79,10 +83,10 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     kDEntry.set(Constants.IntakeDeploy.kD);
   }
 
-  // Explose motor so robotcontainer can access encoder position for auto-homing
+  // Expose motor so robotcontainer can access encoder position for auto-homing
   // and other logic if needed
   public SparkFlex getDeployMotor() {
-    return deployMotor; // or whatever your motor variable is called
+    return deployMotor;
   }
 
   private double getDeployPosition() {
@@ -132,7 +136,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
         Commands.runOnce(this::stow).andThen(Commands.waitUntil(this::atStowPosition)),
         Commands.none(),
         () -> !isStowed() // only run if not already stowed
-    );
+        );
   }
 
   @Override
@@ -153,7 +157,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     }
 
     // Hold voltage if very close to stowed
-    if (isStowing && Math.abs(distanceToGoal) < positionThresholdEntry.get() && isStowed()) {
+    if (isStowing && Math.abs(distanceToGoal) < positionThresholdEntry.get() && isDeployed()) {
       deployMotor.setVoltage(-holdVoltageEntry.get());
       isHolding = true;
     } else {
@@ -193,6 +197,5 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   @Override
-  public void simulationPeriodic() {
-  }
+  public void simulationPeriodic() {}
 }
