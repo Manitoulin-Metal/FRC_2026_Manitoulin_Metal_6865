@@ -34,7 +34,7 @@ public final class Constants {
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 75.0;
-
+  public static final double KICKER_SPEED = 0.8;
   public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0;
 
   public static final double WHIP_SLOW_SPEED = -0.15;
