@@ -59,10 +59,14 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     var table = NetworkTableInstance.getDefault().getTable("Tuning/Deploy");
 
     deployPositionEntry = table.getDoubleTopic("deployPosition").getEntry(DEFAULT_DEPLOY_POSITION);
-    holdVoltageEntry = table.getDoubleTopic("holdVoltage").getEntry(Constants.IntakeDeploy.holdVoltage);
-    rampThresholdEntry = table.getDoubleTopic("rampThreshold").getEntry(Constants.IntakeDeploy.rampThreshold);
-    positionThresholdEntry = table.getDoubleTopic("positionThreshold")
-        .getEntry(Constants.IntakeDeploy.positionThreshold);
+    holdVoltageEntry =
+        table.getDoubleTopic("holdVoltage").getEntry(Constants.IntakeDeploy.holdVoltage);
+    rampThresholdEntry =
+        table.getDoubleTopic("rampThreshold").getEntry(Constants.IntakeDeploy.rampThreshold);
+    positionThresholdEntry =
+        table
+            .getDoubleTopic("positionThreshold")
+            .getEntry(Constants.IntakeDeploy.positionThreshold);
 
     kPEntry = table.getDoubleTopic("kP").getEntry(Constants.IntakeDeploy.kP);
     kIEntry = table.getDoubleTopic("kI").getEntry(Constants.IntakeDeploy.kI);
@@ -119,8 +123,9 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     return Commands.runOnce(this::stow)
         .andThen(
             Commands.waitUntil(
-                () -> Math.abs(intakeDeploy.getEncoder().getPosition() * 360.0 - STOW_POSITION) < positionThresholdEntry
-                    .get()));
+                () ->
+                    Math.abs(intakeDeploy.getEncoder().getPosition() * 360.0 - STOW_POSITION)
+                        < positionThresholdEntry.get()));
   }
 
   public Command deployAgitatorCommand() {
@@ -131,11 +136,13 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   public Command homeCommand() {
-    return Commands.runOnce(() -> {
-      if (!isStowed()) {
-        stow();
-      }
-    }).andThen(Commands.waitUntil(this::isStowed))
+    return Commands.runOnce(
+            () -> {
+              if (!isStowed()) {
+                stow();
+              }
+            })
+        .andThen(Commands.waitUntil(this::isStowed))
         .andThen(Commands.runOnce(() -> intakeDeploy.getEncoder().setPosition(STOW_POSITION)));
   }
 
