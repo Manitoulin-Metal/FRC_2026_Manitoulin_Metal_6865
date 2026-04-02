@@ -96,10 +96,6 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     isHolding = false;
   }
 
-  public boolean isDeployed() {
-    return !hallSensor.get(); // hall effect reads false when magnet engaged
-  }
-
   public boolean isStowed() {
     return !hallSensor.get();
   }
@@ -116,7 +112,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     return Commands.either(
         Commands.runOnce(this::deploy).andThen(Commands.waitUntil(this::atDeployPosition)),
         Commands.none(),
-        () -> !isDeployed());
+        () -> !isStowed());
   }
 
   public Command stowCommand() {
@@ -197,7 +193,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     SmartDashboard.putNumber("IntakeDeploy/PIDError", pid.getPositionError());
     SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
     SmartDashboard.putNumber("IntakeDeploy/Goal", goalPosition);
-    SmartDashboard.putBoolean("IntakeDeploy/isDeployed", isDeployed());
+    SmartDashboard.putBoolean("IntakeDeploy/isStowed", isStowed());
     SmartDashboard.putBoolean("IntakeDeploy/isStowing", isStowing);
     SmartDashboard.putBoolean("IntakeDeploy/isDeploying", isDeploying);
     SmartDashboard.putBoolean("IntakeDeploy/isHolding", isHolding);
