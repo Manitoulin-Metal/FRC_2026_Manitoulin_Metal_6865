@@ -34,400 +34,403 @@ import org.littletonrobotics.junction.networktables.*;
 @SuppressWarnings("unused")
 public class RobotContainer {
 
-  // ============================================================
-  // -------------------- SUBSYSTEMS -----------------------------
-  // ============================================================
+    // ============================================================
+    // -------------------- SUBSYSTEMS -----------------------------
+    // ============================================================
 
-  private final Drive drive;
+    private final Drive drive;
 
-  private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
-  private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
-  private final ShooterSubsystem shooter = new ShooterSubsystem();
-  private final KickerSubsystem kicker = new KickerSubsystem(shooter);
-  private final WhipSubsystem whip = new WhipSubsystem(shooter);
-  private final ClimbSubsystem climb1 = new ClimbSubsystem();
-  private final LEDSubsystem led = new LEDSubsystem();
+    private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
 
-  // Vision (separate cameras)
-  private final VisionSubsystem visionClimb;
-  private final VisionSubsystem visionShoot;
-  private boolean visionEnabled = true;
-
-  // ============================================================
-  // -------------------- CONTROLLERS ----------------------------
-  // ============================================================
-
-  private final CommandXboxController controller = new CommandXboxController(0);
-  private final CommandXboxController controller1 = new CommandXboxController(1);
-
-  // ============================================================
-  // -------------------- FIELD / AUTO ---------------------------
-  // ============================================================
-
-  private final Field2d field = new Field2d();
-
-  private final AprilTagFieldLayout fieldLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-
-  private final LoggedDashboardChooser<Command> autoChooser;
-
-  private final LoggedNetworkNumber endgameAlert1 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
-
-  private final LoggedNetworkNumber endgameAlert2 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
-
-  // ============================================================
-  // -------------------- CONSTRUCTOR ----------------------------
-  // ============================================================
-
-  public RobotContainer() {
-
-    // -------- Drive init --------
-    switch (Constants.currentMode) {
-      case REAL:
-        drive =
-            new Drive(
-                new GyroIOPigeon2(),
-                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                new ModuleIOTalonFX(TunerConstants.BackRight));
-        break;
-
-      case SIM:
-        drive =
-            new Drive(
-                new GyroIOSim(),
-                new ModuleIOSim(TunerConstants.FrontLeft),
-                new ModuleIOSim(TunerConstants.FrontRight),
-                new ModuleIOSim(TunerConstants.BackLeft),
-                new ModuleIOSim(TunerConstants.BackRight));
-        break;
-
-      default:
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
-        break;
+    // Getter function to expose intakeDeploySubsystem to Robot for homing in
+    // robot() in robot.java
+    public IntakeDeploySubsystem getIntakeDeploySubsystem() {
+        return intakeDeploy;
     }
 
-    // -------- Vision setup --------
-    visionClimb =
-        new VisionSubsystem(new VisionIOLimelight("limelight0", drive::getRotation), drive);
+    private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
+    private final ShooterSubsystem shooter = new ShooterSubsystem();
+    private final KickerSubsystem kicker = new KickerSubsystem(shooter);
+    private final WhipSubsystem whip = new WhipSubsystem(shooter);
+    private final ClimbSubsystem climb1 = new ClimbSubsystem();
+    private final LEDSubsystem led = new LEDSubsystem();
 
-    visionShoot =
-        new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+    // Vision (separate cameras)
+    private final VisionSubsystem visionClimb;
+    private final VisionSubsystem visionShoot;
+    private boolean visionEnabled = true;
 
-    // -------- Default drive --------
-    drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+    // ============================================================
+    // -------------------- CONTROLLERS ----------------------------
+    // ============================================================
 
-    // -------- Auto chooser --------
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices");
-    autoChooser.addOption("Simple Drive + Spin", new SimpleDriveAndSpinAuto(drive));
+    private final CommandXboxController controller = new CommandXboxController(0);
+    private final CommandXboxController controller1 = new CommandXboxController(1);
 
-    // -------- Named commands --------
-    NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
+    // ============================================================
+    // -------------------- FIELD / AUTO ---------------------------
+    // ============================================================
 
-    NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
-    NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
+    private final Field2d field = new Field2d();
 
-    NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
+    private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-    NamedCommands.registerCommand(
-        "ClimbAutoUp", Commands.runOnce(() -> climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
+    private final LoggedDashboardChooser<Command> autoChooser;
 
-    NamedCommands.registerCommand(
-        "ClimbAutoDown",
-        Commands.runOnce(() -> climb1.ClimbCommand(-0.5).withTimeout(6).schedule()));
+    private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
 
-    NamedCommands.registerCommand(
-        "timedShootCommand",
-        Commands.parallel(
-                Commands.run(() -> shooter.runShooter(Constants.AUTO_SHOOT_RPS), shooter),
-                kicker.kickerCommand(0.3))
-            .withTimeout(1.5)
-            .andThen(shooter.stopCommand(), kicker.stopCommand()));
+    private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
-    // Load autos
-    for (String autoName : AutoBuilder.getAllAutoNames()) {
-      autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
+    // ============================================================
+    // -------------------- CONSTRUCTOR ----------------------------
+    // ============================================================
+
+    public RobotContainer() {
+
+        // -------- Drive init --------
+        switch (Constants.currentMode) {
+            case REAL:
+                drive = new Drive(
+                        new GyroIOPigeon2(),
+                        new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                        new ModuleIOTalonFX(TunerConstants.FrontRight),
+                        new ModuleIOTalonFX(TunerConstants.BackLeft),
+                        new ModuleIOTalonFX(TunerConstants.BackRight));
+                break;
+
+            case SIM:
+                drive = new Drive(
+                        new GyroIOSim(),
+                        new ModuleIOSim(TunerConstants.FrontLeft),
+                        new ModuleIOSim(TunerConstants.FrontRight),
+                        new ModuleIOSim(TunerConstants.BackLeft),
+                        new ModuleIOSim(TunerConstants.BackRight));
+                break;
+
+            default:
+                drive = new Drive(
+                        new GyroIO() {
+                        },
+                        new ModuleIO() {
+                        },
+                        new ModuleIO() {
+                        },
+                        new ModuleIO() {
+                        },
+                        new ModuleIO() {
+                        });
+                break;
+        }
+
+        // -------- Vision setup --------
+        visionClimb = new VisionSubsystem(new VisionIOLimelight("limelight0", drive::getRotation), drive);
+
+        visionShoot = new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+
+        // -------- Default drive --------
+        drive.setDefaultCommand(
+                DriveCommands.joystickDrive(
+                        drive,
+                        () -> -controller.getLeftY(),
+                        () -> -controller.getLeftX(),
+                        () -> -controller.getRightX()));
+
+        // -------- Auto chooser --------
+        autoChooser = new LoggedDashboardChooser<>("Auto Choices");
+        autoChooser.addOption("Simple Drive + Spin", new SimpleDriveAndSpinAuto(drive));
+
+        // -------- Named commands --------
+        NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
+
+        NamedCommands.registerCommand("startIntake", intakeRoller.intakeCommand());
+        NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
+
+        NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
+
+        NamedCommands.registerCommand(
+                "ClimbAutoUp", Commands.runOnce(() -> climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
+
+        NamedCommands.registerCommand(
+                "ClimbAutoDown",
+                Commands.runOnce(() -> climb1.ClimbCommand(-0.5).withTimeout(6).schedule()));
+
+        // NamedCommands.registerCommand(
+        // "timedShootCommand",
+        // Commands.parallel(
+        // Commands.run(() -> shooter.runShooter(Constants.AUTO_SHOOT_RPS), shooter),
+        // kicker.kickerCommand(0.3))
+        // .withTimeout(1.5)
+        // .andThen(shooter.stopCommand(), kicker.stopCommand()));
+
+        // Load autos
+        for (String autoName : AutoBuilder.getAllAutoNames()) {
+            autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
+        }
+
+        configureButtonBindings();
+        CameraServer.startAutomaticCapture(0);
     }
 
-    configureButtonBindings();
+    // ============================================================
+    // -------------------- BUTTONS --------------------------------
+    // ============================================================
 
-    CameraServer.startAutomaticCapture(0);
-  }
+    private void configureButtonBindings() {
 
-  // ============================================================
-  // -------------------- BUTTONS --------------------------------
-  // ============================================================
+        controller
+                .y()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    visionEnabled = !visionEnabled;
+                                    SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
+                                }));
 
-  private void configureButtonBindings() {
+        // Intake deploy/stow
+        controller1.a().onTrue(intakeDeploy.deployCommand());
+        controller1.b().onTrue(intakeDeploy.stowCommand());
 
-    controller
-        .y()
-        .onTrue(
-            Commands.runOnce(
+        // Stop drive (X)
+        controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+
+        // Gyro reset
+        controller
+                .b()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
+                                drive));
+
+        controller
+                .rightTrigger(0.5)
+                .whileTrue(
+                        DriveCommands.driveToShootVision(
+                                drive,
+                                visionShoot,
+                                shooter,
+                                fieldLayout,
+                                () -> visionEnabled,
+                                () -> -controller.getLeftY(),
+                                () -> -controller.getLeftX(),
+                                () -> -controller.getRightX(),
+                                1.5,
+                                3.0));
+
+        // Vision drive to fieldtag (shooting)
+        /*
+         * controller
+         * .rightTrigger(0.5)
+         * .whileTrue(
+         * DriveCommands.driveToShoot(
+         * drive,
+         * fieldLayout,
+         * 25, // example tag ID
+         * 0.5, // distance
+         * 1.5,
+         * 3.0));
+         */
+
+        // Debug offset calc
+        controller
+                .a()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    int tagId = 32;
+
+                                    var tagPose = fieldLayout.getTagPose(tagId).get().toPose2d();
+                                    var robotPose = drive.getPose();
+
+                                    Transform2d offset = new Transform2d(tagPose, robotPose);
+
+                                    SmartDashboard.putNumber("ClimbOffset/X", offset.getX());
+                                    SmartDashboard.putNumber("ClimbOffset/Y", offset.getY());
+                                    SmartDashboard.putNumber("ClimbOffset/RotDeg", offset.getRotation().getDegrees());
+                                }));
+
+        // Climb controls
+        controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75)).onFalse(climb1.ClimbCommand(0));
+        controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75)).onFalse(climb1.ClimbCommand(0));
+
+        // Intake controls
+        controller1
+                .leftTrigger(0.1)
+                .whileTrue(intakeRoller.intakeCommand())
+                .onFalse(intakeRoller.idleCommand());
+
+        controller1
+                .rightTrigger(0.1)
+                .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
+                .onFalse(shooter.stopCommand());
+
+        // Whip
+        controller1.rightBumper().toggleOnTrue(whip.whipSlowCommand());
+
+        // Kicker test
+        // controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
+
+        // Shooter faults clear
+        controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
+
+        // Agitator
+        // controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
+    }
+
+    // ============================================================
+    // -------------------- AUTO ----------------------------------
+    // ============================================================
+
+    public static Command driveToShootVision(
+            Drive drive,
+            VisionSubsystem vision,
+            AprilTagFieldLayout fieldLayout,
+            Supplier<Boolean> visionEnabled,
+            Supplier<Double> driverX,
+            Supplier<Double> driverY,
+            Supplier<Double> driverRot,
+            double kPLinear,
+            double kPRotation) {
+
+        return Commands.run(
                 () -> {
-                  visionEnabled = !visionEnabled;
-                  SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
-                }));
 
-    // Intake deploy/stow
-    controller1.a().onTrue(intakeDeploy.deployCommand());
-    controller1.b().onTrue(intakeDeploy.stowCommand());
+                    // =========================
+                    // DRIVER OVERRIDE (NO VISION)
+                    // =========================
+                    if (!visionEnabled.get()) {
+                        drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
+                        return;
+                    }
 
-    // Stop drive (X)
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+                    // =========================
+                    // AUTO TAG SELECTION
+                    // =========================
+                    Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+                    int targetTag = (alliance == Alliance.Blue) ? 25 : 9;
 
-    // Gyro reset
-    controller
-        .b()
-        .onTrue(
-            Commands.runOnce(
-                () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
-                drive));
+                    // If we don't see tag → fallback to driver
+                    if (!vision.hasTag(targetTag)) {
+                        drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
+                        return;
+                    }
 
-    controller
-        .rightTrigger(0.5)
-        .whileTrue(
-            DriveCommands.driveToShootVision(
-                drive,
-                visionShoot,
-                shooter,
-                fieldLayout,
-                () -> visionEnabled,
-                () -> -controller.getLeftY(),
-                () -> -controller.getLeftX(),
-                () -> -controller.getRightX(),
-                1.5,
-                3.0));
+                    // =========================
+                    // GET TAG POSE
+                    // =========================
+                    Optional<Pose3d> tagPose3d = fieldLayout.getTagPose(targetTag);
+                    if (tagPose3d.isEmpty())
+                        return;
 
-    // Vision drive to fieldtag (shooting)
-    /*
-     * controller
-     * .rightTrigger(0.5)
-     * .whileTrue(
-     * DriveCommands.driveToShoot(
-     * drive,
-     * fieldLayout,
-     * 25, // example tag ID
-     * 0.5, // distance
-     * 1.5,
-     * 3.0));
-     */
+                    Pose2d tagPose = tagPose3d.get().toPose2d();
+                    Pose2d robotPose = drive.getPose();
 
-    // Debug offset calc
-    controller
-        .a()
-        .onTrue(
-            Commands.runOnce(
-                () -> {
-                  int tagId = 32;
+                    // =========================
+                    // 2m SHOOTING ARC TARGET
+                    // =========================
+                    Transform2d offset = new Transform2d(
+                            new Translation2d(-2.0, 0.0), // 2m back from tag
+                            Rotation2d.fromDegrees(180) // face target
+                    );
 
-                  var tagPose = fieldLayout.getTagPose(tagId).get().toPose2d();
-                  var robotPose = drive.getPose();
+                    Pose2d targetPose = tagPose.transformBy(offset);
 
-                  Transform2d offset = new Transform2d(tagPose, robotPose);
+                    // =========================
+                    // ERROR CALCULATION
+                    // =========================
+                    Transform2d error = targetPose.minus(robotPose);
 
-                  SmartDashboard.putNumber("ClimbOffset/X", offset.getX());
-                  SmartDashboard.putNumber("ClimbOffset/Y", offset.getY());
-                  SmartDashboard.putNumber("ClimbOffset/RotDeg", offset.getRotation().getDegrees());
-                }));
+                    double forwardVision = error.getX() * kPLinear;
+                    double strafeVision = error.getY() * kPLinear;
+                    double rotVision = error.getRotation().getRadians() * kPRotation;
 
-    // Climb controls
-    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75)).onFalse(climb1.ClimbCommand(0));
-    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75)).onFalse(climb1.ClimbCommand(0));
+                    // =========================
+                    // DISTANCE + RPM LOGIC
+                    // =========================
+                    double distance = robotPose.getTranslation().getDistance(targetPose.getTranslation());
 
-    // Intake controls
-    controller1
-        .leftTrigger(0.1)
-        .whileTrue(intakeRoller.intakeCommand())
-        .onFalse(intakeRoller.idleCommand());
+                    double targetRPM = Constants.getRPMForDistance(distance);
 
-    controller1
-        .rightTrigger(0.1)
-        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
-        .onFalse(shooter.stopCommand());
+                    SmartDashboard.putString(
+                            "Shooter Status",
+                            String.format("Shooting to %.2f m at %.0f RPM", distance, targetRPM));
 
-    // Whip
-    controller1.rightBumper().toggleOnTrue(whip.whipSlowCommand());
+                    SmartDashboard.putNumber("Shooter/DistanceToTarget", distance);
+                    SmartDashboard.putNumber("Shooter/TargetRPM", targetRPM);
 
-    // Kicker test
-    controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
+                    // =========================
+                    // DRIVER + VISION BLENDING
+                    // =========================
+                    double visionWeight = 0.7;
+                    double driverWeight = 0.3;
 
-    // Shooter faults clear
-    controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
+                    double vx = driverX.get() * driverWeight + forwardVision * visionWeight;
+                    double vy = driverY.get() * driverWeight + strafeVision * visionWeight;
+                    double vr = driverRot.get() * driverWeight + rotVision * visionWeight;
 
-    // Agitator
-    controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
-  }
+                    // =========================
+                    // CLAMP SPEEDS
+                    // =========================
+                    double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
+                    double maxAngular = drive.getMaxAngularSpeedRadPerSec();
 
-  // ============================================================
-  // -------------------- AUTO ----------------------------------
-  // ============================================================
+                    vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
+                    vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
+                    vr = MathUtil.clamp(vr, -maxAngular, maxAngular);
 
-  public static Command driveToShootVision(
-      Drive drive,
-      VisionSubsystem vision,
-      AprilTagFieldLayout fieldLayout,
-      Supplier<Boolean> visionEnabled,
-      Supplier<Double> driverX,
-      Supplier<Double> driverY,
-      Supplier<Double> driverRot,
-      double kPLinear,
-      double kPRotation) {
+                    // =========================
+                    // DRIVE
+                    // =========================
+                    drive.runVelocity(new ChassisSpeeds(vx, vy, vr));
+                },
+                drive)
 
-    return Commands.run(
-            () -> {
-
-              // =========================
-              // DRIVER OVERRIDE (NO VISION)
-              // =========================
-              if (!visionEnabled.get()) {
-                drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
-                return;
-              }
-
-              // =========================
-              // AUTO TAG SELECTION
-              // =========================
-              Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-              int targetTag = (alliance == Alliance.Blue) ? 25 : 9;
-
-              // If we don't see tag → fallback to driver
-              if (!vision.hasTag(targetTag)) {
-                drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
-                return;
-              }
-
-              // =========================
-              // GET TAG POSE
-              // =========================
-              Optional<Pose3d> tagPose3d = fieldLayout.getTagPose(targetTag);
-              if (tagPose3d.isEmpty()) return;
-
-              Pose2d tagPose = tagPose3d.get().toPose2d();
-              Pose2d robotPose = drive.getPose();
-
-              // =========================
-              // 2m SHOOTING ARC TARGET
-              // =========================
-              Transform2d offset =
-                  new Transform2d(
-                      new Translation2d(-2.0, 0.0), // 2m back from tag
-                      Rotation2d.fromDegrees(180) // face target
-                      );
-
-              Pose2d targetPose = tagPose.transformBy(offset);
-
-              // =========================
-              // ERROR CALCULATION
-              // =========================
-              Transform2d error = targetPose.minus(robotPose);
-
-              double forwardVision = error.getX() * kPLinear;
-              double strafeVision = error.getY() * kPLinear;
-              double rotVision = error.getRotation().getRadians() * kPRotation;
-
-              // =========================
-              // DISTANCE + RPM LOGIC
-              // =========================
-              double distance = robotPose.getTranslation().getDistance(targetPose.getTranslation());
-
-              double targetRPM = Constants.getRPMForDistance(distance);
-
-              SmartDashboard.putString(
-                  "Shooter Status",
-                  String.format("Shooting to %.2f m at %.0f RPM", distance, targetRPM));
-
-              SmartDashboard.putNumber("Shooter/DistanceToTarget", distance);
-              SmartDashboard.putNumber("Shooter/TargetRPM", targetRPM);
-
-              // =========================
-              // DRIVER + VISION BLENDING
-              // =========================
-              double visionWeight = 0.7;
-              double driverWeight = 0.3;
-
-              double vx = driverX.get() * driverWeight + forwardVision * visionWeight;
-              double vy = driverY.get() * driverWeight + strafeVision * visionWeight;
-              double vr = driverRot.get() * driverWeight + rotVision * visionWeight;
-
-              // =========================
-              // CLAMP SPEEDS
-              // =========================
-              double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
-              double maxAngular = drive.getMaxAngularSpeedRadPerSec();
-
-              vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
-              vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
-              vr = MathUtil.clamp(vr, -maxAngular, maxAngular);
-
-              // =========================
-              // DRIVE
-              // =========================
-              drive.runVelocity(new ChassisSpeeds(vx, vy, vr));
-            },
-            drive)
-
-        // =========================
-        // FINISH CONDITION (aligned)
-        // =========================
-        .until(vision::isReadyToShoot)
-        .andThen(drive::stop);
-  }
-
-  public Command getAutonomousCommand() {
-    return autoChooser.get();
-  }
-
-  // ============================================================
-  // -------------------- PERIODIC ------------------------------
-  // ============================================================
-
-  public void periodic() {
-
-    double matchTime = DriverStation.getMatchTime();
-
-    boolean alert20 = matchTime > 0 && matchTime <= endgameAlert1.get();
-    boolean alert10 = matchTime > 0 && matchTime <= endgameAlert2.get();
-
-    SmartDashboard.putBoolean("Endgame 20s", alert20);
-    SmartDashboard.putBoolean("Endgame 10s", alert10);
-
-    Logger.recordOutput("Match/Endgame20", alert20);
-    Logger.recordOutput("Match/Endgame10", alert10);
-
-    // ✅ Define rumble HERE (inside method, before use)
-    double rumble = (alert20 || alert10) ? 0.5 : 0.0;
-
-    // ✅ Apply rumble using HID
-    controller
-        .getHID()
-        .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kLeftRumble, rumble);
-
-    controller
-        .getHID()
-        .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kRightRumble, rumble);
-    // LED + gyro alerts
-    if (drive.isGyroDisconnected()) {
-      led.gyroDisconnectedAlert();
+                // =========================
+                // FINISH CONDITION (aligned)
+                // =========================
+                .until(vision::isReadyToShoot)
+                .andThen(drive::stop);
     }
 
-    // Controller diagnostics
-    SmartDashboard.putNumber("Driver/LeftY", controller.getLeftY());
-    SmartDashboard.putNumber("Operator/LeftY", controller1.getLeftY());
-    SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
-  }
+    public Command getAutonomousCommand() {
+        return autoChooser.get();
+    }
+
+    // ============================================================
+    // -------------------- PERIODIC ------------------------------
+    // ============================================================
+
+    public void periodic() {
+
+        double matchTime = DriverStation.getMatchTime();
+
+        boolean alert20 = matchTime > 0 && matchTime <= endgameAlert1.get();
+        boolean alert10 = matchTime > 0 && matchTime <= endgameAlert2.get();
+
+        SmartDashboard.putBoolean("Endgame 20s", alert20);
+        SmartDashboard.putBoolean("Endgame 10s", alert10);
+
+        Logger.recordOutput("Match/Endgame20", alert20);
+        Logger.recordOutput("Match/Endgame10", alert10);
+
+        // ✅ Define rumble HERE (inside method, before use)
+        double rumble = (alert20 || alert10) ? 0.5 : 0.0;
+
+        // ✅ Apply rumble using HID
+        controller
+                .getHID()
+                .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kLeftRumble, rumble);
+
+        controller
+                .getHID()
+                .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kRightRumble, rumble);
+        // LED + gyro alerts
+        if (drive.isGyroDisconnected()) {
+            led.gyroDisconnectedAlert();
+        }
+
+        // Controller diagnostics
+        SmartDashboard.putNumber("Driver/LeftY", controller.getLeftY());
+        SmartDashboard.putNumber("Operator/LeftY", controller1.getLeftY());
+        SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
+    }
 }

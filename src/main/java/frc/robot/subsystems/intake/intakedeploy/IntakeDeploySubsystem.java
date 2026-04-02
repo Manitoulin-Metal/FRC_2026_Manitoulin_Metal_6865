@@ -87,16 +87,16 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
   public void deploy() {
     goalPosition = getDeployPosition();
+    isHolding = false;
     isDeploying = true;
     isStowing = false;
-    isHolding = false;
   }
 
   public void stow() {
     goalPosition = STOW_POSITION;
+    isHolding = false;
     isStowing = true;
     isDeploying = false;
-    isHolding = false;
   }
 
   public boolean isStowed() {
@@ -108,13 +108,11 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   public Command deployCommand() {
-    return Commands.runOnce(this::deploy)
-        .andThen(Commands.waitUntil(this::atDeployPosition));
+    return Commands.runOnce(this::deploy);
   }
 
   public Command stowCommand() {
-    return Commands.runOnce(this::stow)
-        .andThen(Commands.waitUntil(this::isStowed));
+    return Commands.runOnce(this::stow);
   }
 
   public Command homeCommand() {
@@ -139,6 +137,11 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     double position = intakeDeploy.getEncoder().getPosition() * 360.0;
 
     // ---------- HOLD MODE ----------
+    // automatically release hold if moved away from stow
+    if (isHolding && Math.abs(position - STOW_POSITION) > positionThresholdEntry.get()) {
+      isHolding = false;
+    }
+    // If holding, just apply a constant voltage to hold position and skip PID
     if (isHolding) {
       intakeDeploy.setVoltage(-holdVoltageEntry.get());
 
