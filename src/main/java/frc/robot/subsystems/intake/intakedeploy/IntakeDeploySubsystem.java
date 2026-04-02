@@ -26,35 +26,30 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   public static final double STOW_POSITION = 0.0;
   public static final double DEPLOY_POSITION = 18000.0;
 
-  // NetworkTables tunables
-  private final DoubleEntry deployPositionEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("deployPosition")
-          .getEntry(DEPLOY_POSITION);
+  // Tunables
+  private final DoubleEntry deployPositionEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("deployPosition")
+      .getEntry(DEPLOY_POSITION);
 
-  private final DoubleEntry kPEntry;
-  private final DoubleEntry kIEntry;
-  private final DoubleEntry kDEntry;
   private final DoubleEntry holdVoltageEntry = NetworkTableInstance.getDefault()
       .getTable("Tuning/Deploy")
       .getDoubleTopic("holdVoltage")
       .getEntry(0.2);
 
-  private final DoubleEntry rampThresholdEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("rampThreshold")
-          .getEntry(1500);
+  private final DoubleEntry rampThresholdEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("rampThreshold")
+      .getEntry(1500);
 
   private final DoubleEntry positionThresholdEntry = NetworkTableInstance.getDefault()
       .getTable("Tuning/Deploy")
       .getDoubleTopic("positionThreshold")
       .getEntry(75);
 
-  private double getDeployPosition() {
-    return deployPositionEntry.get();
-  }
+  private final DoubleEntry kPEntry;
+  private final DoubleEntry kIEntry;
+  private final DoubleEntry kDEntry;
 
   private final PIDController pid = new PIDController(0.005, 0, 0);
 
@@ -62,26 +57,32 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private boolean isDeploying = false;
   private boolean isHolding = false;
 
-  private double stowTimer = 0.0;
-  private static final double STOW_DEBOUNCE = 0.2; // seconds
-
   private double goalPosition = 0.0;
 
   public IntakeDeploySubsystem() {
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
-    intakeDeploy.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    pid.setTolerance(positionThresholdEntry.get());
+    intakeDeploy.configure(
+        config,
+        ResetMode.kResetSafeParameters,
+        PersistMode.kPersistParameters);
 
     var table = NetworkTableInstance.getDefault().getTable("Tuning/Deploy");
-    kPEntry = table.getDoubleTopic("kP").getEntry(0.005);
-    kIEntry = table.getDoubleTopic("kI").getEntry(0.0);
-    kDEntry = table.getDoubleTopic("kD").getEntry(0.0);
+
+    kPEntry = table.getDoubleTopic("kP").getEntry(Constants.IntakeDeploy.kP);
+    kIEntry = table.getDoubleTopic("kI").getEntry(Constants.IntakeDeploy.kI);
+    kDEntry = table.getDoubleTopic("kD").getEntry(Constants.IntakeDeploy.kD);
 
     kPEntry.set(Constants.IntakeDeploy.kP);
     kIEntry.set(Constants.IntakeDeploy.kI);
     kDEntry.set(Constants.IntakeDeploy.kD);
+
+    pid.setTolerance(positionThresholdEntry.get());
+  }
+
+  private double getDeployPosition() {
+    return deployPositionEntry.get();
   }
 
   public void deploy() {
@@ -98,10 +99,6 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     isHolding = false;
   }
 
-  public boolean isDeployed() {
-    return hallSensor.get();
-  }
-
   public boolean isStowed() {
     return hallSensor.get();
   }
@@ -110,36 +107,47 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     return Math.abs(pid.getPositionError()) < positionThresholdEntry.get();
   }
 
-  public boolean atStowPosition() {
-    return Math.abs(pid.getPositionError()) < positionThresholdEntry.get();
-  }
-
   public Command deployCommand() {
-    return Commands.either(
-        Commands.runOnce(this::deploy).andThen(Commands.waitUntil(this::atDeployPosition)),
-        Commands.none(),
-        () -> !isDeployed());
+    return Commands.runOnce(this::deploy)
+        .andThen(Commands.waitUntil(this::atDeployPosition));
   }
 
   public Command stowCommand() {
     return Commands.runOnce(this::stow)
-        .andThen(
-            Commands.waitUntil(
-                () ->
-                    Math.abs(intakeDeploy.getEncoder().getPosition() * 360.0 - STOW_POSITION)
-                        < positionThresholdEntry.get()));
+        .andThen(Commands.waitUntil(this::isStowed));
   }
 
-  public Command deployAgitatorCommand() {
-    return Commands.sequence(
-        Commands.run(() -> intakeDeploy.setVoltage(-0.5), this).withTimeout(0.8),
-        Commands.run(() -> intakeDeploy.setVoltage(0.3), this).withTimeout(0.4),
-        stowCommand());
+  public Command homeCommand() {
+    return Commands.either(
+        Commands.runOnce(() -> {
+          intakeDeploy.getEncoder().setPosition(0.0);
+          goalPosition = STOW_POSITION;
+          isHolding = true;
+        }),
+        Commands.sequence(
+            stowCommand(),
+            Commands.runOnce(() -> {
+              intakeDeploy.getEncoder().setPosition(0.0);
+              goalPosition = STOW_POSITION;
+              isHolding = true;
+            })),
+        this::isStowed);
   }
 
   @Override
   public void periodic() {
     double position = intakeDeploy.getEncoder().getPosition() * 360.0;
+
+    // ---------- HOLD MODE ----------
+    if (isHolding) {
+      intakeDeploy.setVoltage(-holdVoltageEntry.get());
+
+      SmartDashboard.putBoolean("IntakeDeploy/isHolding", true);
+      SmartDashboard.putNumber("IntakeDeploy/Position", position);
+      return;
+    }
+
+    // ---------- PID ----------
     pid.setSetpoint(goalPosition);
 
     pid.setP(kPEntry.get());
@@ -150,36 +158,32 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
     double output = pid.calculate(position);
 
-    // // // Ramp down near stow
-    // if (isStowing && Math.abs(distanceToGoal) < rampThresholdEntry.get()) {
-    //   output *= 0.3;
-    // }
-
-    // Apply hold voltage only if very close
-    if (isStowing && Math.abs(distanceToGoal) < positionThresholdEntry.get() && isDeployed()) {
-      intakeDeploy.setVoltage(-holdVoltageEntry.get());
-      isHolding = true;
-      // isStowing = false;
+    // Slow down near stow
+    if (isStowing && Math.abs(distanceToGoal) < rampThresholdEntry.get()) {
+      output *= 0.3;
     }
 
-    //
+    // ---------- SWITCH TO HOLD ----------
+    if (isStowing
+        && Math.abs(distanceToGoal) < positionThresholdEntry.get()
+        && isStowed()) {
 
-    // // Soft debounce for stow completion
-    // if (isStowing && Math.abs(position - STOW_POSITION) < positionThresholdEntry.get()) {
-    //   stowTimer += 0.02; // periodic ~20ms
-    //   if (stowTimer >= STOW_DEBOUNCE) {
-    //     isStowing = false;
-    //     isDeploying = false;
-    //     goalPosition = STOW_POSITION;
-    //     intakeDeploy.getEncoder().setPosition(0.0);
-    //   }
-    // } else {
-    //   stowTimer = 0.0;
-    // }
+      isHolding = true;
+      isStowing = false;
+      isDeploying = false;
+
+      goalPosition = STOW_POSITION;
+      intakeDeploy.getEncoder().setPosition(0.0);
+
+      intakeDeploy.setVoltage(-holdVoltageEntry.get());
+
+      SmartDashboard.putBoolean("IntakeDeploy/isHolding", true);
+      return;
+    }
 
     intakeDeploy.setVoltage(output);
 
-    // Logging
+    // ---------- LOGGING ----------
     Logger.recordOutput("IntakeDeploy/Position", position);
     Logger.recordOutput("IntakeDeploy/PIDError", pid.getPositionError());
     Logger.recordOutput("IntakeDeploy/PIDOutput", output);
@@ -189,7 +193,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     SmartDashboard.putNumber("IntakeDeploy/PIDError", pid.getPositionError());
     SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
     SmartDashboard.putNumber("IntakeDeploy/Goal", goalPosition);
-    SmartDashboard.putBoolean("IntakeDeploy/isDeployed", isDeployed());
+
+    SmartDashboard.putBoolean("IntakeDeploy/isStowed", isStowed());
     SmartDashboard.putBoolean("IntakeDeploy/isStowing", isStowing);
     SmartDashboard.putBoolean("IntakeDeploy/isDeploying", isDeploying);
     SmartDashboard.putBoolean("IntakeDeploy/isHolding", isHolding);
@@ -197,6 +202,5 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
   @Override
   public void simulationPeriodic() {
-    // WPILib sim
   }
 }
