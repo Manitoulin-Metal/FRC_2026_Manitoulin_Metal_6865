@@ -164,7 +164,7 @@ public class RobotContainer {
     CameraServer.startAutomaticCapture(0);
 
     // Home the intake safely on startup
-    homeIntakeOnStartup();
+    // homeIntakeOnStartup();
 
   }
 
@@ -173,21 +173,21 @@ public class RobotContainer {
    * - If hall sensor shows intake is stowed, reset encoder to 0.
    * - If not stowed, schedule the stow command to move intake to stowed position.
    */
-  private void homeIntakeOnStartup() {
-    // Check hall effect sensor
-    if (intakeDeploy.isStowed()) {
-      // Intake already stowed, reset encoder to zero
-      intakeDeploy.getDeployMotor().getEncoder().setPosition(0.0);
-    } else {
-      // Intake not stowed, schedule the stow command
-      CommandScheduler.getInstance().schedule(intakeDeploy.stowCommand());
-    }
-  }
+  // private void homeIntakeOnStartup() {
+  // // Check hall effect sensor
+  // if (intakeDeploy.isStowed()) {
+  // // Intake already stowed, reset encoder to zero
+  // intakeDeploy.getDeployMotor().getEncoder().setPosition(0.0);
+  // } else {
+  // // Intake not stowed, schedule the stow command
+  // CommandScheduler.getInstance().schedule(intakeDeploy.stowCommand());
+  // }
+  // }
 
   // Expose subsystem getters if needed
-  public IntakeDeploySubsystem getIntakeDeploySubsystem() {
-    return intakeDeploy;
-  }
+  // public IntakeDeploySubsystem getIntakeDeploySubsystem() {
+  // return intakeDeploy;
+  // }
 
   // ============================================================
   // -------------------- BUTTONS --------------------------------

@@ -20,77 +20,78 @@ import org.littletonrobotics.junction.Logger;
 @SuppressWarnings("removal")
 public class IntakeDeploySubsystem extends SubsystemBase {
 
-  private final SparkFlex deployMotor = new SparkFlex(59, MotorType.kBrushless);
-  private final DigitalInput hallSensor = new DigitalInput(9); // false = magnet engaged
+  private final SparkFlex intakeDeploy = new SparkFlex(59, MotorType.kBrushless);
+  private final DigitalInput hallSensor = new DigitalInput(9);
 
+  // Default positions
   public static final double STOW_POSITION = 0.0;
-  public static final double DEPLOY_POSITION = 18000.0;
 
-  // NetworkTables tunables
+  // NetworkTables tunables (start with values from Constants)
   private final DoubleEntry deployPositionEntry = NetworkTableInstance.getDefault()
       .getTable("Tuning/Deploy")
       .getDoubleTopic("deployPosition")
-      .getEntry(DEPLOY_POSITION);
+      .getEntry(Constants.IntakeDeploy.deployPosition);
 
   private final DoubleEntry holdVoltageEntry = NetworkTableInstance.getDefault()
       .getTable("Tuning/Deploy")
       .getDoubleTopic("holdVoltage")
-      .getEntry(0.2);
+      .getEntry(Constants.IntakeDeploy.holdVoltage);
 
   private final DoubleEntry rampThresholdEntry = NetworkTableInstance.getDefault()
       .getTable("Tuning/Deploy")
       .getDoubleTopic("rampThreshold")
-      .getEntry(1500);
+      .getEntry(Constants.IntakeDeploy.rampThreshold);
 
   private final DoubleEntry positionThresholdEntry = NetworkTableInstance.getDefault()
       .getTable("Tuning/Deploy")
       .getDoubleTopic("positionThreshold")
-      .getEntry(500); // start with bigger threshold
+      .getEntry(Constants.IntakeDeploy.positionThreshold);
 
-  private final DoubleEntry kPEntry;
-  private final DoubleEntry kIEntry;
-  private final DoubleEntry kDEntry;
+  private final DoubleEntry kPEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("kP")
+      .getEntry(Constants.IntakeDeploy.kP);
 
-  private final PIDController pid = new PIDController(0.005, 0, 0);
+  private final DoubleEntry kIEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("kI")
+      .getEntry(Constants.IntakeDeploy.kI);
 
-  private boolean isStowing = false;
+  private final DoubleEntry kDEntry = NetworkTableInstance.getDefault()
+      .getTable("Tuning/Deploy")
+      .getDoubleTopic("kD")
+      .getEntry(Constants.IntakeDeploy.kD);
+
+  private final PIDController pid = new PIDController(kPEntry.get(), kIEntry.get(), kDEntry.get());
+
   private boolean isDeploying = false;
+  private boolean isStowing = false;
   private boolean isHolding = false;
 
+  private double goalPosition = STOW_POSITION;
   private double stowTimer = 0.0;
   private static final double STOW_DEBOUNCE = 0.2; // seconds
-
-  private double goalPosition = 0.0;
 
   public IntakeDeploySubsystem() {
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
-    deployMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    intakeDeploy.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     pid.setTolerance(positionThresholdEntry.get());
 
-    var table = NetworkTableInstance.getDefault().getTable("Tuning/Deploy");
-    kPEntry = table.getDoubleTopic("kP").getEntry(0.005);
-    kIEntry = table.getDoubleTopic("kI").getEntry(0.0);
-    kDEntry = table.getDoubleTopic("kD").getEntry(0.0);
-
-    kPEntry.set(Constants.IntakeDeploy.kP);
-    kIEntry.set(Constants.IntakeDeploy.kI);
-    kDEntry.set(Constants.IntakeDeploy.kD);
+    // Force publish initial values to NetworkTables
+    deployPositionEntry.setDefault(Constants.IntakeDeploy.deployPosition);
+    holdVoltageEntry.setDefault(Constants.IntakeDeploy.holdVoltage);
+    rampThresholdEntry.setDefault(Constants.IntakeDeploy.rampThreshold);
+    positionThresholdEntry.setDefault(Constants.IntakeDeploy.positionThreshold);
+    kPEntry.setDefault(Constants.IntakeDeploy.kP);
+    kIEntry.setDefault(Constants.IntakeDeploy.kI);
+    kDEntry.setDefault(Constants.IntakeDeploy.kD);
   }
 
-  // Explose motor so robotcontainer can access encoder position for auto-homing
-  // and other logic if needed
-  public SparkFlex getDeployMotor() {
-    return deployMotor; // or whatever your motor variable is called
-  }
-
-  private double getDeployPosition() {
-    return deployPositionEntry.get();
-  }
-
+  /** Commands just set the goal and flags. PID handles movement asynchronously */
   public void deploy() {
-    goalPosition = getDeployPosition();
+    goalPosition = deployPositionEntry.get();
     isDeploying = true;
     isStowing = false;
     isHolding = false;
@@ -103,41 +104,30 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     isHolding = false;
   }
 
-  /** Hall sensor: false = magnet engaged = stowed */
+  /** Hall sensor: true when magnet is detected (intake stowed) */
   public boolean isStowed() {
-    return !hallSensor.get();
-  }
-
-  public boolean isDeployed() {
     return hallSensor.get();
   }
 
-  public boolean atDeployPosition() {
-    return Math.abs(pid.getPositionError()) < positionThresholdEntry.get();
-  }
-
-  public boolean atStowPosition() {
-    return Math.abs(pid.getPositionError()) < positionThresholdEntry.get();
-  }
-
+  /** Command objects */
   public Command deployCommand() {
-    return Commands.either(
-        Commands.runOnce(this::deploy).andThen(Commands.waitUntil(this::atDeployPosition)),
-        Commands.none(),
-        () -> !isDeployed());
+    return Commands.runOnce(this::deploy, this);
   }
 
   public Command stowCommand() {
-    return Commands.either(
-        Commands.runOnce(this::stow).andThen(Commands.waitUntil(this::atStowPosition)),
-        Commands.none(),
-        () -> !isStowed() // only run if not already stowed
-    );
+    return Commands.runOnce(this::stow, this);
+  }
+
+  public Command deployAgitatorCommand() {
+    return Commands.sequence(
+        Commands.run(() -> intakeDeploy.setVoltage(-0.5), this).withTimeout(0.8),
+        Commands.run(() -> intakeDeploy.setVoltage(0.3), this).withTimeout(0.4),
+        stowCommand());
   }
 
   @Override
   public void periodic() {
-    double position = deployMotor.getEncoder().getPosition() * 360.0;
+    double position = intakeDeploy.getEncoder().getPosition() * 360.0;
     pid.setSetpoint(goalPosition);
 
     pid.setP(kPEntry.get());
@@ -152,29 +142,28 @@ public class IntakeDeploySubsystem extends SubsystemBase {
       output *= 0.3;
     }
 
-    // Hold voltage if very close to stowed
+    // Hold voltage when very close and stowed
     if (isStowing && Math.abs(distanceToGoal) < positionThresholdEntry.get() && isStowed()) {
-      deployMotor.setVoltage(-holdVoltageEntry.get());
+      intakeDeploy.setVoltage(-holdVoltageEntry.get());
       isHolding = true;
     } else {
-      deployMotor.setVoltage(output);
+      intakeDeploy.setVoltage(output);
       isHolding = false;
     }
 
-    // Soft debounce for stow completion
-    if (isStowing && isStowed()) {
-      stowTimer += 0.02; // periodic ~20ms
+    // Debounce stow completion and reset encoder
+    if (isStowing && Math.abs(position - STOW_POSITION) < positionThresholdEntry.get()) {
+      stowTimer += 0.02;
       if (stowTimer >= STOW_DEBOUNCE) {
         isStowing = false;
-        isDeploying = false;
         goalPosition = STOW_POSITION;
-        deployMotor.getEncoder().setPosition(0.0);
+        intakeDeploy.getEncoder().setPosition(0.0);
       }
     } else {
       stowTimer = 0.0;
     }
 
-    // Logging
+    // Logging and SmartDashboard
     Logger.recordOutput("IntakeDeploy/Position", position);
     Logger.recordOutput("IntakeDeploy/PIDError", pid.getPositionError());
     Logger.recordOutput("IntakeDeploy/PIDOutput", output);
@@ -184,15 +173,23 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     SmartDashboard.putNumber("IntakeDeploy/PIDError", pid.getPositionError());
     SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
     SmartDashboard.putNumber("IntakeDeploy/Goal", goalPosition);
-    SmartDashboard.putBoolean("IntakeDeploy/isDeployed", isDeployed());
     SmartDashboard.putBoolean("IntakeDeploy/isStowing", isStowing);
     SmartDashboard.putBoolean("IntakeDeploy/isDeploying", isDeploying);
     SmartDashboard.putBoolean("IntakeDeploy/isHolding", isHolding);
-    SmartDashboard.putBoolean("Debug/isStowedSensor", isStowed());
-    SmartDashboard.putNumber("Debug/distanceToGoal", distanceToGoal);
+    SmartDashboard.putBoolean("IntakeDeploy/isStowed", isStowed());
   }
 
   @Override
   public void simulationPeriodic() {
+    // WPILib sim
+  }
+
+  /** Homing helper: run on robot init to stow and reset encoder if needed */
+  public void homeIntake() {
+    if (!isStowed()) {
+      stow(); // sets goalPosition and flags
+    } else {
+      intakeDeploy.getEncoder().setPosition(0.0);
+    }
   }
 }
