@@ -70,13 +70,24 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
     var table = NetworkTableInstance.getDefault().getTable("Tuning/Deploy");
 
+    // PID entries
     kPEntry = table.getDoubleTopic("kP").getEntry(Constants.IntakeDeploy.kP);
     kIEntry = table.getDoubleTopic("kI").getEntry(Constants.IntakeDeploy.kI);
     kDEntry = table.getDoubleTopic("kD").getEntry(Constants.IntakeDeploy.kD);
 
+    // Other tunables
+    holdVoltageEntry = table.getDoubleTopic("holdVoltage").getEntry(Constants.IntakeDeploy.holdVoltage);
+    rampThresholdEntry = table.getDoubleTopic("rampThreshold").getEntry(Constants.IntakeDeploy.rampThreshold);
+    positionThresholdEntry = table.getDoubleTopic("positionThreshold")
+        .getEntry(Constants.IntakeDeploy.positionThreshold);
+
+    // Force publish initial values
     kPEntry.set(Constants.IntakeDeploy.kP);
     kIEntry.set(Constants.IntakeDeploy.kI);
     kDEntry.set(Constants.IntakeDeploy.kD);
+    holdVoltageEntry.set(Constants.IntakeDeploy.holdVoltage);
+    rampThresholdEntry.set(Constants.IntakeDeploy.rampThreshold);
+    positionThresholdEntry.set(Constants.IntakeDeploy.positionThreshold);
 
     pid.setTolerance(positionThresholdEntry.get());
   }
