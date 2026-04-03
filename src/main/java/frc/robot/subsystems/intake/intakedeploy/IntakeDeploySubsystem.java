@@ -51,6 +51,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final DoubleEntry deployHoldEntry;
   private final DoubleEntry stowHoldEntry;
   private final DoubleEntry toleranceEntry;
+  private final DoubleEntry maxOutputVoltsEntry;
 
   // ---------- Logging publishers ----------
   private final BooleanPublisher hallTriggeredPub;
@@ -96,6 +97,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     stowHoldEntry = table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
 
     toleranceEntry = table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
+    maxOutputVoltsEntry = table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
 
     hallTriggeredPub = table.getBooleanTopic("HallTriggered").publish();
     atSetpointPub = table.getBooleanTopic("AtSetpoint").publish();
@@ -109,8 +111,22 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     deployHoldEntry.set(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
     stowHoldEntry.set(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
     toleranceEntry.set(Constants.IntakeDeploy.POSITION_TOLERANCE);
+    maxOutputVoltsEntry.set(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
 
     SmartDashboard.putString("IntakeDeploy/StartupState", state.name());
+  }
+
+  // Helper function to clamp voltage to safe range (or to slow for testing)
+  private double clampVoltage(double volts) {
+    return Math.max(-maxOutputVoltsEntry.get(),
+        Math.min(maxOutputVoltsEntry.get(), volts));
+  }
+
+  // Helper function to set voltage with clamping (replace all motor.setVoltage
+  // calls with this)
+  private void setClampedVoltage(double volts) {
+    double clamped = clampVoltage(volts);
+    motor.setVoltage(clamped);
   }
 
   public void deploy() {
@@ -169,7 +185,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     switch (state) {
       case MOVING_TO_DEPLOY:
         output = pid.calculate(angle, deployAngle);
-        motor.setVoltage(output);
+        setClampedVoltage(output);
 
         if (pid.atSetpoint()) {
           state = IntakeState.DEPLOYED;
@@ -178,36 +194,36 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
       case MOVING_TO_STOW:
         if (isStowedSensorTriggered()) {
-          motor.setVoltage(stowHold);
+          setClampedVoltage(stowHold);
           encoder.setPosition(0.0);
           pid.reset();
           state = IntakeState.STOWED;
           output = stowHold;
         } else {
           output = pid.calculate(angle, stowAngle);
-          motor.setVoltage(output);
+          setClampedVoltage(output);
         }
         break;
 
       case DEPLOYED:
         output = deployHold;
-        motor.setVoltage(output);
+        setClampedVoltage(output);
         break;
 
       case STOWED:
         output = stowHold;
-        motor.setVoltage(output);
+        setClampedVoltage(output);
         break;
 
       case HOMING:
         if (isStowedSensorTriggered()) {
           output = stowHold;
-          motor.setVoltage(output);
+          setClampedVoltage(output);
           encoder.setPosition(0.0);
           pid.reset();
           state = IntakeState.STOWED;
         } else {
-          motor.setVoltage(1.0); // gentle upward voltage
+          setClampedVoltage(1.0); // gentle upward voltage
         }
         break;
     }

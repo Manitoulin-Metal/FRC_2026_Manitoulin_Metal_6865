@@ -77,6 +77,7 @@ public final class Constants {
   }
 
   public static final class IntakeDeploy {
+
     // ---------------- Hardware ----------------
     public static final int MOTOR_ID = 59; // <-- replace with CAN ID
     public static final int HALL_SENSOR_PORT = 9; // <-- DIO port
