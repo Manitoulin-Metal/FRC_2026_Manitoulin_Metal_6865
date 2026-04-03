@@ -15,6 +15,7 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkSoftLimit.SoftLimitDirection;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 
@@ -23,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
+@SuppressWarnings("removal")
 public class IntakeDeploySubsystem extends SubsystemBase {
 
   public enum IntakeState {
@@ -59,8 +61,17 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     motor = new SparkFlex(Constants.IntakeDeploy.MOTOR_ID, MotorType.kBrushless);
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
+    // This soft limit will prevent the motor controller from attempting to drive
+    // mechanism to deploy angle past hard stop
+    // Tune direction and value. Starting at 33.75
+    config.softLimit
+        .forwardSoftLimit(33.75)
+        .forwardSoftLimitEnabled(true);
+
+    // Apply configuration to motor.
     motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
+    // Initialize hall effect sensor and encoder
     hallSensor = new DigitalInput(Constants.IntakeDeploy.HALL_SENSOR_PORT);
     encoder = motor.getEncoder();
 
@@ -209,6 +220,14 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     SmartDashboard.putBoolean("IntakeDeploy/AtSetpoint", pid.atSetpoint());
     SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
     SmartDashboard.putNumber("IntakeDeploy/Error", pid.getPositionError());
+
+    Logger.recordOutput("IntakeDeploy/AngleDeg", angle);
+    Logger.recordOutput("IntakeDeploy/RawRotations", encoder.getPosition());
+    Logger.recordOutput("IntakeDeploy/State", state.name());
+    Logger.recordOutput("IntakeDeploy/HallTriggered", isStowedSensorTriggered());
+    Logger.recordOutput("IntakeDeploy/AtSetpoint", pid.atSetpoint());
+    Logger.recordOutput("IntakeDeploy/PIDOutput", output);
+    Logger.recordOutput("IntakeDeploy/Error", pid.getPositionError());
 
     // NetworkTables live logging
     hallTriggeredPub.set(isStowedSensorTriggered());
