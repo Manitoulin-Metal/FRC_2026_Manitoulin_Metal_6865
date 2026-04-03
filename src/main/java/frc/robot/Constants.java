@@ -89,6 +89,10 @@ public final class Constants {
     public static final double kI = 0.0;
     public static final double kD = 0.8;
 
+    // ---------------- Feedforward ----------------
+    public static final double DEPLOY_FF_VOLTS = 1.5; // voltage to counteract gravity during deploy
+    public static final double STOW_FF_VOLTS = 1.5;   // voltage to help lift arm when stowing
+
     public static final double POSITION_TOLERANCE = 2.0;
 
     // ---------------- Hold Voltages ----------------

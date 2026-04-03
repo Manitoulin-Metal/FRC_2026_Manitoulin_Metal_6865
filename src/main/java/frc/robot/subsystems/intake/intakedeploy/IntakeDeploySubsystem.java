@@ -47,6 +47,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final DoubleEntry toleranceEntry;
   private final DoubleEntry maxOutputVoltsEntry;
   private final DoubleEntry homingVoltsEntry;
+  private final DoubleEntry deployFFEntry;
+private final DoubleEntry stowFFEntry;
 
   // ---------- Logging publishers ----------
   private final BooleanPublisher hallTriggeredPub;
@@ -100,6 +102,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
         table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
     homingVoltsEntry =
         table.getDoubleTopic("HomingOutputVolts").getEntry(Constants.IntakeDeploy.HOMING_VOLTS);
+        deployFFEntry = table.getDoubleTopic("DeployFFVolts").getEntry(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
+stowFFEntry = table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeploy.STOW_FF_VOLTS);
 
     hallTriggeredPub = table.getBooleanTopic("HallTriggered").publish();
     atSetpointPub = table.getBooleanTopic("AtSetpoint").publish();
@@ -115,6 +119,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     toleranceEntry.set(Constants.IntakeDeploy.POSITION_TOLERANCE);
     maxOutputVoltsEntry.set(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
     homingVoltsEntry.set(Constants.IntakeDeploy.HOMING_VOLTS);
+    deployFFEntry.set(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
+    stowFFEntry.set(Constants.IntakeDeploy.STOW_FF_VOLTS);
 
     SmartDashboard.putString("IntakeDeploy/StartupState", state.name());
   }
@@ -185,31 +191,24 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
     switch (state) {
       case MOVING_TO_DEPLOY:
-        if (Math.abs(angle - deployAngle) < 10) {
-          output = deployHold;
-          setClampedVoltage(output);
-          break;
-        }
-        output = pid.calculate(angle, deployAngle);
-        // Logger.recordOutput("IntakeDeploy/MoveDeployVoltage", output);
-        setClampedVoltage(output);
-        // motor.set(output); //For testing if clamping was slowing it down too much.
+        double pidOutput = pid.calculate(angle, deployAngle);
+        // Feedforward helps slow descent, reduce bounce
+        double deployFF = Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
+        setClampedVoltage(pidOutput + deployFF);
 
         if (pid.atSetpoint()) {
-          state = IntakeState.DEPLOYED;
+            state = IntakeState.DEPLOYED;
         }
         break;
 
-      case MOVING_TO_STOW:
+     case MOVING_TO_STOW:
         if (isStowedSensorTriggered() || Math.abs(angle - stowAngle) < 5) {
-          setClampedVoltage(stowHold);
-          // encoder.setPosition(0.0);
-          // pid.reset();
-          state = IntakeState.STOWED;
-          output = stowHold;
+            setClampedVoltage(stowHold); // hold at bottom
+            state = IntakeState.STOWED;
         } else {
-          output = pid.calculate(angle, stowAngle);
-          setClampedVoltage(output);
+            double pidOutputStow = pid.calculate(angle, stowAngle);
+            double stowFF = Math.abs(stowFFEntry.get()); // positive to help lift
+            setClampedVoltage(pidOutputStow + stowFF);
         }
         break;
 
