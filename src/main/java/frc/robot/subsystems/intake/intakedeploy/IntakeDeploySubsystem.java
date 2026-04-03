@@ -201,7 +201,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
         break;
 
       case MOVING_TO_STOW:
-        if (isStowedSensorTriggered()) {
+        if (isStowedSensorTriggered() || Math.abs(angle - stowAngle) < 5) {
           setClampedVoltage(stowHold);
           // encoder.setPosition(0.0);
           // pid.reset();
