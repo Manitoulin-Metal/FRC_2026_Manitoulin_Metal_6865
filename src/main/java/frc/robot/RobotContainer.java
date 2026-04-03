@@ -161,7 +161,7 @@ public class RobotContainer {
     }
 
     configureButtonBindings();
-    CameraServer.startAutomaticCapture(0);
+   // CameraServer.startAutomaticCapture(0);
   }
 
   // ============================================================
