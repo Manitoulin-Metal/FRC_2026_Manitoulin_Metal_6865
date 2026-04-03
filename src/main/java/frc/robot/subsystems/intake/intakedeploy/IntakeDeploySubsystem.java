@@ -1,5 +1,16 @@
 package frc.robot.subsystems.intake.intakedeploy;
 
+import com.revrobotics.RelativeEncoder;
+
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.networktables.DoubleEntry;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkFlex;
@@ -17,185 +28,201 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
-@SuppressWarnings("removal")
 public class IntakeDeploySubsystem extends SubsystemBase {
 
-  private final SparkFlex deployMotor = new SparkFlex(59, MotorType.kBrushless);
-  private final DigitalInput hallSensor = new DigitalInput(9); // false = magnet engaged
+  public enum IntakeState {
+    STOWED,
+    DEPLOYED,
+    MOVING_TO_STOW,
+    MOVING_TO_DEPLOY,
+    HOMING
+  }
 
-  public static final double STOW_POSITION = 0.0;
-  public static final double DEPLOY_POSITION = 18000.0;
+  private final SparkFlex motor;
+  private final RelativeEncoder encoder;
+  private final DigitalInput hallSensor;
+  private final PIDController pid;
 
-  // NetworkTables tunables
-  private final DoubleEntry deployPositionEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("deployPosition")
-          .getEntry(DEPLOY_POSITION);
+  private IntakeState state = IntakeState.HOMING;
 
-  private final DoubleEntry holdVoltageEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("holdVoltage")
-          .getEntry(0.2);
-
-  private final DoubleEntry rampThresholdEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("rampThreshold")
-          .getEntry(1500);
-
-  private final DoubleEntry positionThresholdEntry =
-      NetworkTableInstance.getDefault()
-          .getTable("Tuning/Deploy")
-          .getDoubleTopic("positionThreshold")
-          .getEntry(500); // start with bigger threshold
-
+  // ---------- Tunable NT entries ----------
   private final DoubleEntry kPEntry;
   private final DoubleEntry kIEntry;
   private final DoubleEntry kDEntry;
+  private final DoubleEntry deployAngleEntry;
+  private final DoubleEntry stowAngleEntry;
+  private final DoubleEntry deployHoldEntry;
+  private final DoubleEntry stowHoldEntry;
+  private final DoubleEntry toleranceEntry;
 
-  private final PIDController pid = new PIDController(0.005, 0, 0);
-
-  private boolean isStowing = false;
-  private boolean isDeploying = false;
-  private boolean isHolding = false;
-
-  private double stowTimer = 0.0;
-  private static final double STOW_DEBOUNCE = 0.2; // seconds
-
-  private double goalPosition = 0.0;
+  // ---------- Logging publishers ----------
+  private final BooleanPublisher hallTriggeredPub;
+  private final BooleanPublisher atSetpointPub;
 
   public IntakeDeploySubsystem() {
-    SparkFlexConfig config = new SparkFlexConfig();
-    config.idleMode(IdleMode.kBrake);
-    deployMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    pid.setTolerance(positionThresholdEntry.get());
+    motor = new SparkFlex(Constants.IntakeDeploy.MOTOR_ID, MotorType.kBrushless);
+    hallSensor = new DigitalInput(Constants.IntakeDeploy.HALL_SENSOR_PORT);
+    encoder = motor.getEncoder();
 
-    var table = NetworkTableInstance.getDefault().getTable("Tuning/Deploy");
-    kPEntry = table.getDoubleTopic("kP").getEntry(0.005);
-    kIEntry = table.getDoubleTopic("kI").getEntry(0.0);
-    kDEntry = table.getDoubleTopic("kD").getEntry(0.0);
+    // motor = new CANSparkMax(Constants.IntakeDeploy.MOTOR_ID,
+    // MotorType.kBrushless);
+    // hallSensor = new DigitalInput(Constants.IntakeDeploy.HALL_SENSOR_PORT);
 
+    pid = new PIDController(Constants.IntakeDeploy.kP, Constants.IntakeDeploy.kI, Constants.IntakeDeploy.kD);
+
+    pid.setTolerance(Constants.IntakeDeploy.POSITION_TOLERANCE);
+
+    NetworkTable table = NetworkTableInstance.getDefault().getTable("Tuning/IntakeDeploy");
+
+    kPEntry = table.getDoubleTopic("kP").getEntry(Constants.IntakeDeploy.kP);
+    kIEntry = table.getDoubleTopic("kI").getEntry(Constants.IntakeDeploy.kI);
+    kDEntry = table.getDoubleTopic("kD").getEntry(Constants.IntakeDeploy.kD);
+
+    deployAngleEntry = table.getDoubleTopic("DeployAngle").getEntry(Constants.IntakeDeploy.DEPLOY_ANGLE);
+    stowAngleEntry = table.getDoubleTopic("StowAngle").getEntry(Constants.IntakeDeploy.STOW_ANGLE);
+
+    deployHoldEntry = table.getDoubleTopic("DeployHoldVolts").getEntry(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
+    stowHoldEntry = table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
+
+    toleranceEntry = table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
+
+    hallTriggeredPub = table.getBooleanTopic("HallTriggered").publish();
+    atSetpointPub = table.getBooleanTopic("AtSetpoint").publish();
+
+    // Push defaults so they appear immediately
     kPEntry.set(Constants.IntakeDeploy.kP);
     kIEntry.set(Constants.IntakeDeploy.kI);
     kDEntry.set(Constants.IntakeDeploy.kD);
-  }
+    deployAngleEntry.set(Constants.IntakeDeploy.DEPLOY_ANGLE);
+    stowAngleEntry.set(Constants.IntakeDeploy.STOW_ANGLE);
+    deployHoldEntry.set(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
+    stowHoldEntry.set(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
+    toleranceEntry.set(Constants.IntakeDeploy.POSITION_TOLERANCE);
 
-  // Expose motor so robotcontainer can access encoder position for auto-homing
-  // and other logic if needed
-  public SparkFlex getDeployMotor() {
-    return deployMotor;
-  }
-
-  private double getDeployPosition() {
-    return deployPositionEntry.get();
+    SmartDashboard.putString("IntakeDeploy/StartupState", state.name());
   }
 
   public void deploy() {
-    goalPosition = getDeployPosition();
-    isDeploying = true;
-    isStowing = false;
-    isHolding = false;
+    if (state == IntakeState.HOMING)
+      return; // ignore until homed
+    state = IntakeState.MOVING_TO_DEPLOY;
   }
 
   public void stow() {
-    goalPosition = STOW_POSITION;
-    isStowing = true;
-    isDeploying = false;
-    isHolding = false;
+    state = IntakeState.MOVING_TO_STOW;
   }
 
-  /** Hall sensor: false = magnet engaged = stowed */
-  public boolean isStowed() {
+  // Run this function during robot initialization to home intake
+  public void startHoming() {
+    if (isStowedSensorTriggered()) {
+      encoder.setPosition(0.0);
+      state = IntakeState.STOWED;
+    } else {
+      state = IntakeState.HOMING;
+    }
+  }
+
+  public boolean isStowedSensorTriggered() {
     return !hallSensor.get();
   }
 
-  public boolean isDeployed() {
-    return hallSensor.get();
+  public double getAngleDegrees() {
+    return encoder.getPosition() * (360.0 / 135.0);
   }
 
-  public boolean atDeployPosition() {
-    return Math.abs(pid.getPositionError()) < positionThresholdEntry.get();
+  public IntakeState getState() {
+    return state;
   }
 
-  public boolean atStowPosition() {
-    return Math.abs(pid.getPositionError()) < positionThresholdEntry.get();
-  }
+  private void updatePIDFromDashboard() {
+    pid.setPID(
+        kPEntry.get(),
+        kIEntry.get(),
+        kDEntry.get());
 
-  public Command deployCommand() {
-    return Commands.either(
-        Commands.runOnce(this::deploy).andThen(Commands.waitUntil(this::atDeployPosition)),
-        Commands.none(),
-        () -> !isDeployed());
-  }
-
-  public Command stowCommand() {
-    return Commands.either(
-        Commands.runOnce(this::stow).andThen(Commands.waitUntil(this::atStowPosition)),
-        Commands.none(),
-        () -> !isStowed() // only run if not already stowed
-        );
+    pid.setTolerance(toleranceEntry.get());
   }
 
   @Override
   public void periodic() {
-    double position = deployMotor.getEncoder().getPosition() * 360.0;
-    pid.setSetpoint(goalPosition);
+    updatePIDFromDashboard();
 
-    pid.setP(kPEntry.get());
-    pid.setI(kIEntry.get());
-    pid.setD(kDEntry.get());
+    double angle = getAngleDegrees();
+    double output = 0.0;
 
-    double distanceToGoal = goalPosition - position;
-    double output = pid.calculate(position);
+    double deployAngle = deployAngleEntry.get();
+    double stowAngle = stowAngleEntry.get();
+    double deployHold = deployHoldEntry.get();
+    double stowHold = stowHoldEntry.get();
 
-    // Ramp down near stow
-    if (isStowing && Math.abs(distanceToGoal) < rampThresholdEntry.get()) {
-      output *= 0.3;
+    switch (state) {
+      case MOVING_TO_DEPLOY:
+        output = pid.calculate(angle, deployAngle);
+        motor.setVoltage(output);
+
+        if (pid.atSetpoint()) {
+          state = IntakeState.DEPLOYED;
+        }
+        break;
+
+      case MOVING_TO_STOW:
+        if (isStowedSensorTriggered()) {
+          motor.setVoltage(stowHold);
+          encoder.setPosition(0.0);
+          pid.reset();
+          state = IntakeState.STOWED;
+          output = stowHold;
+        } else {
+          output = pid.calculate(angle, stowAngle);
+          motor.setVoltage(output);
+        }
+        break;
+
+      case DEPLOYED:
+        output = deployHold;
+        motor.setVoltage(output);
+        break;
+
+      case STOWED:
+        output = stowHold;
+        motor.setVoltage(output);
+        break;
+
+      case HOMING:
+        if (isStowedSensorTriggered()) {
+          output = stowHold;
+          motor.setVoltage(output);
+          encoder.setPosition(0.0);
+          pid.reset();
+          state = IntakeState.STOWED;
+        } else {
+          motor.setVoltage(1.0); // gentle upward voltage
+        }
+        break;
     }
 
-    // Hold voltage if very close to stowed
-    if (isStowing && Math.abs(distanceToGoal) < positionThresholdEntry.get() && isDeployed()) {
-      deployMotor.setVoltage(-holdVoltageEntry.get());
-      isHolding = true;
-    } else {
-      deployMotor.setVoltage(output);
-      isHolding = false;
-    }
-
-    // Soft debounce for stow completion
-    if (isStowing && isStowed()) {
-      stowTimer += 0.02; // periodic ~20ms
-      if (stowTimer >= STOW_DEBOUNCE) {
-        isStowing = false;
-        isDeploying = false;
-        goalPosition = STOW_POSITION;
-        deployMotor.getEncoder().setPosition(0.0);
-      }
-    } else {
-      stowTimer = 0.0;
-    }
-
-    // Logging
-    Logger.recordOutput("IntakeDeploy/Position", position);
-    Logger.recordOutput("IntakeDeploy/PIDError", pid.getPositionError());
-    Logger.recordOutput("IntakeDeploy/PIDOutput", output);
-    Logger.recordOutput("IntakeDeploy/Goal", goalPosition);
-
-    SmartDashboard.putNumber("IntakeDeploy/Position", position);
-    SmartDashboard.putNumber("IntakeDeploy/PIDError", pid.getPositionError());
+    // SmartDashboard logging
+    SmartDashboard.putNumber("IntakeDeploy/AngleDeg", angle);
+    SmartDashboard.putNumber("IntakeDeploy/RawRotations", encoder.getPosition());
+    SmartDashboard.putString("IntakeDeploy/State", state.name());
+    SmartDashboard.putBoolean("IntakeDeploy/HallTriggered", isStowedSensorTriggered());
+    SmartDashboard.putBoolean("IntakeDeploy/AtSetpoint", pid.atSetpoint());
     SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
-    SmartDashboard.putNumber("IntakeDeploy/Goal", goalPosition);
-    SmartDashboard.putBoolean("IntakeDeploy/isDeployed", isDeployed());
-    SmartDashboard.putBoolean("IntakeDeploy/isStowing", isStowing);
-    SmartDashboard.putBoolean("IntakeDeploy/isDeploying", isDeploying);
-    SmartDashboard.putBoolean("IntakeDeploy/isHolding", isHolding);
-    SmartDashboard.putBoolean("Debug/isStowedSensor", isStowed());
-    SmartDashboard.putNumber("Debug/distanceToGoal", distanceToGoal);
+    SmartDashboard.putNumber("IntakeDeploy/Error", pid.getPositionError());
+
+    // NetworkTables live logging
+    hallTriggeredPub.set(isStowedSensorTriggered());
+    atSetpointPub.set(pid.atSetpoint());
   }
 
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+  }
 }
+
+// @SuppressWarnings("removal")
+
+// Logging
+// Logger.recordOutput("IntakeDeploy/Position",position);Logger.recordOutput("IntakeDeploy/PIDError",pid.getPositionError());Logger.recordOutput("IntakeDeploy/PIDOutput",output);
+// Logger.recordOutput("IntakeDeploy/Goal", goalPosition);
