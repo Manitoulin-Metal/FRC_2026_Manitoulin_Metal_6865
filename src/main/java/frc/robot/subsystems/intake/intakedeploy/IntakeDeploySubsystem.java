@@ -48,7 +48,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final DoubleEntry maxOutputVoltsEntry;
   private final DoubleEntry homingVoltsEntry;
   private final DoubleEntry deployFFEntry;
-private final DoubleEntry stowFFEntry;
+  private final DoubleEntry stowFFEntry;
 
   // ---------- Logging publishers ----------
   private final BooleanPublisher hallTriggeredPub;
@@ -102,8 +102,10 @@ private final DoubleEntry stowFFEntry;
         table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
     homingVoltsEntry =
         table.getDoubleTopic("HomingOutputVolts").getEntry(Constants.IntakeDeploy.HOMING_VOLTS);
-        deployFFEntry = table.getDoubleTopic("DeployFFVolts").getEntry(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
-stowFFEntry = table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeploy.STOW_FF_VOLTS);
+    deployFFEntry =
+        table.getDoubleTopic("DeployFFVolts").getEntry(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
+    stowFFEntry =
+        table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeploy.STOW_FF_VOLTS);
 
     hallTriggeredPub = table.getBooleanTopic("HallTriggered").publish();
     atSetpointPub = table.getBooleanTopic("AtSetpoint").publish();
@@ -193,22 +195,23 @@ stowFFEntry = table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeplo
       case MOVING_TO_DEPLOY:
         double pidOutput = pid.calculate(angle, deployAngle);
         // Feedforward helps slow descent, reduce bounce
-        double deployFF = Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
+        double deployFF =
+            Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
         setClampedVoltage(pidOutput + deployFF);
 
         if (pid.atSetpoint()) {
-            state = IntakeState.DEPLOYED;
+          state = IntakeState.DEPLOYED;
         }
         break;
 
-     case MOVING_TO_STOW:
-        if (isStowedSensorTriggered() || Math.abs(angle - stowAngle) < 5) {
-            setClampedVoltage(stowHold); // hold at bottom
-            state = IntakeState.STOWED;
+      case MOVING_TO_STOW:
+        if (isStowedSensorTriggered() || Math.abs(angle - stowAngle) < 2) {
+          setClampedVoltage(stowHold); // hold at top
+          state = IntakeState.STOWED;
         } else {
-            double pidOutputStow = pid.calculate(angle, stowAngle);
-            double stowFF = Math.abs(stowFFEntry.get()); // positive to help lift
-            setClampedVoltage(pidOutputStow + stowFF);
+          double pidOutputStow = pid.calculate(angle, stowAngle);
+          double stowFF = -Math.abs(stowFFEntry.get()); // negative to help lift
+          setClampedVoltage(pidOutputStow + stowFF);
         }
         break;
 

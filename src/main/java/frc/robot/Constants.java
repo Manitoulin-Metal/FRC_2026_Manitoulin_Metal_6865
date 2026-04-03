@@ -82,23 +82,23 @@ public final class Constants {
 
     // ---------------- Positions ----------------
     public static final double STOW_ANGLE = 0.0;
-    public static final double DEPLOY_ANGLE = 80.0;
+    public static final double DEPLOY_ANGLE = 84.0;
 
     // ---------------- PID ----------------
-    public static final double kP = 0.25;
+    public static final double kP = 0.14;
     public static final double kI = 0.0;
-    public static final double kD = 0.8;
+    public static final double kD = 0.002;
 
     // ---------------- Feedforward ----------------
     public static final double DEPLOY_FF_VOLTS = 1.5; // voltage to counteract gravity during deploy
-    public static final double STOW_FF_VOLTS = 1.5;   // voltage to help lift arm when stowing
+    public static final double STOW_FF_VOLTS = 2; // voltage to help lift arm when stowing
 
     public static final double POSITION_TOLERANCE = 2.0;
 
     // ---------------- Hold Voltages ----------------
     public static final double HOMING_VOLTS = 2;
     public static final double STOW_HOLD_VOLTS = 0.2;
-    public static final double DEPLOY_HOLD_VOLTS = 0.35;
+    public static final double DEPLOY_HOLD_VOLTS = 0.3;
 
     // ---------------- Safety ----------------
     public static final double MAX_OUTPUT_VOLTS = 12.0;
