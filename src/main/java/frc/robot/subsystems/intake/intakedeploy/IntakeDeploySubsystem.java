@@ -1,26 +1,20 @@
 package frc.robot.subsystems.intake.intakedeploy;
 
 import com.revrobotics.RelativeEncoder;
-
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.networktables.DoubleEntry;
 import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoubleEntry;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkSoftLimit.SoftLimitDirection;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkFlexConfig;
-
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
@@ -52,6 +46,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final DoubleEntry stowHoldEntry;
   private final DoubleEntry toleranceEntry;
   private final DoubleEntry maxOutputVoltsEntry;
+  private final DoubleEntry homingVoltsEntry;
 
   // ---------- Logging publishers ----------
   private final BooleanPublisher hallTriggeredPub;
@@ -65,9 +60,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     // This soft limit will prevent the motor controller from attempting to drive
     // mechanism to deploy angle past hard stop
     // Tune direction and value. Starting at 33.75
-    config.softLimit
-        .forwardSoftLimit(33.75)
-        .forwardSoftLimitEnabled(true);
+    config.softLimit.forwardSoftLimit(90).forwardSoftLimitEnabled(true);
 
     // Apply configuration to motor.
     motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
@@ -80,7 +73,9 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     // MotorType.kBrushless);
     // hallSensor = new DigitalInput(Constants.IntakeDeploy.HALL_SENSOR_PORT);
 
-    pid = new PIDController(Constants.IntakeDeploy.kP, Constants.IntakeDeploy.kI, Constants.IntakeDeploy.kD);
+    pid =
+        new PIDController(
+            Constants.IntakeDeploy.kP, Constants.IntakeDeploy.kI, Constants.IntakeDeploy.kD);
 
     pid.setTolerance(Constants.IntakeDeploy.POSITION_TOLERANCE);
 
@@ -90,14 +85,21 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     kIEntry = table.getDoubleTopic("kI").getEntry(Constants.IntakeDeploy.kI);
     kDEntry = table.getDoubleTopic("kD").getEntry(Constants.IntakeDeploy.kD);
 
-    deployAngleEntry = table.getDoubleTopic("DeployAngle").getEntry(Constants.IntakeDeploy.DEPLOY_ANGLE);
+    deployAngleEntry =
+        table.getDoubleTopic("DeployAngle").getEntry(Constants.IntakeDeploy.DEPLOY_ANGLE);
     stowAngleEntry = table.getDoubleTopic("StowAngle").getEntry(Constants.IntakeDeploy.STOW_ANGLE);
 
-    deployHoldEntry = table.getDoubleTopic("DeployHoldVolts").getEntry(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
-    stowHoldEntry = table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
+    deployHoldEntry =
+        table.getDoubleTopic("DeployHoldVolts").getEntry(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
+    stowHoldEntry =
+        table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
 
-    toleranceEntry = table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
-    maxOutputVoltsEntry = table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
+    toleranceEntry =
+        table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
+    maxOutputVoltsEntry =
+        table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
+    homingVoltsEntry =
+        table.getDoubleTopic("HomingOutputVolts").getEntry(Constants.IntakeDeploy.HOMING_VOLTS);
 
     hallTriggeredPub = table.getBooleanTopic("HallTriggered").publish();
     atSetpointPub = table.getBooleanTopic("AtSetpoint").publish();
@@ -112,26 +114,27 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     stowHoldEntry.set(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
     toleranceEntry.set(Constants.IntakeDeploy.POSITION_TOLERANCE);
     maxOutputVoltsEntry.set(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
+    homingVoltsEntry.set(Constants.IntakeDeploy.HOMING_VOLTS);
 
     SmartDashboard.putString("IntakeDeploy/StartupState", state.name());
   }
 
   // Helper function to clamp voltage to safe range (or to slow for testing)
   private double clampVoltage(double volts) {
-    return Math.max(-maxOutputVoltsEntry.get(),
-        Math.min(maxOutputVoltsEntry.get(), volts));
+    return Math.max(-maxOutputVoltsEntry.get(), Math.min(maxOutputVoltsEntry.get(), volts));
   }
 
   // Helper function to set voltage with clamping (replace all motor.setVoltage
   // calls with this)
   private void setClampedVoltage(double volts) {
     double clamped = clampVoltage(volts);
+    SmartDashboard.putNumber("IntakeDeploy/ClampedVoltage", clamped);
+    Logger.recordOutput("IntakeDeploy/ClampedVoltage", clamped);
     motor.setVoltage(clamped);
   }
 
   public void deploy() {
-    if (state == IntakeState.HOMING)
-      return; // ignore until homed
+    if (state == IntakeState.HOMING) return; // ignore until homed
     state = IntakeState.MOVING_TO_DEPLOY;
   }
 
@@ -154,7 +157,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   public double getAngleDegrees() {
-    return encoder.getPosition() * (360.0 / 135.0);
+    return encoder.getPosition() * (360.0 / Constants.IntakeDeploy.GEAR_RATIO);
   }
 
   public IntakeState getState() {
@@ -162,10 +165,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   private void updatePIDFromDashboard() {
-    pid.setPID(
-        kPEntry.get(),
-        kIEntry.get(),
-        kDEntry.get());
+    pid.setPID(kPEntry.get(), kIEntry.get(), kDEntry.get());
 
     pid.setTolerance(toleranceEntry.get());
   }
@@ -181,11 +181,19 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     double stowAngle = stowAngleEntry.get();
     double deployHold = deployHoldEntry.get();
     double stowHold = stowHoldEntry.get();
+    double homingVolts = homingVoltsEntry.get();
 
     switch (state) {
       case MOVING_TO_DEPLOY:
+        if (Math.abs(angle - deployAngle) < 10) {
+          output = deployHold;
+          setClampedVoltage(output);
+          break;
+        }
         output = pid.calculate(angle, deployAngle);
+        // Logger.recordOutput("IntakeDeploy/MoveDeployVoltage", output);
         setClampedVoltage(output);
+        // motor.set(output); //For testing if clamping was slowing it down too much.
 
         if (pid.atSetpoint()) {
           state = IntakeState.DEPLOYED;
@@ -195,8 +203,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
       case MOVING_TO_STOW:
         if (isStowedSensorTriggered()) {
           setClampedVoltage(stowHold);
-          encoder.setPosition(0.0);
-          pid.reset();
+          // encoder.setPosition(0.0);
+          // pid.reset();
           state = IntakeState.STOWED;
           output = stowHold;
         } else {
@@ -211,19 +219,19 @@ public class IntakeDeploySubsystem extends SubsystemBase {
         break;
 
       case STOWED:
-        output = stowHold;
+        output = -stowHold;
         setClampedVoltage(output);
         break;
 
       case HOMING:
         if (isStowedSensorTriggered()) {
-          output = stowHold;
+          output = -stowHold;
           setClampedVoltage(output);
           encoder.setPosition(0.0);
           pid.reset();
           state = IntakeState.STOWED;
         } else {
-          setClampedVoltage(1.0); // gentle upward voltage
+          setClampedVoltage(-homingVolts); // gentle upward voltage
         }
         break;
     }
@@ -251,8 +259,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   @Override
-  public void simulationPeriodic() {
-  }
+  public void simulationPeriodic() {}
 }
 
 // @SuppressWarnings("removal")
