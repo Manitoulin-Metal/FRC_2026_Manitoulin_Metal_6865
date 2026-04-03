@@ -81,11 +81,12 @@ public final class Constants {
     // ---------------- Hardware ----------------
     public static final int MOTOR_ID = 59; // <-- replace with CAN ID
     public static final int HALL_SENSOR_PORT = 9; // <-- DIO port
-    public static final double GEAR_RATIO = 135.0;
+    public static final double GEAR_RATIO = 270.0; // 270:1 with 135:1 on the Neo and 2:1 external reduction from
+                                                   // sprockets
 
     // ---------------- Positions ----------------
     public static final double STOW_ANGLE = 0.0;
-    public static final double DEPLOY_ANGLE = 90.0;
+    public static final double DEPLOY_ANGLE = 70.0;
 
     // ---------------- PID ----------------
     public static final double kP = 0.008;
