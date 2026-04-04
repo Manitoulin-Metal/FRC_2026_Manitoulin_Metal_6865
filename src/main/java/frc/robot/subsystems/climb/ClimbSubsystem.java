@@ -26,21 +26,21 @@ public class ClimbSubsystem extends SubsystemBase {
 
   // ========================= MOTOR CONTROL =========================
 
-public void runClimber(double speed) {
+  public void runClimber(double speed) {
 
-  boolean pressed = isLimitSwitchPressed();
+    boolean pressed = isLimitSwitchPressed();
 
-  // DEBUG (watch this live!)
-  SmartDashboard.putBoolean("Climb/LimitSwitchPressed", pressed);
-  SmartDashboard.putNumber("Climb/SpeedCommand", speed);
+    // DEBUG (watch this live!)
+    SmartDashboard.putBoolean("Climb/LimitSwitchPressed", pressed);
+    SmartDashboard.putNumber("Climb/SpeedCommand", speed);
 
-  if (pressed && speed > 0) {
-    climbMotor.stopMotor(); // stronger than set(0)
-    return;
+    if (pressed && speed > 0) {
+      climbMotor.stopMotor(); // stronger than set(0)
+      return;
+    }
+
+    climbMotor.set(speed);
   }
-
-  climbMotor.set(speed);
-}
 
   public boolean isLimitSwitchPressed() {
     return !limitSwitch.get(); // active low
@@ -48,20 +48,17 @@ public void runClimber(double speed) {
 
   // ========================= COMMANDS =========================
 
-public Command climbCommand(double speed) {
-  return run(
-          () -> runClimber(speed))
-      .finallyDo(
-          interrupted -> climbMotor.stopMotor());
-}
+  public Command climbCommand(double speed) {
+    return run(() -> {
+          boolean pressed = isLimitSwitchPressed();
 
-public Command stopCommand() {
-  return runOnce(climbMotor::stopMotor);
-}
-  // ========================= DEBUG =========================
-
-  @Override
-  public void periodic() {
-    SmartDashboard.putBoolean("Climb/LimitSwitchPressed", isLimitSwitchPressed());
+          // Stop downward motion if limit switch pressed
+          if (pressed && speed < 0) {
+            climbMotor.stopMotor();
+          } else {
+            climbMotor.set(speed);
+          }
+        })
+        .finallyDo(interrupted -> climbMotor.stopMotor());
   }
 }

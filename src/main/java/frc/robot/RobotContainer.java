@@ -64,13 +64,16 @@ public class RobotContainer {
 
   private final Field2d field = new Field2d();
 
-  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert1 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
 
-  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert2 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
   // ============================================================
   // -------------------- CONSTRUCTOR ----------------------------
@@ -81,42 +84,42 @@ public class RobotContainer {
     // -------- Drive init --------
     switch (Constants.currentMode) {
       case REAL:
-        drive = new Drive(
-            new GyroIOPigeon2(),
-            new ModuleIOTalonFX(TunerConstants.FrontLeft),
-            new ModuleIOTalonFX(TunerConstants.FrontRight),
-            new ModuleIOTalonFX(TunerConstants.BackLeft),
-            new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOPigeon2(),
+                new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                new ModuleIOTalonFX(TunerConstants.FrontRight),
+                new ModuleIOTalonFX(TunerConstants.BackLeft),
+                new ModuleIOTalonFX(TunerConstants.BackRight));
         break;
 
       case SIM:
-        drive = new Drive(
-            new GyroIOSim(),
-            new ModuleIOSim(TunerConstants.FrontLeft),
-            new ModuleIOSim(TunerConstants.FrontRight),
-            new ModuleIOSim(TunerConstants.BackLeft),
-            new ModuleIOSim(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOSim(),
+                new ModuleIOSim(TunerConstants.FrontLeft),
+                new ModuleIOSim(TunerConstants.FrontRight),
+                new ModuleIOSim(TunerConstants.BackLeft),
+                new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default:
-        drive = new Drive(
-            new GyroIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            });
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
         break;
     }
 
     // -------- Vision setup --------
-    visionClimb = new VisionSubsystem(new VisionIOLimelight("limelight0", drive::getRotation), drive);
+    visionClimb =
+        new VisionSubsystem(new VisionIOLimelight("limelight0", drive::getRotation), drive);
 
-    visionShoot = new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+    visionShoot =
+        new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
 
     // -------- Default drive --------
     drive.setDefaultCommand(
@@ -145,9 +148,7 @@ public class RobotContainer {
     // NamedCommands.registerCommand(
     // "ClimbAutoUp", Commands.runOnce(() -> climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
 
-    NamedCommands.registerCommand(
-        "ClimbAutoDown",
-        climb1.climbCommand(-0.5).withTimeout(6));
+    NamedCommands.registerCommand("ClimbAutoDown", climb1.climbCommand(-0.5).withTimeout(6));
 
     NamedCommands.registerCommand(
         "timedShootCommand",
@@ -335,8 +336,7 @@ public class RobotContainer {
           // GET TAG POSE
           // =========================
           Optional<Pose3d> tagPose3d = fieldLayout.getTagPose(targetTag);
-          if (tagPose3d.isEmpty())
-            return;
+          if (tagPose3d.isEmpty()) return;
 
           Pose2d tagPose = tagPose3d.get().toPose2d();
           Pose2d robotPose = drive.getPose();
@@ -344,10 +344,11 @@ public class RobotContainer {
           // =========================
           // 2m SHOOTING ARC TARGET
           // =========================
-          Transform2d offset = new Transform2d(
-              new Translation2d(-2.0, 0.0), // 2m back from tag
-              Rotation2d.fromDegrees(180) // face target
-          );
+          Transform2d offset =
+              new Transform2d(
+                  new Translation2d(-2.0, 0.0), // 2m back from tag
+                  Rotation2d.fromDegrees(180) // face target
+                  );
 
           Pose2d targetPose = tagPose.transformBy(offset);
 
