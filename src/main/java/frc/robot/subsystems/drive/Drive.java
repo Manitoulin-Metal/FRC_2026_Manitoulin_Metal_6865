@@ -218,15 +218,25 @@ public class Drive extends SubsystemBase {
     double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
 
     // Bump detection and vision reset during autonomous
-    if (DriverStation.isAutonomous() && m_vision != null && m_vision.hasValidVision()) {
-      Pose2d estPose = poseEstimator.getEstimatedPosition();
+    if (DriverStation.isAutonomous() && m_vision != null) {
+
       Pose2d visionPose = m_vision.getEstimatedPose();
-      double dx = estPose.getTranslation().getDistance(visionPose.getTranslation());
-      double dyaw = Math.abs(estPose.getRotation().minus(visionPose.getRotation()).getDegrees());
-      if (dx > frc.robot.Constants.AUTO_BUMP_ERROR_METERS
-          || dyaw > frc.robot.Constants.AUTO_BUMP_YAW_DEG) {
-        setPose(visionPose);
-        Logger.recordOutput("Drive/BumpReset", true);
+
+      // Only proceed if vision actually has a valid pose
+      if (visionPose != null) {
+
+        Pose2d estPose = poseEstimator.getEstimatedPosition();
+
+        double dx = estPose.getTranslation().getDistance(visionPose.getTranslation());
+
+        double dyaw = Math.abs(estPose.getRotation().minus(visionPose.getRotation()).getDegrees());
+
+        if (dx > frc.robot.Constants.AUTO_BUMP_ERROR_METERS
+            || dyaw > frc.robot.Constants.AUTO_BUMP_YAW_DEG) {
+
+          setPose(visionPose);
+          Logger.recordOutput("Drive/BumpReset", true);
+        }
       }
     }
 
