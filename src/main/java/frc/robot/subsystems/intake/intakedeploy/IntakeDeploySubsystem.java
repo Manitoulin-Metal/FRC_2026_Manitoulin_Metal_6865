@@ -75,9 +75,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     // MotorType.kBrushless);
     // hallSensor = new DigitalInput(Constants.IntakeDeploy.HALL_SENSOR_PORT);
 
-    pid =
-        new PIDController(
-            Constants.IntakeDeploy.kP, Constants.IntakeDeploy.kI, Constants.IntakeDeploy.kD);
+    pid = new PIDController(
+        Constants.IntakeDeploy.kP, Constants.IntakeDeploy.kI, Constants.IntakeDeploy.kD);
 
     pid.setTolerance(Constants.IntakeDeploy.POSITION_TOLERANCE);
 
@@ -87,25 +86,17 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     kIEntry = table.getDoubleTopic("kI").getEntry(Constants.IntakeDeploy.kI);
     kDEntry = table.getDoubleTopic("kD").getEntry(Constants.IntakeDeploy.kD);
 
-    deployAngleEntry =
-        table.getDoubleTopic("DeployAngle").getEntry(Constants.IntakeDeploy.DEPLOY_ANGLE);
+    deployAngleEntry = table.getDoubleTopic("DeployAngle").getEntry(Constants.IntakeDeploy.DEPLOY_ANGLE);
     stowAngleEntry = table.getDoubleTopic("StowAngle").getEntry(Constants.IntakeDeploy.STOW_ANGLE);
 
-    deployHoldEntry =
-        table.getDoubleTopic("DeployHoldVolts").getEntry(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
-    stowHoldEntry =
-        table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
+    deployHoldEntry = table.getDoubleTopic("DeployHoldVolts").getEntry(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
+    stowHoldEntry = table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
 
-    toleranceEntry =
-        table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
-    maxOutputVoltsEntry =
-        table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
-    homingVoltsEntry =
-        table.getDoubleTopic("HomingOutputVolts").getEntry(Constants.IntakeDeploy.HOMING_VOLTS);
-    deployFFEntry =
-        table.getDoubleTopic("DeployFFVolts").getEntry(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
-    stowFFEntry =
-        table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeploy.STOW_FF_VOLTS);
+    toleranceEntry = table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
+    maxOutputVoltsEntry = table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
+    homingVoltsEntry = table.getDoubleTopic("HomingOutputVolts").getEntry(Constants.IntakeDeploy.HOMING_VOLTS);
+    deployFFEntry = table.getDoubleTopic("DeployFFVolts").getEntry(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
+    stowFFEntry = table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeploy.STOW_FF_VOLTS);
 
     hallTriggeredPub = table.getBooleanTopic("HallTriggered").publish();
     atSetpointPub = table.getBooleanTopic("AtSetpoint").publish();
@@ -142,7 +133,16 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   public void deploy() {
-    if (state == IntakeState.HOMING) return; // ignore until homed
+    // Ignore deploy button presses during homing to prevent interrupting the homing
+    // process
+    if (state == IntakeState.HOMING)
+      return;
+
+    // If we're deployed, ignore deploy command to prevent overdriving intake into
+    // hard stop
+    if (state == IntakeState.DEPLOYED)
+      return;
+
     state = IntakeState.MOVING_TO_DEPLOY;
   }
 
@@ -193,16 +193,21 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
     switch (state) {
       case MOVING_TO_DEPLOY:
-        if (state != IntakeState.DEPLOYED) {
-          double pidOutput = pid.calculate(angle, deployAngle);
-          // Feedforward helps slow descent, reduce bounce
-          double deployFF =
-              Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
-          setClampedVoltage(pidOutput + deployFF);
+        // Safety mechanism to prevent driving down into hard stop if you attempt to
+        // deploy when already near the deploy position
+        if (Math.abs(angle - deployAngle) < 2) {
+          setClampedVoltage(deployHold); // hold at bottom
+          state = IntakeState.DEPLOYED;
+          break;
+        }
 
-          if (pid.atSetpoint()) {
-            state = IntakeState.DEPLOYED;
-          }
+        double pidOutput = pid.calculate(angle, deployAngle);
+        // Feedforward helps slow descent, reduce bounce
+        double deployFF = Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
+        setClampedVoltage(pidOutput + deployFF);
+
+        if (pid.atSetpoint()) {
+          state = IntakeState.DEPLOYED;
         }
         break;
 
@@ -263,7 +268,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+  }
 }
 
 // @SuppressWarnings("removal")
