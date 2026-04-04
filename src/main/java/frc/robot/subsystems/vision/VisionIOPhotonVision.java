@@ -8,12 +8,11 @@
 
 package frc.robot.subsystems.vision;
 
+import static frc.robot.subsystems.vision.VisionConstants.*;
+
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
-
-import static frc.robot.subsystems.vision.VisionConstants.*;
-
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,7 +20,6 @@ import java.util.Set;
 import org.photonvision.PhotonCamera;
 
 /** IO implementation for real PhotonVision hardware. */
-
 public class VisionIOPhotonVision implements VisionIO {
   protected final PhotonCamera camera;
   protected final Transform3d robotToCamera;
@@ -32,7 +30,6 @@ public class VisionIOPhotonVision implements VisionIO {
    * @param name The configured name of the camera.
    * @param robotToCamera The 3D position of the camera relative to the robot.
    */
-
   public VisionIOPhotonVision(String name, Transform3d robotToCamera) {
     camera = new PhotonCamera(name);
     this.robotToCamera = robotToCamera;
@@ -55,9 +52,7 @@ public class VisionIOPhotonVision implements VisionIO {
             new TargetObservation(
                 Rotation2d.fromDegrees(result.getBestTarget().getYaw()),
                 Rotation2d.fromDegrees(result.getBestTarget().getPitch()));
-      }
-
-      else {
+      } else {
         inputs.latestTargetObservation = new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
       }
 
@@ -91,8 +86,7 @@ public class VisionIOPhotonVision implements VisionIO {
                 totalTagDistance / result.targets.size(), // Average tag distance
                 PoseObservationType.PHOTONVISION)); // Observation type
 
-      } 
-      else if (!result.targets.isEmpty()) { // Single tag result
+      } else if (!result.targets.isEmpty()) { // Single tag result
         var target = result.targets.get(0);
 
         // Calculate robot pose
@@ -132,7 +126,7 @@ public class VisionIOPhotonVision implements VisionIO {
     // Save tag IDs to inputs objects
     inputs.tagIds = new int[tagIds.size()];
     int i = 0;
-    
+
     for (int id : tagIds) {
       inputs.tagIds[i++] = id;
     }

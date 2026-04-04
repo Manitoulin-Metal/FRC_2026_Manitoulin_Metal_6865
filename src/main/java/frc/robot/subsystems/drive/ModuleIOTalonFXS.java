@@ -11,9 +11,7 @@ import static frc.robot.util.PhoenixUtil.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.CANdiConfiguration;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
@@ -79,7 +77,9 @@ public class ModuleIOTalonFXS implements ModuleIO {
   private final Debouncer turnEncoderConnectedDebounce =
       new Debouncer(0.5, Debouncer.DebounceType.kFalling);
 
-  public ModuleIOTalonFXS(SwerveModuleConstants<TalonFXSConfiguration, TalonFXSConfiguration, CANdiConfiguration> frontleft) {
+  public ModuleIOTalonFXS(
+      SwerveModuleConstants<TalonFXSConfiguration, TalonFXSConfiguration, CANdiConfiguration>
+          frontleft) {
     driveTalon = new TalonFXS(frontleft.DriveMotorId, TunerConstants.kCANBus);
     turnTalon = new TalonFXS(frontleft.SteerMotorId, TunerConstants.kCANBus);
     candi = new CANdi(frontleft.EncoderId, TunerConstants.kCANBus);

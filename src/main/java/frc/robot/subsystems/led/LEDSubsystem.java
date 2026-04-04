@@ -3,6 +3,4 @@
 
 package frc.robot.subsystems.led;
 
-public class LEDSubsystem {
-    
-}
+public class LEDSubsystem {}
