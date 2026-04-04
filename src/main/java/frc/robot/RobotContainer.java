@@ -133,22 +133,29 @@ public class RobotContainer {
     NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
 
     NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
-
     NamedCommands.registerCommand(
         "ClimbAutoUp",
-        climb1.climbCommand(0.5).withTimeout(4));
+        DriveCommands.driveToClimb(
+            drive,
+            fieldLayout,
+            new Transform2d(new Translation2d(0.0, 0.0), Rotation2d.fromDegrees(0.0)),
+            1.5,
+            3.0));
+    // IMEDIANTELY UNCOMMENT THIS
+    // NamedCommands.registerCommand(
+    // "ClimbAutoUp", Commands.runOnce(() -> climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
 
     NamedCommands.registerCommand(
         "ClimbAutoDown",
         climb1.climbCommand(-0.5).withTimeout(6));
 
-    // NamedCommands.registerCommand(
-    // "timedShootCommand",
-    // Commands.parallel(
-    // Commands.run(() -> shooter.runShooter(Constants.AUTO_SHOOT_RPS), shooter),
-    // kicker.kickerCommand(0.3))
-    // .withTimeout(1.5)
-    // .andThen(shooter.stopCommand(), kicker.stopCommand()));
+    NamedCommands.registerCommand(
+        "timedShootCommand",
+        Commands.parallel(
+                Commands.run(() -> shooter.runShooter(Constants.AUTO_SHOOT_RPS), shooter),
+                kicker.kickerCommand())
+            .withTimeout(1.5)
+            .andThen(shooter.stopCommand(), kicker.stopCommand()));
 
     // Load autos
     for (String autoName : AutoBuilder.getAllAutoNames()) {
@@ -243,19 +250,6 @@ public class RobotContainer {
                   SmartDashboard.putNumber("ClimbOffset/RotDeg", offset.getRotation().getDegrees());
                 }));
 
-    // Drive to Climb
-    driver
-        .leftTrigger(0.5)
-        .onTrue(
-            Commands.parallel(
-                DriveCommands.driveToClimb(drive, fieldLayout, null, 0, 0),
-                // run a no-op command that still requires the vision subsystem (replace with
-                // real call if available)
-                Commands.run(() -> {
-                }, visionClimb))
-                .until(visionClimb::isReadyToClimb)
-                .andThen(drive::stop, drive));
-
     // Climb controls
     operator.pov(0).whileTrue(climb1.climbCommand(0.75)).onFalse(climb1.climbCommand(0));
     operator.pov(180).whileTrue(climb1.climbCommand(-0.75)).onFalse(climb1.climbCommand(0));
@@ -269,8 +263,11 @@ public class RobotContainer {
     // Shooter controls
     operator
         .rightTrigger(0.5)
-        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
-        .onFalse(shooter.stopCommand());
+        .whileTrue(
+            Commands.parallel(
+                Commands.run(() -> shooter.runShooter(75.0), shooter), whip.whipCommand()))
+        .onFalse(shooter.stopCommand())
+        .toggleOnFalse(whip.whipStopCommand());
 
     // Shooter Slow controls
     operator
@@ -279,10 +276,10 @@ public class RobotContainer {
         .onFalse(shooter.stopCommand());
 
     // Whip
-    operator.rightBumper().toggleOnTrue(whip.whipSlowCommand());
+    operator.rightBumper().toggleOnTrue(whip.whipCommand());
 
     // Kicker test
-    // controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
+    driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // Shooter faults clear
     operator.leftBumper().onTrue(shooter.clearFaultsCommand());

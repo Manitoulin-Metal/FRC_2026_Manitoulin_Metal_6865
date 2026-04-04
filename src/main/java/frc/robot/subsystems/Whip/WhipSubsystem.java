@@ -26,13 +26,18 @@ public class WhipSubsystem extends SubsystemBase {
    *
    * @return a command
    */
-  public final Command whipSlowCommand() {
+  public final Command whipCommand() {
     System.out.println("Whip is Running");
     setManualMode(true);
-    return Commands.run(() -> whip(Constants.WHIP_SLOW_SPEED), this).finallyDo(this::stopWhip);
+    return Commands.run(() -> whip(Constants.WHIP_SLOW_SPEED), this)
+        .finallyDo(
+            () -> {
+              setManualMode(false);
+              whip(0.0);
+            });
   }
 
-  private void stopWhip() {
+  public void stopWhip() {
     setManualMode(false);
     whip(0.0);
   }
@@ -47,9 +52,9 @@ public class WhipSubsystem extends SubsystemBase {
     whip.set(speed);
   }
 
-  /** Stop command to set kicker speed to 0. */
+  /** Stop command to set whip speed to 0. */
   public Command stopCommand() {
-    return Commands.runOnce(() -> whip(0.0), this);
+    return Commands.runOnce(() -> stopWhip(), this);
   }
 
   /**
@@ -58,7 +63,7 @@ public class WhipSubsystem extends SubsystemBase {
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
   public boolean whipCondition() {
-    return m_shooter.getVelocityRps() * 60 > Constants.SHOOTER_WHIP_RPM_THRESHOLD;
+    return m_shooter.atTarget();
   }
 
   private boolean manualMode = false;
@@ -79,7 +84,7 @@ public class WhipSubsystem extends SubsystemBase {
       return;
     }
     double shooterRps = m_shooter.getVelocityRps();
-    boolean condition = shooterRps * 60 > Constants.SHOOTER_WHIP_RPM_THRESHOLD;
+    boolean condition = whipCondition();
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Whip/ShooterRPS", shooterRps);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean("Whip/Condition", condition);
     double speed = condition ? whipAutoSpeedEntry.get() : 0.0;

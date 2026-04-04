@@ -13,6 +13,7 @@ import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.Optional;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -34,10 +35,7 @@ public final class DriveCommands {
   // TELEOP JOYSTICK DRIVE
   // -----------------------------
   public static Command joystickDrive(
-      Drive drive,
-      java.util.function.DoubleSupplier forward,
-      java.util.function.DoubleSupplier strafe,
-      java.util.function.DoubleSupplier rotation) {
+      Drive drive, DoubleSupplier forward, DoubleSupplier strafe, DoubleSupplier rotation) {
 
     return Commands.run(
         () -> {
@@ -61,6 +59,15 @@ public final class DriveCommands {
           drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rot));
         },
         drive);
+  }
+
+  public static Command slowJoystickDrive(
+      Drive drive, DoubleSupplier forward, DoubleSupplier strafe, DoubleSupplier rotation) {
+    return joystickDrive(
+        drive,
+        () -> forward.getAsDouble() * 0.5,
+        () -> strafe.getAsDouble() * 0.5,
+        () -> rotation.getAsDouble() * 0.5);
   }
 
   // -----------------------------
