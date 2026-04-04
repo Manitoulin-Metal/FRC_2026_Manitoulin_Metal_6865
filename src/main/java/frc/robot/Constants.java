@@ -51,6 +51,7 @@ public final class Constants {
 
   // Vision auto positioning
   public static final int HUB_TAG_ID = 25;
+  public static final int TOWER_TAG_ID = 32;
   // public static final int HUB_TAG_ID = 0;
   public static final double AUTO_VISION_KP_LINEAR = 2.0;
   public static final double AUTO_VISION_KP_ANGULAR = 4.0;

@@ -163,6 +163,10 @@ public class VisionSubsystem extends SubsystemBase {
     return hasShootingTag() && Math.abs(getTxDegrees()) < 1.0 && getDistanceToTarget() > 0;
   }
 
+  public boolean isReadyToClimb() {
+    return hasTag(Constants.TOWER_TAG_ID) && Math.abs(getTyDegrees()) < 5.0;
+  }
+
   public double getShootingTargetDistance() {
     if (inputs.rawFiducialCount == 0) {
       return -1.0;
