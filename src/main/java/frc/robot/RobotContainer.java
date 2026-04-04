@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
-import frc.robot.commands.auto.SimpleDriveAndSpinAuto;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Whip.WhipSubsystem;
 import frc.robot.subsystems.climb.ClimbSubsystem;
@@ -129,7 +128,6 @@ public class RobotContainer {
 
     // -------- Auto chooser --------
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
-    autoChooser.addOption("Simple Drive + Spin", new SimpleDriveAndSpinAuto(drive));
 
     // -------- Named commands --------
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
@@ -140,11 +138,11 @@ public class RobotContainer {
     NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
 
     NamedCommands.registerCommand(
-        "ClimbAutoUp", Commands.runOnce(() -> climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
+        "ClimbAutoUp", Commands.runOnce(() -> climb1.climbCommand(0.5).withTimeout(4).schedule()));
 
     NamedCommands.registerCommand(
         "ClimbAutoDown",
-        Commands.runOnce(() -> climb1.ClimbCommand(-0.5).withTimeout(6).schedule()));
+        Commands.runOnce(() -> climb1.climbCommand(-0.5).withTimeout(6).schedule()));
 
     // NamedCommands.registerCommand(
     // "timedShootCommand",
@@ -260,8 +258,8 @@ public class RobotContainer {
                 .andThen(drive::stop, drive));
 
     // Climb controls
-    operator.pov(0).whileTrue(climb1.ClimbCommand(0.75)).onFalse(climb1.ClimbCommand(0));
-    operator.pov(180).whileTrue(climb1.ClimbCommand(-0.75)).onFalse(climb1.ClimbCommand(0));
+    operator.pov(0).whileTrue(climb1.climbCommand(0.75)).onFalse(climb1.climbCommand(0));
+    operator.pov(180).whileTrue(climb1.climbCommand(-0.75)).onFalse(climb1.climbCommand(0));
 
     // Intake controls
     operator
@@ -315,103 +313,97 @@ public class RobotContainer {
       double kPRotation) {
 
     return Commands.run(
-            () -> {
+        () -> {
 
-              // =========================
-              // DRIVER OVERRIDE (NO VISION)
-              // =========================
-              if (!visionEnabled.get()) {
-                drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
-                return;
-              }
+          // =========================
+          // DRIVER OVERRIDE (NO VISION)
+          // =========================
+          if (!visionEnabled.get()) {
+            drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
+            return;
+          }
 
-              // =========================
-              // AUTO TAG SELECTION
-              // =========================
-              Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-              int targetTag = (alliance == Alliance.Blue) ? 25 : 9;
+          // =========================
+          // AUTO TAG SELECTION
+          // =========================
+          Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+          int targetTag = (alliance == Alliance.Blue) ? 25 : 9;
 
-              // If we don't see tag → fallback to driver
-              if (!vision.hasTag(targetTag)) {
-                drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
-                return;
-              }
+          // If we don't see tag → fallback to driver
+          if (!vision.hasTag(targetTag)) {
+            drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
+            return;
+          }
 
-              // =========================
-              // GET TAG POSE
-              // =========================
-              Optional<Pose3d> tagPose3d = fieldLayout.getTagPose(targetTag);
-              if (tagPose3d.isEmpty()) return;
+          // =========================
+          // GET TAG POSE
+          // =========================
+          Optional<Pose3d> tagPose3d = fieldLayout.getTagPose(targetTag);
+          if (tagPose3d.isEmpty()) return;
 
-              Pose2d tagPose = tagPose3d.get().toPose2d();
-              Pose2d robotPose = drive.getPose();
+          Pose2d tagPose = tagPose3d.get().toPose2d();
+          Pose2d robotPose = drive.getPose();
 
-              // =========================
-              // 2m SHOOTING ARC TARGET
-              // =========================
-              Transform2d offset =
-                  new Transform2d(
-                      new Translation2d(-2.0, 0.0), // 2m back from tag
-                      Rotation2d.fromDegrees(180) // face target
-                      );
+          // =========================
+          // 2m SHOOTING ARC TARGET
+          // =========================
+          Transform2d offset =
+              new Transform2d(
+                  new Translation2d(-2.0, 0.0), // 2m back from tag
+                  Rotation2d.fromDegrees(180) // face target
+                  );
 
-              Pose2d targetPose = tagPose.transformBy(offset);
+          Pose2d targetPose = tagPose.transformBy(offset);
 
-              // =========================
-              // ERROR CALCULATION
-              // =========================
-              Transform2d error = targetPose.minus(robotPose);
+          // =========================
+          // ERROR CALCULATION
+          // =========================
+          Transform2d error = targetPose.minus(robotPose);
 
-              double forwardVision = error.getX() * kPLinear;
-              double strafeVision = error.getY() * kPLinear;
-              double rotVision = error.getRotation().getRadians() * kPRotation;
+          double forwardVision = error.getX() * kPLinear;
+          double strafeVision = error.getY() * kPLinear;
+          double rotVision = error.getRotation().getRadians() * kPRotation;
 
-              // =========================
-              // DISTANCE + RPM LOGIC
-              // =========================
-              double distance = robotPose.getTranslation().getDistance(targetPose.getTranslation());
+          // =========================
+          // DISTANCE + RPM LOGIC
+          // =========================
+          double distance = robotPose.getTranslation().getDistance(targetPose.getTranslation());
 
-              double targetRPM = Constants.getRPMForDistance(distance);
+          double targetRPM = Constants.getRPMForDistance(distance);
 
-              SmartDashboard.putString(
-                  "Shooter Status",
-                  String.format("Shooting to %.2f m at %.0f RPM", distance, targetRPM));
+          SmartDashboard.putString(
+              "Shooter Status",
+              String.format("Shooting to %.2f m at %.0f RPM", distance, targetRPM));
 
-              SmartDashboard.putNumber("Shooter/DistanceToTarget", distance);
-              SmartDashboard.putNumber("Shooter/TargetRPM", targetRPM);
+          SmartDashboard.putNumber("Shooter/DistanceToTarget", distance);
+          SmartDashboard.putNumber("Shooter/TargetRPM", targetRPM);
 
-              // =========================
-              // DRIVER + VISION BLENDING
-              // =========================
-              double visionWeight = 0.7;
-              double driverWeight = 0.3;
+          // =========================
+          // DRIVER + VISION BLENDING
+          // =========================
+          double visionWeight = 0.7;
+          double driverWeight = 0.3;
 
-              double vx = driverX.get() * driverWeight + forwardVision * visionWeight;
-              double vy = driverY.get() * driverWeight + strafeVision * visionWeight;
-              double vr = driverRot.get() * driverWeight + rotVision * visionWeight;
+          double vx = driverX.get() * driverWeight + forwardVision * visionWeight;
+          double vy = driverY.get() * driverWeight + strafeVision * visionWeight;
+          double vr = driverRot.get() * driverWeight + rotVision * visionWeight;
 
-              // =========================
-              // CLAMP SPEEDS
-              // =========================
-              double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
-              double maxAngular = drive.getMaxAngularSpeedRadPerSec();
+          // =========================
+          // CLAMP SPEEDS
+          // =========================
+          double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
+          double maxAngular = drive.getMaxAngularSpeedRadPerSec();
 
-              vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
-              vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
-              vr = MathUtil.clamp(vr, -maxAngular, maxAngular);
+          vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
+          vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
+          vr = MathUtil.clamp(vr, -maxAngular, maxAngular);
 
-              // =========================
-              // DRIVE
-              // =========================
-              drive.runVelocity(new ChassisSpeeds(vx, vy, vr));
-            },
-            drive)
-
-        // =========================
-        // FINISH CONDITION (aligned)
-        // =========================
-        .until(vision::isReadyToShoot)
-        .andThen(drive::stop);
+          // =========================
+          // DRIVE
+          // =========================
+          drive.runVelocity(new ChassisSpeeds(vx, vy, vr));
+        },
+        drive);
   }
 
   public Command getAutonomousCommand() {

@@ -13,7 +13,6 @@ public class VisionSubsystem extends SubsystemBase {
 
   private final VisionIO io;
   private final VisionIOInputsAutoLogged inputs = new VisionIOInputsAutoLogged();
-
   private final Drive drive;
 
   public VisionSubsystem(VisionIO io, Drive drive) {
@@ -21,19 +20,13 @@ public class VisionSubsystem extends SubsystemBase {
     this.drive = drive;
   }
 
-  // ============================================================
-  // -------------------- TAG DETECTION --------------------------
-  // ============================================================
+  // ========================= TAG DETECTION =========================
 
   public boolean hasTag(int tagId) {
     for (int id : inputs.tagIds) {
       if (id == tagId) return true;
     }
     return false;
-  }
-
-  public boolean hasValidVision() {
-    return getBestObservation() != null;
   }
 
   public boolean hasAnyTag() {
@@ -44,9 +37,7 @@ public class VisionSubsystem extends SubsystemBase {
     return inputs.tagIds;
   }
 
-  // ============================================================
-  // -------------------- BEST OBSERVATION -----------------------
-  // ============================================================
+  // ========================= BEST OBSERVATION =========================
 
   public PoseObservation getBestObservation() {
     if (inputs.poseObservations.length == 0) return null;
@@ -61,15 +52,11 @@ public class VisionSubsystem extends SubsystemBase {
 
       double score = 0;
 
-      // Prefer MegaTag2
       if (obs.type() == VisionIO.PoseObservationType.MEGATAG_2) {
         score += 2.0;
       }
 
-      // More tags = better
       score += obs.tagCount();
-
-      // Closer = better
       score += 1.0 / (obs.averageTagDistance() + 0.001);
 
       if (best == null || score > bestScore) {
@@ -81,9 +68,23 @@ public class VisionSubsystem extends SubsystemBase {
     return best;
   }
 
-  // ============================================================
-  // -------------------- DISTANCE -------------------------------
-  // ============================================================
+  // ========================= POSE =========================
+
+  public Pose2d getEstimatedPose() {
+    PoseObservation obs = getBestObservation();
+    if (obs == null) return null;
+    return obs.pose().toPose2d();
+  }
+
+  public Pose2d getBestRobotPose() {
+    Pose2d visionPose = getEstimatedPose();
+    if (visionPose != null) {
+      return visionPose;
+    }
+    return drive.getPose();
+  }
+
+  // ========================= DISTANCE =========================
 
   public double getAverageDistance() {
     PoseObservation obs = getBestObservation();
@@ -91,31 +92,17 @@ public class VisionSubsystem extends SubsystemBase {
     return obs.averageTagDistance();
   }
 
-  // ============================================================
-  // -------------------- TX / TY -------------------------------
-  // ============================================================
+  // ========================= TX / TY =========================
 
   public double getTX() {
     return inputs.latestTargetObservation.tx().getDegrees();
-  }
-
-  public Pose2d getEstimatedPose() {
-    PoseObservation obs = getBestObservation();
-    System.out.println("TX=" + getTX() + ", TY=" + getTY());
-    // If there is no observation or TY is the invalid sentinel, return null.
-    if (obs == null) return null;
-    if (getTY() == 999) return null;
-    // Convert the Pose3d from the observation to a Pose2d before returning.
-    return obs.pose().toPose2d();
   }
 
   public double getTY() {
     return inputs.latestTargetObservation.ty().getDegrees();
   }
 
-  // ============================================================
-  // -------------------- CLIMB TARGET ---------------------------
-  // ============================================================
+  // ========================= CLIMB TARGET =========================
 
   public Optional<Pose2d> getClimbTargetPose(AprilTagFieldLayout layout) {
 
@@ -125,7 +112,6 @@ public class VisionSubsystem extends SubsystemBase {
     if (tagPose3d.isEmpty()) return Optional.empty();
 
     Pose2d tagPose = tagPose3d.get().toPose2d();
-
     Pose2d targetPose = tagPose.transformBy(Constants.CLIMB_OFFSET);
 
     return Optional.of(targetPose);
@@ -136,7 +122,7 @@ public class VisionSubsystem extends SubsystemBase {
     Optional<Pose2d> targetOpt = getClimbTargetPose(layout);
     if (targetOpt.isEmpty()) return Optional.empty();
 
-    Pose2d robotPose = drive.getPose();
+    Pose2d robotPose = getBestRobotPose();
     Pose2d targetPose = targetOpt.get();
 
     return Optional.of(targetPose.minus(robotPose));
@@ -157,21 +143,13 @@ public class VisionSubsystem extends SubsystemBase {
     return posGood && rotGood;
   }
 
-  // ============================================================
-  // -------------------- SHOOT READY ----------------------------
-  // ============================================================
-
-  public boolean isReadyToShoot() {
-    return hasAnyTag() && getBestObservation() != null;
-  }
+  // ========================= STATUS =========================
 
   public boolean isReadyToClimb() {
     return hasTag(Constants.CLIMB_TAG_ID) && getBestObservation() != null;
   }
 
-  // ============================================================
-  // -------------------- PERIODIC -------------------------------
-  // ============================================================
+  // ========================= PERIODIC =========================
 
   @Override
   public void periodic() {
@@ -183,8 +161,9 @@ public class VisionSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("Vision/TX", getTX());
     SmartDashboard.putNumber("Vision/TY", getTY());
 
-    if (inputs.poseObservations.length > 0) {
-      SmartDashboard.putNumber("Vision/Ambiguity", inputs.poseObservations[0].ambiguity());
+    PoseObservation best = getBestObservation();
+    if (best != null) {
+      SmartDashboard.putNumber("Vision/Ambiguity", best.ambiguity());
     }
   }
 }
