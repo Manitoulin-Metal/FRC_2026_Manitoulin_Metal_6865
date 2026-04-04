@@ -266,8 +266,11 @@ public class RobotContainer {
     // Shooter controls
     operator
         .rightTrigger(0.5)
-        .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
-        .onFalse(shooter.stopCommand());
+        .whileTrue(
+            Commands.parallel(
+                Commands.run(() -> shooter.runShooter(75.0), shooter), whip.whipCommand()))
+        .onFalse(shooter.stopCommand())
+        .toggleOnFalse(whip.whipStopCommand());
 
     // Shooter Slow controls
     operator
@@ -276,7 +279,7 @@ public class RobotContainer {
         .onFalse(shooter.stopCommand());
 
     // Whip
-    operator.rightBumper().toggleOnTrue(whip.whipSlowCommand());
+    operator.rightBumper().toggleOnTrue(whip.whipCommand());
 
     // Kicker test
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
