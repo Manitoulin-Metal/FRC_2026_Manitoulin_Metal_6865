@@ -32,6 +32,10 @@ public class VisionSubsystem extends SubsystemBase {
     return false;
   }
 
+  public boolean hasValidVision() {
+    return getBestObservation() != null;
+  }
+
   public boolean hasAnyTag() {
     return inputs.tagIds.length > 0;
   }
@@ -95,6 +99,16 @@ public class VisionSubsystem extends SubsystemBase {
     return inputs.latestTargetObservation.tx().getDegrees();
   }
 
+  public Pose2d getEstimatedPose() {
+    PoseObservation obs = getBestObservation();
+    System.out.println("TX=" + getTX() + ", TY=" + getTY());
+    // If there is no observation or TY is the invalid sentinel, return null.
+    if (obs == null) return null;
+    if (getTY() == 999) return null;
+    // Convert the Pose3d from the observation to a Pose2d before returning.
+    return obs.pose().toPose2d();
+  }
+
   public double getTY() {
     return inputs.latestTargetObservation.ty().getDegrees();
   }
@@ -135,11 +149,10 @@ public class VisionSubsystem extends SubsystemBase {
     Transform2d error = errorOpt.get();
 
     boolean posGood =
-        Math.abs(error.getX()) < Constants.CLIMB_POS_TOLERANCE &&
-        Math.abs(error.getY()) < Constants.CLIMB_POS_TOLERANCE;
+        Math.abs(error.getX()) < Constants.CLIMB_POS_TOLERANCE
+            && Math.abs(error.getY()) < Constants.CLIMB_POS_TOLERANCE;
 
-    boolean rotGood =
-        Math.abs(error.getRotation().getRadians()) < Constants.CLIMB_ROT_TOLERANCE;
+    boolean rotGood = Math.abs(error.getRotation().getRadians()) < Constants.CLIMB_ROT_TOLERANCE;
 
     return posGood && rotGood;
   }
@@ -150,6 +163,10 @@ public class VisionSubsystem extends SubsystemBase {
 
   public boolean isReadyToShoot() {
     return hasAnyTag() && getBestObservation() != null;
+  }
+
+  public boolean isReadyToClimb() {
+    return hasTag(Constants.CLIMB_TAG_ID) && getBestObservation() != null;
   }
 
   // ============================================================
@@ -167,8 +184,7 @@ public class VisionSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("Vision/TY", getTY());
 
     if (inputs.poseObservations.length > 0) {
-      SmartDashboard.putNumber(
-          "Vision/Ambiguity", inputs.poseObservations[0].ambiguity());
+      SmartDashboard.putNumber("Vision/Ambiguity", inputs.poseObservations[0].ambiguity());
     }
   }
 }

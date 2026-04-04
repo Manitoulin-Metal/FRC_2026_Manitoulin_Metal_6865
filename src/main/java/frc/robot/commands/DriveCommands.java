@@ -333,7 +333,7 @@ public final class DriveCommands {
               drive.runVelocity(new ChassisSpeeds(vx, vy, vr));
             },
             drive)
-        .until(() -> Math.abs(vision.getTxDegrees()) < 1.0 && Math.abs(vision.getTyDegrees()) < 1.0)
+        .until(() -> Math.abs(vision.getTX()) < 1.0 && Math.abs(vision.getTY()) < 1.0)
         .andThen(drive::stop);
   }
 }
