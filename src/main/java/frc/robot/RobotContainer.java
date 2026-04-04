@@ -168,6 +168,7 @@ public class RobotContainer {
   // ============================================================
 
   private void configureButtonBindings() {
+    Logger.recordOutput("Bindings/Configured", true);
 
     driver
         .y()
@@ -422,6 +423,13 @@ public class RobotContainer {
   // ============================================================
 
   public void periodic() {
+    Logger.recordOutput("Controls/DriverLeftY", driver.getLeftY());
+    Logger.recordOutput("Controls/DriverLeftX", driver.getLeftX());
+    Logger.recordOutput("Controls/DriverRightX", driver.getRightX());
+    Logger.recordOutput("Controls/DriverRT", driver.getRightTriggerAxis());
+    Logger.recordOutput("Controls/DriverLT", driver.getLeftTriggerAxis());
+    Logger.recordOutput("Controls/OperatorLT", operator.getLeftTriggerAxis());
+    Logger.recordOutput("Controls/OperatorRT", operator.getRightTriggerAxis());
 
     double matchTime = DriverStation.getMatchTime();
 

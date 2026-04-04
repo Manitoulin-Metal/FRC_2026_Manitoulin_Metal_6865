@@ -14,6 +14,7 @@ import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public final class DriveCommands {
 
@@ -43,6 +44,7 @@ public final class DriveCommands {
           double xSpeed = forward.getAsDouble();
           double ySpeed = strafe.getAsDouble();
           double rot = rotation.getAsDouble();
+          Logger.recordOutput("DriveCmd/JoystickDrive", new double[] {xSpeed, ySpeed, rot});
 
           // Optional: apply deadband
           xSpeed = MathUtil.applyDeadband(xSpeed, 0.05);
