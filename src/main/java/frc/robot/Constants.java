@@ -41,12 +41,15 @@ public final class Constants {
   public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0;
 
   public static final double WHIP_SLOW_SPEED = -0.15;
+  public static final double TEST_SLOWSHOOTER_RPS = 6.0; // Temporary test speed
+  public static final double SLOWSHOOTER_VELOCITY_RPS =
+      TEST_SLOWSHOOTER_RPS; // Tune this RPS (~60 RPM for test)
+  public static final double SLOWSHOOTER_KICKER_RPM_THRESHOLD =
+      3550.0; // Triggers kicker at shooter 60.0 RPS (1)
 
   public static double getRPMForDistance(double distance) {
-    if (distance < 2.0) return 2500;
-    if (distance < 3.0) return 3000;
-    if (distance < 4.0) return 3500;
-    return 4000;
+    if (distance < 2.40) return 3550;
+    return 4200;
   }
 
   // Vision auto positioning
