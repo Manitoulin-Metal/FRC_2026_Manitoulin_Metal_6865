@@ -125,10 +125,7 @@ public class RobotContainer {
     // -------- Default drive --------
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
-            drive,
-            () -> -driver.getLeftY(),
-            () -> -driver.getLeftX(),
-            () -> -driver.getRightX()));
+            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
     // -------- Auto chooser --------
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -200,7 +197,7 @@ public class RobotContainer {
             Commands.runOnce(
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
-    
+
     // Drive to Shoot Command
     driver
         .rightTrigger(0.5)
@@ -250,16 +247,16 @@ public class RobotContainer {
                 }));
 
     // Drive to Climb
-    driver.leftTrigger(0.5).onTrue(
-        Commands.parallel(
-            DriveCommands.driveToClimb(drive, fieldLayout, null, 0, 0),
-            // run a no-op command that still requires the vision subsystem (replace with real call if available)
-            Commands.run(() -> {}, visionClimb)
-        )
-        .until(visionClimb::isReadyToClimb)
-        .andThen(drive::stop, drive)
-    );
-
+    driver
+        .leftTrigger(0.5)
+        .onTrue(
+            Commands.parallel(
+                    DriveCommands.driveToClimb(drive, fieldLayout, null, 0, 0),
+                    // run a no-op command that still requires the vision subsystem (replace with
+                    // real call if available)
+                    Commands.run(() -> {}, visionClimb))
+                .until(visionClimb::isReadyToClimb)
+                .andThen(drive::stop, drive));
 
     // Climb controls
     operator.pov(0).whileTrue(climb1.ClimbCommand(0.75)).onFalse(climb1.ClimbCommand(0));
@@ -441,13 +438,9 @@ public class RobotContainer {
     double rumble = (alert20 || alert10) ? 0.5 : 0.0;
 
     // ✅ Apply rumble using HID
-    driver
-        .getHID()
-        .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kLeftRumble, rumble);
+    driver.getHID().setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kLeftRumble, rumble);
 
-    driver
-        .getHID()
-        .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kRightRumble, rumble);
+    driver.getHID().setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kRightRumble, rumble);
     // LED + gyro alerts
     if (drive.isGyroDisconnected()) {
       led.gyroDisconnectedAlert();
