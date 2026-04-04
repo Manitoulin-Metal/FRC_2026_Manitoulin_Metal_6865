@@ -273,8 +273,14 @@ public class RobotContainer {
 
     // Shooter controls
     operator
-        .rightTrigger(0.1)
+        .rightTrigger(0.5)
         .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
+        .onFalse(shooter.stopCommand());
+
+    // Shooter Slow controls
+    operator
+        .y()
+        .whileTrue(Commands.run(() -> shooter.runShooter(60.0), shooter))
         .onFalse(shooter.stopCommand());
 
     // Whip
