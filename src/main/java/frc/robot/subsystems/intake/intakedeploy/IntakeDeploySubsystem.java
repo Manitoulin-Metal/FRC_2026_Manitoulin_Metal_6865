@@ -195,7 +195,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
       case MOVING_TO_DEPLOY:
         // Safety mechanism to prevent driving down into hard stop if you attempt to
         // deploy when already near the deploy position
-        if (Math.abs(angle - deployAngle) < 2) {
+        if (angle >= deployAngle) {
           setClampedVoltage(deployHold); // hold at bottom
           state = IntakeState.DEPLOYED;
           break;
