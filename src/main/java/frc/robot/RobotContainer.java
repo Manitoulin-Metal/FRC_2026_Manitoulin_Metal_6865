@@ -56,8 +56,8 @@ public class RobotContainer {
   // -------------------- CONTROLLERS ----------------------------
   // ============================================================
 
-  private final CommandXboxController controller = new CommandXboxController(0);
-  private final CommandXboxController controller1 = new CommandXboxController(1);
+  private final CommandXboxController driver = new CommandXboxController(0);
+  private final CommandXboxController operator = new CommandXboxController(1);
 
   // ============================================================
   // -------------------- FIELD / AUTO ---------------------------
@@ -126,9 +126,9 @@ public class RobotContainer {
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+            () -> -driver.getLeftY(),
+            () -> -driver.getLeftX(),
+            () -> -driver.getRightX()));
 
     // -------- Auto chooser --------
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -172,7 +172,7 @@ public class RobotContainer {
 
   private void configureButtonBindings() {
 
-    controller
+    driver
         .y()
         .onTrue(
             Commands.runOnce(
@@ -186,22 +186,23 @@ public class RobotContainer {
     // controller1.b().onTrue(intakeDeploy.stowCommand());
 
     // New intake deploy
-    controller1.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+    operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
     // New intake stow
-    controller1.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
+    operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
     // Stop drive (X)
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // Gyro reset
-    controller
+    driver
         .b()
         .onTrue(
             Commands.runOnce(
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
-
-    controller
+    
+    // Drive to Shoot Command
+    driver
         .rightTrigger(0.5)
         .whileTrue(
             DriveCommands.driveToShootVision(
@@ -210,9 +211,9 @@ public class RobotContainer {
                 shooter,
                 fieldLayout,
                 () -> visionEnabled,
-                () -> -controller.getLeftY(),
-                () -> -controller.getLeftX(),
-                () -> -controller.getRightX(),
+                () -> -driver.getLeftY(),
+                () -> -driver.getLeftX(),
+                () -> -driver.getRightX(),
                 1.5,
                 3.0));
 
@@ -231,7 +232,7 @@ public class RobotContainer {
      */
 
     // Debug offset calc
-    controller
+    driver
         .a()
         .onTrue(
             Commands.runOnce(
@@ -248,29 +249,42 @@ public class RobotContainer {
                   SmartDashboard.putNumber("ClimbOffset/RotDeg", offset.getRotation().getDegrees());
                 }));
 
+    // Drive to Climb
+    driver.leftTrigger(0.5).onTrue(
+        Commands.parallel(
+            DriveCommands.driveToClimb(drive, fieldLayout, null, 0, 0),
+            // run a no-op command that still requires the vision subsystem (replace with real call if available)
+            Commands.run(() -> {}, visionClimb)
+        )
+        .until(visionClimb::isReadyToClimb)
+        .andThen(drive::stop, drive)
+    );
+
+
     // Climb controls
-    controller1.pov(0).whileTrue(climb1.ClimbCommand(0.75)).onFalse(climb1.ClimbCommand(0));
-    controller1.pov(180).whileTrue(climb1.ClimbCommand(-0.75)).onFalse(climb1.ClimbCommand(0));
+    operator.pov(0).whileTrue(climb1.ClimbCommand(0.75)).onFalse(climb1.ClimbCommand(0));
+    operator.pov(180).whileTrue(climb1.ClimbCommand(-0.75)).onFalse(climb1.ClimbCommand(0));
 
     // Intake controls
-    controller1
+    operator
         .leftTrigger(0.1)
         .whileTrue(intakeRoller.intakeCommand())
         .onFalse(intakeRoller.idleCommand());
 
-    controller1
+    // Shooter controls
+    operator
         .rightTrigger(0.1)
         .whileTrue(Commands.run(() -> shooter.runShooter(75.0), shooter))
         .onFalse(shooter.stopCommand());
 
     // Whip
-    controller1.rightBumper().toggleOnTrue(whip.whipSlowCommand());
+    operator.rightBumper().toggleOnTrue(whip.whipSlowCommand());
 
     // Kicker test
     // controller.leftTrigger(0.5).whileTrue(kicker.kickerCommand(0.3));
 
     // Shooter faults clear
-    controller1.leftBumper().onTrue(shooter.clearFaultsCommand());
+    operator.leftBumper().onTrue(shooter.clearFaultsCommand());
 
     // Agitator
     // controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
@@ -421,11 +435,11 @@ public class RobotContainer {
     double rumble = (alert20 || alert10) ? 0.5 : 0.0;
 
     // ✅ Apply rumble using HID
-    controller
+    driver
         .getHID()
         .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kLeftRumble, rumble);
 
-    controller
+    driver
         .getHID()
         .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kRightRumble, rumble);
     // LED + gyro alerts
@@ -434,8 +448,8 @@ public class RobotContainer {
     }
 
     // Controller diagnostics
-    SmartDashboard.putNumber("Driver/LeftY", controller.getLeftY());
-    SmartDashboard.putNumber("Operator/LeftY", controller1.getLeftY());
+    SmartDashboard.putNumber("Driver/LeftY", driver.getLeftY());
+    SmartDashboard.putNumber("Operator/LeftY", operator.getLeftY());
     SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
   }
 }

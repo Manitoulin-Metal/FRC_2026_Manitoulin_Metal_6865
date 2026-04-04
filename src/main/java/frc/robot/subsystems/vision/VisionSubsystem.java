@@ -163,6 +163,22 @@ public class VisionSubsystem extends SubsystemBase {
     return hasShootingTag() && Math.abs(getTxDegrees()) < 1.0 && getDistanceToTarget() > 0;
   }
 
+  public boolean isReadyToClimb() {
+    return hasClimbTag() && Math.abs(getTxDegrees()) < 1.0 && getDistanceToTarget() > 0;
+  }
+
+  /** Returns true if any detected fiducial is considered a climb tag. */
+  public boolean hasClimbTag() {
+    // Default behavior: treat any detected tag that is not a known shooting tag as a climb tag.
+    // This avoids adding new external constants and fixes the undefined method compile error.
+    for (int i = 0; i < inputs.rawFiducialCount; i++) {
+      if (!SHOOTING_TAGS.contains(inputs.rawFiducialIDs[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public double getShootingTargetDistance() {
     if (inputs.rawFiducialCount == 0) {
       return -1.0;
