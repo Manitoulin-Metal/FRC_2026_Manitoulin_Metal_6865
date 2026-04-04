@@ -26,19 +26,21 @@ public class ClimbSubsystem extends SubsystemBase {
 
   // ========================= MOTOR CONTROL =========================
 
-  public void runClimber(double speed) {
+public void runClimber(double speed) {
 
-    // Prevent upward movement if limit switch is pressed
-    if (speed > 0 && isLimitSwitchPressed()) {
-      climbMotor.set(0);
-    } else {
-      climbMotor.set(speed);
-    }
+  boolean pressed = isLimitSwitchPressed();
+
+  // DEBUG (watch this live!)
+  SmartDashboard.putBoolean("Climb/LimitSwitchPressed", pressed);
+  SmartDashboard.putNumber("Climb/SpeedCommand", speed);
+
+  if (pressed && speed > 0) {
+    climbMotor.stopMotor(); // stronger than set(0)
+    return;
   }
 
-  public void stopClimber() {
-    climbMotor.set(0);
-  }
+  climbMotor.set(speed);
+}
 
   public boolean isLimitSwitchPressed() {
     return !limitSwitch.get(); // active low
@@ -46,14 +48,16 @@ public class ClimbSubsystem extends SubsystemBase {
 
   // ========================= COMMANDS =========================
 
-  public Command climbCommand(double speed) {
-    return run(() -> runClimber(speed)).finallyDo(() -> stopClimber());
-  }
+public Command climbCommand(double speed) {
+  return run(
+          () -> runClimber(speed))
+      .finallyDo(
+          interrupted -> climbMotor.stopMotor());
+}
 
-  public Command stopCommand() {
-    return runOnce(this::stopClimber);
-  }
-
+public Command stopCommand() {
+  return runOnce(climbMotor::stopMotor);
+}
   // ========================= DEBUG =========================
 
   @Override
