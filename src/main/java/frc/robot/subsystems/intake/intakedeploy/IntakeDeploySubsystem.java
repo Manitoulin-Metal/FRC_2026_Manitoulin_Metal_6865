@@ -193,14 +193,16 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
     switch (state) {
       case MOVING_TO_DEPLOY:
-        double pidOutput = pid.calculate(angle, deployAngle);
-        // Feedforward helps slow descent, reduce bounce
-        double deployFF =
-            Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
-        setClampedVoltage(pidOutput + deployFF);
+        if (state != IntakeState.DEPLOYED) {
+          double pidOutput = pid.calculate(angle, deployAngle);
+          // Feedforward helps slow descent, reduce bounce
+          double deployFF =
+              Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
+          setClampedVoltage(pidOutput + deployFF);
 
-        if (pid.atSetpoint()) {
-          state = IntakeState.DEPLOYED;
+          if (pid.atSetpoint()) {
+            state = IntakeState.DEPLOYED;
+          }
         }
         break;
 
