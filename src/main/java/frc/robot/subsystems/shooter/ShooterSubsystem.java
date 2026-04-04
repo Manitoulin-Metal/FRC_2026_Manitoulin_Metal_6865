@@ -92,6 +92,12 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /** Stop command: stops shooter instantly */
+  /** Returns true if shooter velocity is at target within tolerance */
+  public boolean atTarget() {
+    return Math.abs(targetRps - getVelocityRps()) <= Constants.SHOOTER_AT_TARGET_TOLERANCE_RPS
+        && getVelocityRps() >= Constants.SHOOTER_MIN_RPS;
+  }
+
   public Command stopCommand() {
     return Commands.runOnce(this::stopShooter, this);
   }

@@ -6,7 +6,6 @@ import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 
 public class KickerSubsystem extends SubsystemBase {
@@ -26,14 +25,13 @@ public class KickerSubsystem extends SubsystemBase {
 
   /** Returns true if the shooter is fast enough to allow the kicker to run. */
   public boolean kickerCondition() {
-    // Convert RPS to RPM and compare to threshold
-    return m_shooter.getVelocityRps() * 60 > Constants.SHOOTER_KICKER_RPM_THRESHOLD;
+    return m_shooter.atTarget();
   }
 
   /** Runs the kicker at constant speed if the shooter is ready. */
   public void kicker() {
     if (kickerCondition()) {
-      kicker.set(Constants.KICKER_SPEED);
+      kicker.set(0.5);
     } else {
       kicker.set(0.0);
     }
@@ -57,6 +55,9 @@ public class KickerSubsystem extends SubsystemBase {
 
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/ShooterRPS", shooterRps);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean("Kicker/Condition", condition);
+    double speed = condition ? 0.5 : 0.0;
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/SetSpeed", speed);
+    kicker.set(speed);
   }
 
   @Override

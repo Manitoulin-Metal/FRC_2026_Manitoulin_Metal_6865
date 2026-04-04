@@ -28,8 +28,10 @@ public final class Constants {
   public static final double TEST_SHOOTER_RPS = 10.0; // Temporary test speed
   public static final double SHOOTER_VELOCITY_RPS =
       TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
-  public static final double SHOOTER_KICKER_RPM_THRESHOLD =
-      4200.0; // Triggers kicker at shooter 70.0 RPS (70 * 60)
+  public static final double SHOOTER_KICKER_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for testing
+  public static final double SHOOTER_WHIP_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for testing
+  public static final double SHOOTER_AT_TARGET_TOLERANCE_RPS = 3.0;
+  public static final double SHOOTER_MIN_RPS = 50.0;
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
   // public static final int[] SHOOTING_TAG_IDS = {};
@@ -37,15 +39,16 @@ public final class Constants {
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 75.0;
-  public static final double KICKER_SPEED = 0.8;
-  public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0;
+  // public static final double KICKER_SPEED = 50;
+  // public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0; // superseded by new threshold
+  // above
 
   public static final double WHIP_SLOW_SPEED = -0.15;
   public static final double TEST_SLOWSHOOTER_RPS = 6.0; // Temporary test speed
   public static final double SLOWSHOOTER_VELOCITY_RPS =
       TEST_SLOWSHOOTER_RPS; // Tune this RPS (~60 RPM for test)
   public static final double SLOWSHOOTER_KICKER_RPM_THRESHOLD =
-      3550.0; // Triggers kicker at shooter 60.0 RPS (1)
+      3500.0; // Triggers kicker at shooter 60.0 RPS (1)
 
   public static double getRPMForDistance(double distance) {
     if (distance < 2.40) return 3550;
@@ -67,7 +70,7 @@ public final class Constants {
   public static final double[] SHOOTER_TARGET_RPS_BY_DISTANCE = {65.0, 68.0, 70.0, 72.0, 75.0};
 
   public static class Shooter {
-    public static final double kP = 0.0; // Disabled (set 0) to troubleshoot not moving
+    public static final double kP = 0.01; // Minimal PID enabled for better tracking
     public static final double kI = 0.0; // Disabled (set 0) to troubleshoot not moving
     public static final double kD = 0.0; // Disabled (set 0) to troubleshoot not moving
     public static final double kV = 0.12;

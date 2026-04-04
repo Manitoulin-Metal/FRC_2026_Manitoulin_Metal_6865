@@ -1,10 +1,10 @@
 ***Controller (Driver Controller):***
 Button B: Reset Gyro
-Right Trigger: Drive To Climb Command
+Left Trigger (hold): Slow Drive (0.5x speed)
+Right Trigger: Drive To Shoot Vision
 Button X: Switches to X Pattern
-Button Y: Shooter open-loop test at 30% duty cycle (hardware test - hold to spin motor bypassing PID)
-Button A: (available)
-
+Button Y: Toggle Vision Enabled
+Button A: Debug climb offset calc
 
 ***Controller1 (Operator Controller):***
 Right Trigger: Run Shooter
@@ -13,7 +13,7 @@ Button A: Deploy Intake (With PID)
 Button B: Stow Intake (With PID)
 Button X: Deploy Agitator
 D PAD DOWN: Drop Robot off Climb
-D PAD UP: Lift Robot Up Cilmb
+D PAD UP: Lift Robot Up Climb
 
 **REMAINING BUTTONS THAT CAN BE BINDED FOR OPERATOR CONTROLLER**
 
