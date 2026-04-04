@@ -6,6 +6,7 @@ import static edu.wpi.first.wpilibj2.command.Commands.run;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.climb.ClimbSubsystem;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Command helpers for the climb subsystem. This class follows the same pattern as DriveCommands -
@@ -27,6 +28,7 @@ public class ClimbCommand {
   public static Command runClimber(ClimbSubsystem climbSubsystem, double speed) {
     return run(
         () -> {
+          Logger.recordOutput("ClimbCmd/Speed", speed);
           climbSubsystem.runClimber(speed);
         },
         climbSubsystem);
