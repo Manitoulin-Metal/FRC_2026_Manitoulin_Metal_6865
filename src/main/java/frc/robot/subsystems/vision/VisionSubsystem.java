@@ -24,7 +24,8 @@ public class VisionSubsystem extends SubsystemBase {
 
   public boolean hasTag(int tagId) {
     for (int id : inputs.tagIds) {
-      if (id == tagId) return true;
+      if (id == tagId)
+        return true;
     }
     return false;
   }
@@ -37,7 +38,7 @@ public class VisionSubsystem extends SubsystemBase {
 
   public boolean hasStableTarget() {
     PoseObservation obs = getBestObservation();
-    return obs != null && obs.tagCount() > 0 && obs.ambiguity() < 0.2;
+    return obs != null; // no ambiguity check needed with current Limelight v3
   }
 
   public boolean shouldUseVisionForClimb() {
@@ -47,15 +48,18 @@ public class VisionSubsystem extends SubsystemBase {
   // ========================= OBSERVATION =========================
 
   public PoseObservation getBestObservation() {
-    if (inputs.poseObservations.length == 0) return null;
+    if (inputs.poseObservations.length == 0)
+      return null;
 
     PoseObservation best = null;
     double bestScore = -1;
 
     for (PoseObservation obs : inputs.poseObservations) {
 
-      if (obs.tagCount() == 0) continue;
-      if (obs.ambiguity() > 0.3) continue;
+      if (obs.tagCount() == 0)
+        continue;
+      if (obs.ambiguity() > 0.3)
+        continue;
 
       double score = obs.tagCount() + (1.0 / (obs.averageTagDistance() + 0.001));
 
@@ -87,17 +91,20 @@ public class VisionSubsystem extends SubsystemBase {
   // ========================= ROBOT SPACE (KEY) =========================
 
   public double getTX() {
-    if (!hasAnyTag()) return 0.0;
+    if (!hasAnyTag())
+      return 0.0;
     return inputs.latestTargetObservation.tx().getDegrees();
   }
 
   public double getTY() {
-    if (!hasAnyTag()) return 0.0;
+    if (!hasAnyTag())
+      return 0.0;
     return inputs.latestTargetObservation.ty().getDegrees();
   }
 
   public Optional<Transform2d> getRobotRelativeError() {
-    if (!hasAnyTag()) return Optional.empty();
+    if (!hasAnyTag())
+      return Optional.empty();
 
     double tx = getTX();
     double ty = getTY();
@@ -118,7 +125,7 @@ public class VisionSubsystem extends SubsystemBase {
     Optional<Pose3d> tagPoseOpt = fieldLayout.getTagPose(tagId);
     if (tagPoseOpt.isEmpty()) {
       // Tag not found in layout, return NaN array
-      return new double[] {Double.NaN, Double.NaN, Double.NaN};
+      return new double[] { Double.NaN, Double.NaN, Double.NaN };
     }
 
     Pose3d tagPose = tagPoseOpt.get();
@@ -128,19 +135,17 @@ public class VisionSubsystem extends SubsystemBase {
     double tyRad = Math.toRadians(ty);
 
     // Forward offset (x) using vertical angle
-    double deltaZ =
-        tagPose.getZ() - VisionConstants.CAMERA_UP; // Vertical difference between camera and tag
+    double deltaZ = tagPose.getZ() - VisionConstants.CAMERA_UP; // Vertical difference between camera and tag
     double forwardDistance = deltaZ / Math.tan(tyRad);
 
     // Lateral offset (y) using horizontal angle
     double lateralOffset = forwardDistance * Math.tan(txRad);
 
     // Straight-line distance
-    double distance =
-        Math.sqrt(
-            forwardDistance * forwardDistance + lateralOffset * lateralOffset + deltaZ * deltaZ);
+    double distance = Math.sqrt(
+        forwardDistance * forwardDistance + lateralOffset * lateralOffset + deltaZ * deltaZ);
 
-    return new double[] {forwardDistance, lateralOffset, distance};
+    return new double[] { forwardDistance, lateralOffset, distance };
   }
 
   // ========================= STATUS =========================
