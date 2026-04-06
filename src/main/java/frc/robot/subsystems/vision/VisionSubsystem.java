@@ -7,6 +7,7 @@ import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionIO.PoseObservation;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -126,54 +127,47 @@ public class VisionSubsystem extends SubsystemBase {
 
   // ========================= PERIODIC =========================
 
-  @Override
-  public void periodic() {
+@Override
+public void periodic() {
     io.updateInputs(inputs);
 
     // -------- Debug table of all detected tags (for tuning) --------
-    // Example: get detected tags
-    List<Integer> tagIDs = getDetectedTagIDs();
-    List<Double> txs = getTXs(); // horizontal offset
-    List<Double> tys = getTYs(); // vertical offset
-    List<Double> dists = getDistances(); // distance to tag
-    List<Double> angles = new ArrayList<>(); // angle relative to robot
-
-    // Compute angles from pose if you have tag poses
-    for (int id : tagIDs) {
-      Optional<Pose3d> tagPoseOpt = fieldLayout.getTagPose(id);
-      if (tagPoseOpt.isPresent()) {
-        Pose2d tagPose = tagPoseOpt.get().toPose2d();
-        Pose2d robotPose = drive.getPose();
-        Rotation2d angleToTag = tagPose.getTranslation().minus(robotPose.getTranslation()).getAngle();
-        angles.add(Math.toDegrees(angleToTag.getRadians()));
-      } else {
-        angles.add(Double.NaN);
-      }
-    }
-
-    // Build table
     StringBuilder table = new StringBuilder();
-    table.append(String.format("| ID | TX | TY | Dist | Angle |\n"));
-    table.append("|---|---|---|---|---|\n");
+    table.append("| ID | TX | TY | Angle |\n");
+    table.append("|---|---|---|---|\n");
 
-    for (int i = 0; i < tagIDs.size(); i++) {
-      table.append(String.format(
-          "| %d | %.2f | %.2f | %.2f | %.1f |\n",
-          tagIDs.get(i), txs.get(i), tys.get(i), dists.get(i), angles.get(i)));
+    // Loop through all detected tag IDs
+    for (int i = 0; i < inputs.tagIds.length; i++) {
+        int tagId = inputs.tagIds[i];
+        double tx = 0.0;
+        double ty = 0.0;
+        double angle = Double.NaN;
+
+        if (inputs.latestTargetObservation != null &&
+            inputs.latestTargetObservation.tagIds().contains(tagId)) {
+            // Use latest observation for that tag
+            tx = inputs.latestTargetObservation.tx().getDegrees();
+            ty = inputs.latestTargetObservation.ty().getDegrees();
+
+            // Compute angle relative to robot
+            Optional<Pose3d> tagPoseOpt = Constants.FIELD_LAYOUT.getTagPose(tagId);
+            if (tagPoseOpt.isPresent()) {
+                Pose2d tagPose = tagPoseOpt.get().toPose2d();
+                Pose2d robotPose = drive.getPose();
+                angle = Math.toDegrees(tagPose.getTranslation().minus(robotPose.getTranslation()).getAngle().getRadians());
+            }
+        }
+
+        table.append(String.format("| %d | %.2f | %.2f | %.1f |\n", tagId, tx, ty, angle));
     }
 
-    // Publish to SmartDashboard / Elastic
     SmartDashboard.putString("Test/AprilTagTable", table.toString());
 
     // ------- End of debug table -------
-
-    SmartDashboard.putBoolean("Vision/HasTag",
-
-        hasAnyTag());
+    SmartDashboard.putBoolean("Vision/HasTag", hasAnyTag());
     SmartDashboard.putBoolean("Vision/Stable", hasStableTarget());
     SmartDashboard.putBoolean("Vision/UseVision", shouldUseVisionForClimb());
 
     SmartDashboard.putNumber("Vision/TX", getTX());
     SmartDashboard.putNumber("Vision/TY", getTY());
-  }
 }
