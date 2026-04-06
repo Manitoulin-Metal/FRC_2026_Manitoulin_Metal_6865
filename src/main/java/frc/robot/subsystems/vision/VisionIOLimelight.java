@@ -45,8 +45,9 @@ public class VisionIOLimelight implements VisionIO {
   /**
    * Creates a new VisionIOLimelight.
    *
-   * @param name The configured name of the Limelight.
-   * @param rotationSupplier Supplier for the current estimated rotation, used for MegaTag 2.
+   * @param name             The configured name of the Limelight.
+   * @param rotationSupplier Supplier for the current estimated rotation, used for
+   *                         MegaTag 2.
    */
   public VisionIOLimelight(String name, Supplier<Rotation2d> rotationSupplier) {
     this.name = name;
@@ -65,123 +66,67 @@ public class VisionIOLimelight implements VisionIO {
 
     megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
 
-    megatag2Subscriber =
-        table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
+    megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
   }
 
   @Override
   public void updateInputs(VisionIOInputs inputs) {
+    // Check connection based on latency (still useful)
+    inputs.connected = ((RobotController.getFPGATime() - txSubscriber.getLastChange()) / 1000) < 250;
 
-    // Update connection status based on whether an update has been seen in the last
-    // 250ms
+    // ------------------ Basic target info ------------------
+    double tx = txSubscriber.get();
+    double ty = tySubscriber.get();
 
-    inputs.connected =
-        ((RobotController.getFPGATime() - latencySubscriber.getLastChange()) / 1000) < 250;
+    // Only mark a tag if Limelight sees one (tv==1)
+    boolean hasTarget = tx != 0.0 || ty != 0.0;
+    inputs.latestTargetObservation = new TargetObservation(
+        Rotation2d.fromDegrees(tx),
+        Rotation2d.fromDegrees(ty));
 
-    // Update target observation
-
-    inputs.latestTargetObservation =
-        new TargetObservation(
-            Rotation2d.fromDegrees(txSubscriber.get()), Rotation2d.fromDegrees(tySubscriber.get()));
-
-    // Update orientation for MegaTag 2
-
-    orientationPublisher.accept(
-        new double[] {rotationSupplier.get().getDegrees(), 0.0, 0.0, 0.0, 0.0, 0.0});
-
-    NetworkTableInstance.getDefault()
-        .flush(); // Increases network traffic but recommended by Limelight
-
-    // Read new pose observations from NetworkTables
-
-    Set<Integer> tagIds = new HashSet<>();
+    // ------------------ Pose observations from botpose_wpiblue ------------------
+    var rawSamples = NetworkTableInstance.getDefault()
+        .getTable(name)
+        .getDoubleArrayTopic("botpose_wpiblue")
+        .subscribe(new double[] {})
+        .readQueue();
 
     List<PoseObservation> poseObservations = new LinkedList<>();
+    Set<Integer> tagIds = new HashSet<>();
 
-    for (var rawSample : megatag1Subscriber.readQueue()) {
+    for (var raw : rawSamples) {
+      if (raw.value.length < 8)
+        continue; // ensure valid data
 
-      if (rawSample.value.length == 0) continue;
-      for (int i = 11; i < rawSample.value.length; i += 7) {
-        tagIds.add((int) rawSample.value[i]);
+      Pose3d pose = new Pose3d(
+          raw.value[0], raw.value[1], raw.value[2],
+          new Rotation3d(
+              Units.degreesToRadians(raw.value[3]),
+              Units.degreesToRadians(raw.value[4]),
+              Units.degreesToRadians(raw.value[5])));
+
+      int tagCount = (int) raw.value[7]; // number of tags contributing
+      double avgDistance = (tagCount > 0 && raw.value.length >= 9) ? raw.value[8] : 0.0;
+
+      // Collect tag IDs (starts at index 11 for each tag, step 7)
+      for (int i = 11; i < raw.value.length; i += 7) {
+        tagIds.add((int) raw.value[i]);
       }
 
-      poseObservations.add(
-          new PoseObservation(
-              // Timestamp, based on server timestamp of publish and latency
-              rawSample.timestamp * 1.0e-6 - rawSample.value[6] * 1.0e-3,
-
-              // 3D pose estimate
-              parsePose(rawSample.value),
-
-              // Ambiguity, using only the first tag because ambiguity isn't applicable for
-              // multitag
-              rawSample.value.length >= 18 ? rawSample.value[17] : 0.0,
-
-              // Tag count
-              (int) rawSample.value[7],
-
-              // Average tag distance
-              rawSample.value[9],
-
-              // Observation type
-              PoseObservationType.MEGATAG_1));
+      poseObservations.add(new PoseObservation(
+          raw.timestamp * 1.0e-6 - 0.0, // timestamp, you could use latency if needed
+          pose,
+          0.0, // ambiguity, can ignore for multi-tag
+          tagCount,
+          avgDistance,
+          PoseObservationType.MEGATAG_2));
     }
 
-    for (var rawSample : megatag2Subscriber.readQueue()) {
+    // Save observations
+    inputs.poseObservations = poseObservations.toArray(new PoseObservation[0]);
 
-      if (rawSample.value.length == 0) continue;
-
-      for (int i = 11; i < rawSample.value.length; i += 7) {
-        tagIds.add((int) rawSample.value[i]);
-      }
-
-      poseObservations.add(
-          new PoseObservation(
-              // Timestamp, based on server timestamp of publish and latency
-              rawSample.timestamp * 1.0e-6 - rawSample.value[6] * 1.0e-3,
-
-              // 3D pose estimate
-              parsePose(rawSample.value),
-
-              // Ambiguity, zeroed because the pose is already disambiguated
-              0.0,
-
-              // Tag count
-              (int) rawSample.value[7],
-
-              // Average tag distance
-              rawSample.value[9],
-
-              // Observation type
-              PoseObservationType.MEGATAG_2));
-    }
-
-    // Save pose observations to inputs object
-
-    inputs.poseObservations = new PoseObservation[poseObservations.size()];
-
-    for (int i = 0; i < poseObservations.size(); i++) {
-      inputs.poseObservations[i] = poseObservations.get(i);
-    }
-
-    // Get raw fiducials for shooting range check
-    var rawFiducials = frc.robot.LimelightHelpers.getRawFiducials(name);
-    inputs.rawFiducialCount = rawFiducials.length;
-    inputs.rawFiducialIDs = new int[rawFiducials.length];
-    inputs.rawFiducialDistances = new double[rawFiducials.length];
-    for (int j = 0; j < rawFiducials.length; j++) {
-      inputs.rawFiducialIDs[j] = rawFiducials[j].id;
-      inputs.rawFiducialDistances[j] = rawFiducials[j].distToRobot;
-    }
-    // Save tag IDs to inputs objects
-
-    inputs.tagIds = new int[tagIds.size()];
-
-    int i = 0;
-
-    for (int id : tagIds) {
-      inputs.tagIds[i++] = id;
-    }
+    // Save tag IDs
+    inputs.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
   }
 
   /** Parses the 3D pose from a Limelight botpose array. */
