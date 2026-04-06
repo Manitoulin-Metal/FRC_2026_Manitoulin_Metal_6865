@@ -117,9 +117,9 @@ public class RobotContainer {
     }
 
     // -------- Vision setup --------
-    visionClimb = new VisionSubsystem(new VisionIOLimelight("limelight0", drive::getRotation), drive);
+    visionClimb = new VisionSubsystem(new VisionIOLimelight("limelight_forwards", drive::getRotation), drive);
 
-    visionShoot = new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+    visionShoot = new VisionSubsystem(new VisionIOLimelight("limelight_backwards", drive::getRotation), drive);
 
     // -------- Default drive (now with robot-centric toggle) --------
     drive.setDefaultCommand(
