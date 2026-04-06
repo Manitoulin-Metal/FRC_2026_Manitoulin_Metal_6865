@@ -119,59 +119,33 @@ public class VisionSubsystem extends SubsystemBase {
 
   // Function to convert angular tx and ty to a 2D translation in robot space
   // (forward, strafe)
-  public static double[] calculateCameraToTagOffsets(
-      VisionSubsystem visionClimb,
-      AprilTagFieldLayout fieldLayout,
-      int tagId) {
-
-    // Camera position relative to robot center
-    final double camForward = 0.184;
-    final double camRight = -0.1651;
-    final double camUp = 0.441425;
-
-    // Get tag height from field layout
+  public double[] getCameraToTagOffset(AprilTagFieldLayout fieldLayout, int tagId, double tx, double ty) {
+    // Get tag pose from the field layout
     Optional<Pose3d> tagPoseOpt = fieldLayout.getTagPose(tagId);
-
     if (tagPoseOpt.isEmpty()) {
-      return new double[] { 0.0, 0.0, 0.0 };
+      // Tag not found in layout, return NaN array
+      return new double[] { Double.NaN, Double.NaN, Double.NaN };
     }
 
-    double tagHeight = tagPoseOpt.get().getZ();
+    Pose3d tagPose = tagPoseOpt.get();
 
-    // Get Limelight angles
-    double txRad = Math.toRadians(visionClimb.getTX());
-    double tyRad = Math.toRadians(visionClimb.getTY());
+    // Convert angles from degrees to radians
+    double txRad = Math.toRadians(tx);
+    double tyRad = Math.toRadians(ty);
 
-    // Vertical height difference
-    double dz = tagHeight - camUp;
+    // Forward offset (x) using vertical angle
+    double deltaZ = tagPose.getZ() - VisionConstants.CAMERA_UP; // Vertical difference between camera and tag
+    double forwardDistance = deltaZ / Math.tan(tyRad);
 
-    // Forward distance from camera to tag
-    double xOffset = dz / Math.tan(tyRad);
+    // Lateral offset (y) using horizontal angle
+    double lateralOffset = forwardDistance * Math.tan(txRad);
 
-    // Side-to-side offset
-    double yOffset = xOffset * Math.tan(txRad);
+    // Straight-line distance
+    double distance = Math.sqrt(forwardDistance * forwardDistance +
+        lateralOffset * lateralOffset +
+        deltaZ * deltaZ);
 
-    // Apply camera position offset
-    xOffset += camForward;
-    yOffset += camRight;
-
-    // True 3D straight-line distance
-    double distance3d = Math.sqrt(xOffset * xOffset + yOffset * yOffset + dz * dz);
-
-    return new double[] { xOffset, yOffset, distance3d };
-  }
-
-  public double getDistanceToTag(
-      AprilTagFieldLayout fieldLayout,
-      int tagId) {
-
-    Optional<Translation3d> offset = getCameraToTagOffset(fieldLayout, tagId);
-
-    if (offset.isEmpty()) {
-      return Double.NaN;
-    }
-
-    return offset.get().getNorm();
+    return new double[] { forwardDistance, lateralOffset, distance };
   }
 
   // ========================= STATUS =========================

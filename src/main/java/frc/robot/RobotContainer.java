@@ -564,15 +564,14 @@ public class RobotContainer {
     }
 
     // Vision diagnostics
-    Optional<Translation3d> offset = visionClimb.getCameraToTagOffset(
-        fieldLayout,
-        Constants.CLIMB_TAG_ID);
+    double tx = visionClimb.getTX(); // Limelight horizontal angle
+    double ty = visionClimb.getTY(); // Limelight vertical angle
 
-    if (offset.isPresent()) {
-      SmartDashboard.putNumber("Tag X", offset.get().getX());
-      SmartDashboard.putNumber("Tag Y", offset.get().getY());
-      SmartDashboard.putNumber("Tag Dist", offset.get().getNorm());
-    }
+    double[] offsets = visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
+
+    SmartDashboard.putNumber("CameraToTag/X", offsets[0]);
+    SmartDashboard.putNumber("CameraToTag/Y", offsets[1]);
+    SmartDashboard.putNumber("CameraToTag/Distance", offsets[2]);
 
     // Controller diagnostics
     SmartDashboard.putNumber("Driver/LeftY", driver.getLeftY());
