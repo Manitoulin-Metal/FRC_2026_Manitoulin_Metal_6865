@@ -146,7 +146,8 @@ public class RobotContainer {
             3.0));
     // IMEDIANTELY UNCOMMENT THIS
     // NamedCommands.registerCommand(
-    // "ClimbAutoUp", Commands.runOnce(() -> climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
+    // "ClimbAutoUp", Commands.runOnce(() ->
+    // climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
 
     NamedCommands.registerCommand("ClimbAutoDown", climb1.climbCommand(-0.5).withTimeout(6));
 
@@ -282,12 +283,114 @@ public class RobotContainer {
     // Kicker test
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
+    // Vision for Climb
+    driver.leftBumper().whileTrue(driveToClimbVision());
+
     // Shooter faults clear
     operator.leftBumper().onTrue(shooter.clearFaultsCommand());
-
-    // Agitator
-    // controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
   }
+
+  public Command driveToClimbVision() {
+    return Commands.run(
+        () -> {
+          double forward = 0;
+          double strafe = 0;
+          double turn = 0;
+
+          if (!visionClimb.shouldUseVisionForClimb()) {
+            // SEARCH MODE
+            turn = 0.5;
+          } else {
+
+            var errorOpt = visionClimb.getRobotRelativeError();
+
+            if (errorOpt.isEmpty()) {
+              drive.stop();
+              return;
+            }
+
+            Transform2d error = errorOpt.get();
+
+            forward = error.getX() * Constants.CLIMB_kP_FORWARD;
+            strafe = error.getY() * Constants.CLIMB_kP_STRAFE;
+            turn = error.getRotation().getRadians() * Constants.CLIMB_kP_TURN;
+
+            // Deadbands
+            if (Math.abs(error.getX()) < 0.5) forward = 0;
+            if (Math.abs(error.getY()) < 0.5) strafe = 0;
+            if (Math.abs(error.getRotation().getDegrees()) < 1.0) turn = 0;
+          }
+
+          // Clamp speeds
+          forward = MathUtil.clamp(forward, -1.0, 1.0);
+          strafe = MathUtil.clamp(strafe, -1.0, 1.0);
+          turn = MathUtil.clamp(turn, -1.0, 1.0);
+
+          // ✅ ROBOT-CENTRIC DRIVE
+          drive.runVelocity(new ChassisSpeeds(forward, strafe, turn));
+        },
+        drive);
+  }
+
+  public Command limelightClimbFull() {
+    return Commands.run(
+        () -> {
+          boolean seesTag = visionClimb.hasTag(Constants.CLIMB_TAG_ID);
+
+          double forward = 0;
+          double strafe = 0;
+          double turn = 0;
+
+          if (!seesTag) {
+            // 🔍 SEARCH MODE
+            turn = 0.5;
+            forward = 0;
+            strafe = 0;
+          } else {
+
+            double tx = visionClimb.getTX();
+            double ty = visionClimb.getTY();
+
+            // 🎯 TARGETS (YOU MEASURED THIS!)
+            double targetTX = 0.0;
+            double targetTY = 9.15;
+
+            // 🎮 GAINS (safe starting point)
+            double kTurn = 0.035;
+            double kForward = 0.08;
+            double kStrafe = 0.025;
+
+            double errorX = targetTX - tx;
+            double errorY = targetTY - ty;
+
+            // Controls
+            turn = errorX * kTurn;
+            forward = errorY * kForward;
+            strafe = errorX * kStrafe;
+
+            // Deadbands = stability
+            if (Math.abs(errorX) < 1.0) {
+              turn = 0;
+              strafe = 0;
+            }
+
+            if (Math.abs(errorY) < 0.5) {
+              forward = 0;
+            }
+          }
+
+          // Clamp speeds (VERY IMPORTANT FOR TESTING)
+          turn = MathUtil.clamp(turn, -1.0, 1.0);
+          forward = MathUtil.clamp(forward, -1.0, 1.0);
+          strafe = MathUtil.clamp(strafe, -1.0, 1.0);
+
+          drive.runVelocity(new ChassisSpeeds(forward, strafe, turn));
+        },
+        drive);
+  }
+
+  // Agitator
+  // controller1.x().onTrue(intakeDeploy.deployAgitatorCommand());
 
   // ---------- ENABLE HOMING METHOD ----------
   public void enableHoming() {

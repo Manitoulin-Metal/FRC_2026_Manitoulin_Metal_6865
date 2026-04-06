@@ -1,6 +1,5 @@
 package frc.robot.subsystems.vision;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -33,11 +32,18 @@ public class VisionSubsystem extends SubsystemBase {
     return inputs.tagIds.length > 0;
   }
 
-  public int[] getVisibleTagIDs() {
-    return inputs.tagIds;
+  // ========================= STABILITY =========================
+
+  public boolean hasStableTarget() {
+    PoseObservation obs = getBestObservation();
+    return obs != null && obs.tagCount() > 0 && obs.ambiguity() < 0.2;
   }
 
-  // ========================= BEST OBSERVATION =========================
+  public boolean shouldUseVisionForClimb() {
+    return hasTag(Constants.CLIMB_TAG_ID) && hasStableTarget();
+  }
+
+  // ========================= OBSERVATION =========================
 
   public PoseObservation getBestObservation() {
     if (inputs.poseObservations.length == 0) return null;
@@ -50,14 +56,11 @@ public class VisionSubsystem extends SubsystemBase {
       if (obs.tagCount() == 0) continue;
       if (obs.ambiguity() > 0.3) continue;
 
-      double score = 0;
+      double score = obs.tagCount() + (1.0 / (obs.averageTagDistance() + 0.001));
 
       if (obs.type() == VisionIO.PoseObservationType.MEGATAG_2) {
         score += 2.0;
       }
-
-      score += obs.tagCount();
-      score += 1.0 / (obs.averageTagDistance() + 0.001);
 
       if (best == null || score > bestScore) {
         best = obs;
@@ -68,85 +71,48 @@ public class VisionSubsystem extends SubsystemBase {
     return best;
   }
 
-  // ========================= POSE =========================
+  // ========================= FIELD SPACE =========================
 
   public Pose2d getEstimatedPose() {
     PoseObservation obs = getBestObservation();
-    if (obs == null) return null;
-    return obs.pose().toPose2d();
+    return (obs == null) ? null : obs.pose().toPose2d();
   }
 
   public Pose2d getBestRobotPose() {
     Pose2d visionPose = getEstimatedPose();
-    if (visionPose != null) {
-      return visionPose;
-    }
-    return drive.getPose();
+    return (visionPose != null) ? visionPose : drive.getPose();
   }
 
-  // ========================= DISTANCE =========================
-
-  public double getAverageDistance() {
-    PoseObservation obs = getBestObservation();
-    if (obs == null) return 999;
-    return obs.averageTagDistance();
-  }
-
-  // ========================= TX / TY =========================
+  // ========================= ROBOT SPACE (KEY) =========================
 
   public double getTX() {
+    if (!hasAnyTag()) return 0.0;
     return inputs.latestTargetObservation.tx().getDegrees();
   }
 
   public double getTY() {
+    if (!hasAnyTag()) return 0.0;
     return inputs.latestTargetObservation.ty().getDegrees();
   }
 
-  // ========================= CLIMB TARGET =========================
+  public Optional<Transform2d> getRobotRelativeError() {
+    if (!hasAnyTag()) return Optional.empty();
 
-  public Optional<Pose2d> getClimbTargetPose(AprilTagFieldLayout layout) {
+    double tx = getTX();
+    double ty = getTY();
 
-    if (!hasTag(Constants.CLIMB_TAG_ID)) return Optional.empty();
+    double forwardError = Constants.CLIMB_TARGET_TY - ty;
+    double strafeError = tx * Constants.CLIMB_STRAFE_FACTOR;
+    Rotation2d rotationError = Rotation2d.fromDegrees(tx);
 
-    Optional<Pose3d> tagPose3d = layout.getTagPose(Constants.CLIMB_TAG_ID);
-    if (tagPose3d.isEmpty()) return Optional.empty();
-
-    Pose2d tagPose = tagPose3d.get().toPose2d();
-    Pose2d targetPose = tagPose.transformBy(Constants.CLIMB_OFFSET);
-
-    return Optional.of(targetPose);
-  }
-
-  public Optional<Transform2d> getClimbError(AprilTagFieldLayout layout) {
-
-    Optional<Pose2d> targetOpt = getClimbTargetPose(layout);
-    if (targetOpt.isEmpty()) return Optional.empty();
-
-    Pose2d robotPose = getBestRobotPose();
-    Pose2d targetPose = targetOpt.get();
-
-    return Optional.of(targetPose.minus(robotPose));
-  }
-
-  public boolean isClimbAligned(AprilTagFieldLayout layout) {
-    Optional<Transform2d> errorOpt = getClimbError(layout);
-    if (errorOpt.isEmpty()) return false;
-
-    Transform2d error = errorOpt.get();
-
-    boolean posGood =
-        Math.abs(error.getX()) < Constants.CLIMB_POS_TOLERANCE
-            && Math.abs(error.getY()) < Constants.CLIMB_POS_TOLERANCE;
-
-    boolean rotGood = Math.abs(error.getRotation().getRadians()) < Constants.CLIMB_ROT_TOLERANCE;
-
-    return posGood && rotGood;
+    return Optional.of(
+        new Transform2d(new Translation2d(forwardError, strafeError), rotationError));
   }
 
   // ========================= STATUS =========================
 
   public boolean isReadyToClimb() {
-    return hasTag(Constants.CLIMB_TAG_ID) && getBestObservation() != null;
+    return shouldUseVisionForClimb();
   }
 
   // ========================= PERIODIC =========================
@@ -155,15 +121,11 @@ public class VisionSubsystem extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
 
-    SmartDashboard.putBoolean("Vision/Connected", inputs.connected);
-    SmartDashboard.putNumber("Vision/TagCount", inputs.tagIds.length);
-    SmartDashboard.putNumber("Vision/Distance", getAverageDistance());
+    SmartDashboard.putBoolean("Vision/HasTag", hasAnyTag());
+    SmartDashboard.putBoolean("Vision/Stable", hasStableTarget());
+    SmartDashboard.putBoolean("Vision/UseVision", shouldUseVisionForClimb());
+
     SmartDashboard.putNumber("Vision/TX", getTX());
     SmartDashboard.putNumber("Vision/TY", getTY());
-
-    PoseObservation best = getBestObservation();
-    if (best != null) {
-      SmartDashboard.putNumber("Vision/Ambiguity", best.ambiguity());
-    }
   }
 }

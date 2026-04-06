@@ -153,6 +153,13 @@ public final class Constants {
   public static final double CLIMB_POS_TOLERANCE = 0.05;
   public static final double CLIMB_ROT_TOLERANCE = Math.toRadians(3);
 
+  public static final double CLIMB_TARGET_TY = 9.15; // YOUR measured value
+  public static final double CLIMB_STRAFE_FACTOR = 0.02;
+
+  public static final double CLIMB_kP_FORWARD = 0.08;
+  public static final double CLIMB_kP_STRAFE = 0.03;
+  public static final double CLIMB_kP_TURN = 0.035;
+
   public static enum Mode {
     /** Running on a real robot. */
     REAL,
