@@ -31,7 +31,13 @@ public interface VisionIO {
   }
 
   /** Represents the angle to a simple target, not used for pose estimation. */
-  public static record TargetObservation(Rotation2d tx, Rotation2d ty) {}
+  public static record TargetObservation(Rotation2d tx, Rotation2d ty) {
+
+    public String tagIds() {
+      // TODO Auto-generated method stub
+      throw new UnsupportedOperationException("Unimplemented method 'tagIds'");
+    }
+  }
 
   /** Represents a robot pose sample used for pose estimation. */
   public static record PoseObservation(
