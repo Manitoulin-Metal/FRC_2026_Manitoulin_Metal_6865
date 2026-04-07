@@ -45,9 +45,8 @@ public class VisionIOLimelight implements VisionIO {
   /**
    * Creates a new VisionIOLimelight.
    *
-   * @param name             The configured name of the Limelight.
-   * @param rotationSupplier Supplier for the current estimated rotation, used for
-   *                         MegaTag 2.
+   * @param name The configured name of the Limelight.
+   * @param rotationSupplier Supplier for the current estimated rotation, used for MegaTag 2.
    */
   public VisionIOLimelight(String name, Supplier<Rotation2d> rotationSupplier) {
     this.name = name;
@@ -66,13 +65,15 @@ public class VisionIOLimelight implements VisionIO {
 
     megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
 
-    megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
+    megatag2Subscriber =
+        table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
   }
 
   @Override
   public void updateInputs(VisionIOInputs inputs) {
     // Check connection based on latency (still useful)
-    inputs.connected = ((RobotController.getFPGATime() - txSubscriber.getLastChange()) / 1000) < 250;
+    inputs.connected =
+        ((RobotController.getFPGATime() - txSubscriber.getLastChange()) / 1000) < 250;
 
     // ------------------ Basic target info ------------------
     double tx = txSubscriber.get();
@@ -80,30 +81,32 @@ public class VisionIOLimelight implements VisionIO {
 
     // Only mark a tag if Limelight sees one (tv==1)
     boolean hasTarget = tx != 0.0 || ty != 0.0;
-    inputs.latestTargetObservation = new TargetObservation(
-        Rotation2d.fromDegrees(tx),
-        Rotation2d.fromDegrees(ty));
+    inputs.latestTargetObservation =
+        new TargetObservation(Rotation2d.fromDegrees(tx), Rotation2d.fromDegrees(ty));
 
     // ------------------ Pose observations from botpose_wpiblue ------------------
-    var rawSamples = NetworkTableInstance.getDefault()
-        .getTable(name)
-        .getDoubleArrayTopic("botpose_wpiblue")
-        .subscribe(new double[] {})
-        .readQueue();
+    var rawSamples =
+        NetworkTableInstance.getDefault()
+            .getTable(name)
+            .getDoubleArrayTopic("botpose_wpiblue")
+            .subscribe(new double[] {})
+            .readQueue();
 
     List<PoseObservation> poseObservations = new LinkedList<>();
     Set<Integer> tagIds = new HashSet<>();
 
     for (var raw : rawSamples) {
-      if (raw.value.length < 8)
-        continue; // ensure valid data
+      if (raw.value.length < 8) continue; // ensure valid data
 
-      Pose3d pose = new Pose3d(
-          raw.value[0], raw.value[1], raw.value[2],
-          new Rotation3d(
-              Units.degreesToRadians(raw.value[3]),
-              Units.degreesToRadians(raw.value[4]),
-              Units.degreesToRadians(raw.value[5])));
+      Pose3d pose =
+          new Pose3d(
+              raw.value[0],
+              raw.value[1],
+              raw.value[2],
+              new Rotation3d(
+                  Units.degreesToRadians(raw.value[3]),
+                  Units.degreesToRadians(raw.value[4]),
+                  Units.degreesToRadians(raw.value[5])));
 
       int tagCount = (int) raw.value[7]; // number of tags contributing
       double avgDistance = (tagCount > 0 && raw.value.length >= 9) ? raw.value[8] : 0.0;
@@ -113,13 +116,14 @@ public class VisionIOLimelight implements VisionIO {
         tagIds.add((int) raw.value[i]);
       }
 
-      poseObservations.add(new PoseObservation(
-          raw.timestamp * 1.0e-6 - 0.0, // timestamp, you could use latency if needed
-          pose,
-          0.0, // ambiguity, can ignore for multi-tag
-          tagCount,
-          avgDistance,
-          PoseObservationType.MEGATAG_2));
+      poseObservations.add(
+          new PoseObservation(
+              raw.timestamp * 1.0e-6 - 0.0, // timestamp, you could use latency if needed
+              pose,
+              0.0, // ambiguity, can ignore for multi-tag
+              tagCount,
+              avgDistance,
+              PoseObservationType.MEGATAG_2));
     }
 
     // Save observations
