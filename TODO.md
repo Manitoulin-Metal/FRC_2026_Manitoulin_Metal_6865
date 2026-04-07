@@ -1,38 +1,23 @@
-# Fix Kicker/Whip not running at shooter full speed
+# Replace LimelightHelpers in DriveCommands.java with WPILib PIDController
 
-## Status
-- Step 1: ✓ Constants.java updated
-- Step 2: ✓ ShooterSubsystem.java - atTarget() added
-- Step 3: ✓ KickerSubsystem.java - condition now uses atTarget()
-- Step 4: WhipSubsystem.java - pending
-- Step 5: Test in teleop
-- Step 6: Optional bindings
+## Approved Plan Steps
 
-### All code changes complete!
+### 1. ✅ Create TODO.md (Current step - completed)
 
-**Next Steps:**
-1. Build & deploy: `./gradlew build deploy`
-2. Teleop test:
-   - Operator Y: shooter 60 RPS - check Kicker/Condition, Whip/Condition true?
-   - Operator RT: shooter 75 RPS
-   - Driver LT: kicker command
-   - Operator RB: whip slow (manual) - check auto resumes after
-3. Tune thresholds/PID via Shuffleboard if velocity low
-4. Check Shooter/Faults for issues
+### 2. ✅ Create PIDControllers in DriveCommands.java
+### 3. ✅ Refactor alignToTag method  
+### 4. ✅ Update import statements
 
-Task complete - ready for testing!
+### 5. Update callers in RobotContainer.java
+- Find alignToTag calls and pass VisionSubsystem instance
 
-Progress: 4/6 (code done, test pending)
-e# Fix Kicker/Whip not running at shooter full speed
+### 6. Add constants to Constants.java (optional)
+- PID gains: ALIGN_STRAFE_P, ALIGN_DISTANCE_P, ALIGN_ROT_P
 
-## Status
-- Step 1: ✓ Constants.java updated
-- Step 2: ✓ ShooterSubsystem.java - atTarget() added
-- Step 3: KickerSubsystem.java - Update condition & add auto-run
-- Step 4: WhipSubsystem.java - Update condition & fix manualMode
-- Step 5: Test in teleop
-- Step 6: Optional RobotContainer bindings
+### 7. Test and tune
+- Verify tag alignment works identically or better
+- Tune PID gains via Shuffleboard
+- ✅ attempt_completion
 
-Progress: 2/6
+**Status:** Ready for implementation
 
-**Next: KickerSubsystem.java**

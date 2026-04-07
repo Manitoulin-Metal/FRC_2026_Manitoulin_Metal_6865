@@ -302,8 +302,8 @@ public class RobotContainer {
     // Vision for Climb
     // driver.leftBumper().whileTrue(driveToClimbVision());
 
-    // Testing auto align with April tags
-    driver.a().whileTrue(DriveCommands.alignToTag(32, drive));
+    // Testing auto align with April tags (PID + VisionSubsystem)
+    driver.a().whileTrue(DriveCommands.alignToTag(32, drive, visionClimb));
 
     // Shooter faults clear
     operator.leftBumper().onTrue(shooter.clearFaultsCommand());
