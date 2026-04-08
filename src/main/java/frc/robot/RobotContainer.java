@@ -152,8 +152,7 @@ public class RobotContainer {
             1.5,
             3.0));
     NamedCommands.registerCommand(
-    "ClimbAutoUp", Commands.runOnce(() ->
-    climb1.climbCommand(0.5).withTimeout(4).schedule()));
+        "ClimbAutoUp", Commands.runOnce(() -> climb1.climbCommand(0.5).withTimeout(4).schedule()));
 
     NamedCommands.registerCommand("ClimbAutoDown", climb1.climbCommand(-0.5).withTimeout(6));
 
@@ -302,7 +301,7 @@ public class RobotContainer {
     // driver.leftBumper().whileTrue(driveToClimbVision());
 
     // Testing auto align with April tags (PID + VisionSubsystem)
-    driver.a().whileTrue(DriveCommands.alignToTag(32, drive, visionClimb));
+    driver.a().whileTrue(DriveCommands.SimpleAlignToTag(32, drive));
 
     // Shooter faults clear
     operator.leftBumper().onTrue(shooter.clearFaultsCommand());

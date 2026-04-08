@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
+import frc.robot.LimelightHelpers;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.Optional;
@@ -355,8 +356,143 @@ public final class DriveCommands {
         .andThen(drive::stop);
   }
 
+  public static Command SimpleAlignToTag(int targetId, Drive drive) {
+    return Commands.run(
+        () -> {
+          double tid = LimelightHelpers.getFiducialID("limelight");
+
+          PIDController strafeController = new PIDController(0.15, 0.0, 0.0);
+          PIDController distanceController = new PIDController(0.15, 0.0, 0.0);
+          PIDController rotationController = new PIDController(0.02, 0.0, 0.0);
+
+          // Set tolerances for convergence (degrees)
+          strafeController.setTolerance(1.0);
+          distanceController.setTolerance(0.5);
+          rotationController.setTolerance(1.0);
+
+          // If wrong tag or no tag seen, stop
+          if (tid != targetId) {
+            drive.stop();
+            return;
+          }
+
+          Pose3d pose = LimelightHelpers.getBotPose3d_TargetSpace("limelight");
+
+          SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
+
+          double tx = LimelightHelpers.getTX("limelight");
+          double ty = LimelightHelpers.getTY("limelight");
+          // double yaw = pose.getRotation().getZ();
+          // For rotation, use tx angle error (original used pose yaw which is ~tx)
+          double rotationError = tx; // degrees
+
+          // Explicit setpoint components for the PID controllers
+          double setpointTx = -26; // desired tx (degrees)
+          double setpointTy = 9; // desired ty (meters)
+          double setpointRotation = -26; // desired rotation (degrees)
+
+          // PID-controlled outputs using the explicit setpoints
+          double strafe = strafeController.calculate(tx, setpointTx);
+          double distance = distanceController.calculate(ty, setpointTy);
+          double omega = rotationController.calculate(rotationError, setpointRotation);
+
+          // Clamp to safe speeds (matching original)
+          double maxSpeed = 6.0;
+          strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
+          distance = MathUtil.clamp(distance, -maxSpeed, maxSpeed);
+          omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
+
+          // Robot-centric movement (same as original)
+          // drive.runVelocity(
+          //     new ChassisSpeeds(
+          //         distance,
+          //          // forward/backward (ty - target_ty, but target_ty=0)
+          //         strafe, // left/right (tx)
+          //         omega // rotation
+          //         ));
+
+          // tuning only below)
+          drive.runVelocity(
+              new ChassisSpeeds(
+                  0, 0, omega // rotation
+                  ));
+
+          if (strafeController.atSetpoint()
+              && distanceController.atSetpoint()
+              && rotationController.atSetpoint()) {
+            drive.setTagAlignmentData(tx, ty, rotationError, true, true);
+          } else {
+            drive.setTagAlignmentData(tx, ty, rotationError, true, false);
+          }
+        },
+        drive);
+  }
+
   /** Align to AprilTag using WPILib PIDControllers and VisionSubsystem */
-  public static Command alignToTag(int targetId, Drive drive, VisionSubsystem vision) {
+  // public static Command alignToTag(int targetId, Drive drive) {
+  //   PIDController strafeController = new PIDController(0.05, 0.0, 0.0);
+  //   PIDController distanceController = new PIDController(0.15, 0.0, 0.0);
+  //   PIDController rotationController = new PIDController(0.1, 0.0, 0.0);
+
+  //   // Set tolerances for convergence (degrees)
+  //   strafeController.setTolerance(1.0);
+  //   distanceController.setTolerance(0.5);
+  //   rotationController.setTolerance(1.0);
+
+  //   return Commands.run(
+  //           () -> {
+  //             // Check if correct tag is visible (replaces getFiducialID)
+  //             if (!vision.hasTag(targetId)) {
+  //               drive.stop();
+  //               SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
+  //               return;
+  //             }
+
+  //             SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
+
+  //             // Use VisionSubsystem methods (replaces direct LimelightHelpers calls)
+  //             double tx = vision.getTX();
+  //             double ty = vision.getTY();
+
+  //             // For rotation, use tx angle error (original used pose yaw which is ~tx)
+  //             double rotationError = tx; // degrees
+
+  //             SmartDashboard.putNumber("AlignTesting/tx", tx);
+  //             SmartDashboard.putNumber("AlignTesting/ty", ty);
+  //             SmartDashboard.putNumber("AlignTesting/rotationError", rotationError);
+
+  //             // PID-controlled outputs (replaces proportional gains)
+  //             double strafe = strafeController.calculate(tx, 0.0);
+  //             double distance = distanceController.calculate(ty, 0.0);
+  //             double omega = rotationController.calculate(rotationError, 0.0);
+
+  //             // Clamp to safe speeds (matching original)
+  //             double maxSpeed = 6.0;
+  //             strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
+  //             distance = MathUtil.clamp(distance, -maxSpeed, maxSpeed);
+  //             omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
+
+  //             // Robot-centric movement (same as original)
+  //             drive.runVelocity(
+  //                 new ChassisSpeeds(
+  //                     distance, // forward/backward (ty - target_ty, but target_ty=0)
+  //                     strafe, // left/right (tx)
+  //                     omega // rotation
+  //                     ));
+
+  //             // Log PID states
+  //             SmartDashboard.putBoolean(
+  //                 "Align/PIDAtSetpoint",
+  //                 strafeController.atSetpoint()
+  //                     && distanceController.atSetpoint()
+  //                     && rotationController.atSetpoint());
+  //           },
+  //           drive,
+  //           vision)
+  //       .withName("AlignToTag_PID");
+  // }
+
+  public static Command alignToTagVision(int targetId, Drive drive, VisionSubsystem vision) {
     PIDController strafeController = new PIDController(0.05, 0.0, 0.0);
     PIDController distanceController = new PIDController(0.15, 0.0, 0.0);
     PIDController rotationController = new PIDController(0.1, 0.0, 0.0);

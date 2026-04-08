@@ -82,6 +82,13 @@ public class Drive extends SubsystemBase {
   private final Module[] modules = new Module[4]; // FL, FR, BL, BR
   private final SysIdRoutine sysId;
 
+  // Get PID controller values from the tag alignment commands
+  private double alignTX = 0.0;
+  private double alignTY = 0.0;
+  private double alignRotationError = 0.0;
+  private boolean tryingToAlignToTag = false;
+  private boolean atTagAlignmentSetpoint = false;
+
   private final Alert gyroDisconnectedAlert =
       new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
 
@@ -144,7 +151,6 @@ public class Drive extends SubsystemBase {
                 (voltage) -> runCharacterization(voltage.in(Volts)), null, this));
   }
 
-  @Override
   public void periodic() {
     odometryLock.lock();
     // Prevents odometry updates while reading data
@@ -211,8 +217,6 @@ public class Drive extends SubsystemBase {
     double x = pose.getX();
     double y = pose.getY();
 
-    SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
-
     // 2024 Crescendo field size (meters)
     double fieldLength = 16.54;
     double fieldWidth = 8.21;
@@ -249,6 +253,12 @@ public class Drive extends SubsystemBase {
           getModulePositions(),
           new Pose2d(clampedX, clampedY, pose.getRotation()));
     }
+
+    SmartDashboard.putNumber("AlignTesting/tx", alignTX);
+    SmartDashboard.putNumber("AlignTesting/ty", alignTY);
+    SmartDashboard.putNumber("AlignTesting/rotationError", alignRotationError);
+    SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", tryingToAlignToTag);
+    SmartDashboard.putBoolean("AlignTesting/AtTagAlignmentSetpoint", atTagAlignmentSetpoint);
   }
 
   /**
@@ -412,5 +422,18 @@ public class Drive extends SubsystemBase {
   /** Returns true if the gyro is disconnected */
   public boolean isGyroDisconnected() {
     return !gyroInputs.connected;
+  }
+
+  public void setTagAlignmentData(
+      double alignTX,
+      double alignTY,
+      double alignRotationError,
+      boolean tryingToAlignToTag,
+      boolean atSetpoint) {
+    this.alignRotationError = alignRotationError;
+    this.alignTX = alignTX;
+    this.alignTY = alignTY;
+    this.tryingToAlignToTag = tryingToAlignToTag;
+    this.atTagAlignmentSetpoint = atSetpoint;
   }
 }
