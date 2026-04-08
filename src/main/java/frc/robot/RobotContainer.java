@@ -144,17 +144,16 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
     NamedCommands.registerCommand(
-        "ClimbAutoUp",
+        "ClimbAutoDrive",
         DriveCommands.driveToClimb(
             drive,
             fieldLayout,
             new Transform2d(new Translation2d(0.0, 0.0), Rotation2d.fromDegrees(0.0)),
             1.5,
             3.0));
-    // IMEDIANTELY UNCOMMENT THIS
-    // NamedCommands.registerCommand(
-    // "ClimbAutoUp", Commands.runOnce(() ->
-    // climb1.ClimbCommand(0.5).withTimeout(4).schedule()));
+    NamedCommands.registerCommand(
+    "ClimbAutoUp", Commands.runOnce(() ->
+    climb1.climbCommand(0.5).withTimeout(4).schedule()));
 
     NamedCommands.registerCommand("ClimbAutoDown", climb1.climbCommand(-0.5).withTimeout(6));
 

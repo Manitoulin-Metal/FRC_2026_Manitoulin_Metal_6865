@@ -5,7 +5,7 @@
 ### 1. ✅ Create TODO.md (Current step - completed)
 
 ### 2. ✅ Create PIDControllers in DriveCommands.java
-### 3. ✅ Refactor alignToTag method  
+### 3. ✅ Refactor alignToTag method
 ### 4. ✅ Update import statements
 
 ### 5. Update callers in RobotContainer.java
@@ -20,4 +20,3 @@
 - ✅ attempt_completion
 
 **Status:** Ready for implementation
-
