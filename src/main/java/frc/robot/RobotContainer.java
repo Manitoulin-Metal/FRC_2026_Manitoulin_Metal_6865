@@ -321,6 +321,8 @@ public class RobotContainer {
     // LED + gyro alerts
     if (drive.isGyroDisconnected()) {
       led.gyroDisconnectedAlert();
+    } else {
+      led.BLUE();
     }
 
     // Vision diagnostics inputs
