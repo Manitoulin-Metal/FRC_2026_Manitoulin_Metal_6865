@@ -243,6 +243,9 @@ public class RobotContainer {
     // Stow intake mechanism.
     operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
+    // Run intake deploy SHAKE mode while held.
+    operator.x().onTrue(intakeDeploy.shakeCommand()).onFalse(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
+
     // Raise climber while held.
     operator.pov(0).whileTrue(climb1.climbCommand(0.75)).onFalse(climb1.climbCommand(0));
 

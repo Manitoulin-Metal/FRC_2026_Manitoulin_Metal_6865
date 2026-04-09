@@ -14,6 +14,8 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
@@ -26,13 +28,15 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     DEPLOYED,
     MOVING_TO_STOW,
     MOVING_TO_DEPLOY,
-    HOMING
+    HOMING,
+    SHAKE
   }
 
   private final SparkFlex motor;
   private final RelativeEncoder encoder;
   private final DigitalInput hallSensor;
   private final PIDController pid;
+  private double shakeTargetAngleDeg = Constants.IntakeDeploy.SHAKE_MAX_ANGLE;
 
   private IntakeState state = IntakeState.HOMING;
 
@@ -42,6 +46,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final DoubleEntry kDEntry;
   private final DoubleEntry deployAngleEntry;
   private final DoubleEntry stowAngleEntry;
+  private final DoubleEntry shakeMinAngleEntry;
+  private final DoubleEntry shakeMaxAngleEntry;
   private final DoubleEntry deployHoldEntry;
   private final DoubleEntry stowHoldEntry;
   private final DoubleEntry toleranceEntry;
@@ -75,9 +81,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     // MotorType.kBrushless);
     // hallSensor = new DigitalInput(Constants.IntakeDeploy.HALL_SENSOR_PORT);
 
-    pid =
-        new PIDController(
-            Constants.IntakeDeploy.kP, Constants.IntakeDeploy.kI, Constants.IntakeDeploy.kD);
+    pid = new PIDController(
+        Constants.IntakeDeploy.kP, Constants.IntakeDeploy.kI, Constants.IntakeDeploy.kD);
 
     pid.setTolerance(Constants.IntakeDeploy.POSITION_TOLERANCE);
 
@@ -87,25 +92,19 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     kIEntry = table.getDoubleTopic("kI").getEntry(Constants.IntakeDeploy.kI);
     kDEntry = table.getDoubleTopic("kD").getEntry(Constants.IntakeDeploy.kD);
 
-    deployAngleEntry =
-        table.getDoubleTopic("DeployAngle").getEntry(Constants.IntakeDeploy.DEPLOY_ANGLE);
+    deployAngleEntry = table.getDoubleTopic("DeployAngle").getEntry(Constants.IntakeDeploy.DEPLOY_ANGLE);
     stowAngleEntry = table.getDoubleTopic("StowAngle").getEntry(Constants.IntakeDeploy.STOW_ANGLE);
+    shakeMinAngleEntry = table.getDoubleTopic("ShakeMinAngle").getEntry(Constants.IntakeDeploy.SHAKE_MIN_ANGLE);
+    shakeMaxAngleEntry = table.getDoubleTopic("ShakeMaxAngle").getEntry(Constants.IntakeDeploy.SHAKE_MAX_ANGLE);
 
-    deployHoldEntry =
-        table.getDoubleTopic("DeployHoldVolts").getEntry(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
-    stowHoldEntry =
-        table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
+    deployHoldEntry = table.getDoubleTopic("DeployHoldVolts").getEntry(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
+    stowHoldEntry = table.getDoubleTopic("StowHoldVolts").getEntry(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
 
-    toleranceEntry =
-        table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
-    maxOutputVoltsEntry =
-        table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
-    homingVoltsEntry =
-        table.getDoubleTopic("HomingOutputVolts").getEntry(Constants.IntakeDeploy.HOMING_VOLTS);
-    deployFFEntry =
-        table.getDoubleTopic("DeployFFVolts").getEntry(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
-    stowFFEntry =
-        table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeploy.STOW_FF_VOLTS);
+    toleranceEntry = table.getDoubleTopic("Tolerance").getEntry(Constants.IntakeDeploy.POSITION_TOLERANCE);
+    maxOutputVoltsEntry = table.getDoubleTopic("MaxOutputVolts").getEntry(Constants.IntakeDeploy.MAX_OUTPUT_VOLTS);
+    homingVoltsEntry = table.getDoubleTopic("HomingOutputVolts").getEntry(Constants.IntakeDeploy.HOMING_VOLTS);
+    deployFFEntry = table.getDoubleTopic("DeployFFVolts").getEntry(Constants.IntakeDeploy.DEPLOY_FF_VOLTS);
+    stowFFEntry = table.getDoubleTopic("StowFFVolts").getEntry(Constants.IntakeDeploy.STOW_FF_VOLTS);
 
     hallTriggeredPub = table.getBooleanTopic("HallTriggered").publish();
     atSetpointPub = table.getBooleanTopic("AtSetpoint").publish();
@@ -116,6 +115,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     kDEntry.set(Constants.IntakeDeploy.kD);
     deployAngleEntry.set(Constants.IntakeDeploy.DEPLOY_ANGLE);
     stowAngleEntry.set(Constants.IntakeDeploy.STOW_ANGLE);
+    shakeMinAngleEntry.set(Constants.IntakeDeploy.SHAKE_MIN_ANGLE);
+    shakeMaxAngleEntry.set(Constants.IntakeDeploy.SHAKE_MAX_ANGLE);
     deployHoldEntry.set(Constants.IntakeDeploy.DEPLOY_HOLD_VOLTS);
     stowHoldEntry.set(Constants.IntakeDeploy.STOW_HOLD_VOLTS);
     toleranceEntry.set(Constants.IntakeDeploy.POSITION_TOLERANCE);
@@ -144,17 +145,38 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   public void deploy() {
     // Ignore deploy button presses during homing to prevent interrupting the homing
     // process
-    if (state == IntakeState.HOMING) return;
+    if (state == IntakeState.HOMING)
+      return;
 
     // If we're deployed, ignore deploy command to prevent overdriving intake into
     // hard stop
-    if (state == IntakeState.DEPLOYED) return;
+    if (state == IntakeState.DEPLOYED)
+      return;
 
     state = IntakeState.MOVING_TO_DEPLOY;
   }
 
   public void stow() {
     state = IntakeState.MOVING_TO_STOW;
+  }
+
+  /** Starts continuous oscillation between 30 and 50 degrees using PID. */
+  public void shake() {
+    if (state == IntakeState.HOMING)
+      return;
+
+    double shakeMin = Math.min(shakeMinAngleEntry.get(), shakeMaxAngleEntry.get());
+    double shakeMax = Math.max(shakeMinAngleEntry.get(), shakeMaxAngleEntry.get());
+    double angle = getAngleDegrees();
+    double midpoint = (shakeMin + shakeMax) / 2.0;
+    shakeTargetAngleDeg = angle < midpoint ? shakeMax : shakeMin;
+    pid.reset();
+    state = IntakeState.SHAKE;
+  }
+
+  /** Command wrapper for entering SHAKE mode. */
+  public Command shakeCommand() {
+    return Commands.runOnce(this::shake, this);
   }
 
   // Run this function during robot initialization to home intake
@@ -210,8 +232,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
 
         double pidOutput = pid.calculate(angle, deployAngle);
         // Feedforward helps slow descent, reduce bounce
-        double deployFF =
-            Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
+        double deployFF = Math.abs(deployFFEntry.get()); // Positive is downwards (homing is negative)
         setClampedVoltage(pidOutput + deployFF);
 
         if (pid.atSetpoint()) {
@@ -251,6 +272,20 @@ public class IntakeDeploySubsystem extends SubsystemBase {
           setClampedVoltage(-homingVolts); // gentle upward voltage
         }
         break;
+
+      case SHAKE:
+        double shakeMin = Math.min(shakeMinAngleEntry.get(), shakeMaxAngleEntry.get());
+        double shakeMax = Math.max(shakeMinAngleEntry.get(), shakeMaxAngleEntry.get());
+        double pidOutputShake = pid.calculate(angle, shakeTargetAngleDeg);
+        double shakeFF = shakeTargetAngleDeg > angle ? Math.abs(deployFFEntry.get()) : -Math.abs(stowFFEntry.get());
+        output = pidOutputShake + shakeFF;
+        setClampedVoltage(output);
+
+        if (Math.abs(angle - shakeTargetAngleDeg) <= toleranceEntry.get()) {
+          double midpoint = (shakeMin + shakeMax) / 2.0;
+          shakeTargetAngleDeg = shakeTargetAngleDeg > midpoint ? shakeMin : shakeMax;
+        }
+        break;
     }
 
     // SmartDashboard logging
@@ -276,7 +311,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+  }
 }
 
 // @SuppressWarnings("removal")
