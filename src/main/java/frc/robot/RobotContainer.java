@@ -223,8 +223,19 @@ public class RobotContainer {
     // .a()
     // .onTrue(ClimbCommands.logClimbOffset(drive, fieldLayout, 32));
 
-    // Toggle shake
-    driver.a().onTrue(intakeDeploy.shakeCommand()).onFalse(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+    // Toggle intake deploy shake mode on/off.
+    driver
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  if (intakeDeploy.getState() == IntakeDeploySubsystem.IntakeState.SHAKE) {
+                    intakeDeploy.stow();
+                  } else {
+                    intakeDeploy.shake();
+                  }
+                },
+                intakeDeploy));
 
     // Run kicker test while held.
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
