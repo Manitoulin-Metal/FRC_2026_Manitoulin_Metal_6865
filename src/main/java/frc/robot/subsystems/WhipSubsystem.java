@@ -1,4 +1,4 @@
-package frc.robot.subsystems.Whip;
+package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
@@ -6,7 +6,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.subsystems.shooter.ShooterSubsystem;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class WhipSubsystem extends SubsystemBase {
@@ -58,7 +57,8 @@ public class WhipSubsystem extends SubsystemBase {
   }
 
   /**
-   * An example method querying a boolean state of the subsystem (for example, a digital sensor).
+   * An example method querying a boolean state of the subsystem (for example, a
+   * digital sensor).
    *
    * @return value of some boolean subsystem state, such as a digital sensor.
    */
@@ -67,8 +67,7 @@ public class WhipSubsystem extends SubsystemBase {
   }
 
   private boolean manualMode = false;
-  private final LoggedNetworkNumber whipAutoSpeedEntry =
-      new LoggedNetworkNumber("Tuning/Whip/AutoSpeed", -0.5);
+  private final LoggedNetworkNumber whipAutoSpeedEntry = new LoggedNetworkNumber("Tuning/Whip/AutoSpeed", -0.5);
 
   public void setManualMode(boolean mode) {
     this.manualMode = mode;

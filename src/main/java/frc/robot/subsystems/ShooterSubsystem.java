@@ -1,7 +1,7 @@
 // This is being used by Team 6865, Manitoulin Metal
 // This was created by Team 6865, Manitoulin Metal
 
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;

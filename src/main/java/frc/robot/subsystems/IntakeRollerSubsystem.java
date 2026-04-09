@@ -1,7 +1,7 @@
 // This is being used by Team 6865, Manitoulin Metal
 // This was created by Team 6865, Manitoulin Metal
 
-package frc.robot.subsystems.intake.intakeroller;
+package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;

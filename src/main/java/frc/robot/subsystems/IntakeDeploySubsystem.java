@@ -1,4 +1,4 @@
-package frc.robot.subsystems.intake.intakedeploy;
+package frc.robot.subsystems;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.PersistMode;

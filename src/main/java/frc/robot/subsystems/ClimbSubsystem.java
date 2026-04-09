@@ -1,4 +1,4 @@
-package frc.robot.subsystems.climb;
+package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
