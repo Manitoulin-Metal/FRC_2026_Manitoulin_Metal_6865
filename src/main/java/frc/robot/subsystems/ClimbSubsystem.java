@@ -34,7 +34,7 @@ public class ClimbSubsystem extends SubsystemBase {
     SmartDashboard.putBoolean("Climb/LimitSwitchPressed", pressed);
     SmartDashboard.putNumber("Climb/SpeedCommand", speed);
 
-    if (pressed && speed > 0) {
+    if (pressed && speed < 0) {
       climbMotor.stopMotor(); // stronger than set(0)
       return;
     }

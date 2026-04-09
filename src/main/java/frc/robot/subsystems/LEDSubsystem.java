@@ -16,8 +16,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class LEDSubsystem extends SubsystemBase {
-  @SuppressWarnings({ "deprecated", "removal" })
+  @SuppressWarnings({"deprecated", "removal"})
   private final CANdle candle = new CANdle(4, "DriveCanivore");
+
   private final SolidColor candleColorRequest = new SolidColor(0, 7);
 
   private static final int kPort = 9;
@@ -163,7 +164,8 @@ public class LEDSubsystem extends SubsystemBase {
   }
 
   public void TEAM_PATTERN2() {
-    LEDPattern pattern = LEDPattern.gradient(LEDPattern.GradientType.kDiscontinuous, Color.kYellow, Color.kBlack);
+    LEDPattern pattern =
+        LEDPattern.gradient(LEDPattern.GradientType.kDiscontinuous, Color.kYellow, Color.kBlack);
     pattern.applyTo(m_ledBuffer);
     pushOutputs();
   }
