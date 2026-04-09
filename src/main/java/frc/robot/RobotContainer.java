@@ -64,16 +64,13 @@ public class RobotContainer {
 
   private final Field2d field = new Field2d();
 
-  private final AprilTagFieldLayout fieldLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
 
-  private final LoggedNetworkNumber endgameAlert2 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
   // ============================================================
   // -------------------- CONSTRUCTOR ----------------------------
@@ -84,42 +81,42 @@ public class RobotContainer {
     // -------- Drive init --------
     switch (Constants.currentMode) {
       case REAL:
-        drive =
-            new Drive(
-                new GyroIOPigeon2(),
-                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOPigeon2(),
+            new ModuleIOTalonFX(TunerConstants.FrontLeft),
+            new ModuleIOTalonFX(TunerConstants.FrontRight),
+            new ModuleIOTalonFX(TunerConstants.BackLeft),
+            new ModuleIOTalonFX(TunerConstants.BackRight));
         break;
 
       case SIM:
-        drive =
-            new Drive(
-                new GyroIOSim(),
-                new ModuleIOSim(TunerConstants.FrontLeft),
-                new ModuleIOSim(TunerConstants.FrontRight),
-                new ModuleIOSim(TunerConstants.BackLeft),
-                new ModuleIOSim(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOSim(),
+            new ModuleIOSim(TunerConstants.FrontLeft),
+            new ModuleIOSim(TunerConstants.FrontRight),
+            new ModuleIOSim(TunerConstants.BackLeft),
+            new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default:
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
+        drive = new Drive(
+            new GyroIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            });
         break;
     }
 
     // -------- Vision setup --------
-    visionClimb =
-        new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+    visionClimb = new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
 
-    visionShoot =
-        new VisionSubsystem(new VisionIOLimelight("limelight_forward", drive::getRotation), drive);
+    visionShoot = new VisionSubsystem(new VisionIOLimelight("limelight_forward", drive::getRotation), drive);
 
     // -------- Default drive (now with robot-centric toggle) --------
     drive.setDefaultCommand(
@@ -272,7 +269,7 @@ public class RobotContainer {
     // Toggle shooter + whip on/off with each trigger press.
     operator
         .rightTrigger(0.5)
-        .toggleOnTrue(ShooterCommands.shootWithWhip(shooter, whip, intakeDeploy, 75.0));
+        .toggleOnTrue(ShooterCommands.shootWithWhip(shooter, whip, 75.0));
 
     // Run shooter at reduced speed while held.
     operator.y().whileTrue(ShooterCommands.runShooterAtRps(shooter, intakeDeploy, 60.0));
@@ -329,8 +326,7 @@ public class RobotContainer {
     // Vision diagnostics inputs
     double tx = visionClimb.getTX();
     double ty = visionClimb.getTY();
-    double[] offsets =
-        visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
+    double[] offsets = visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
     SmartDashboard.putBoolean("Endgame 20s", alert20);
