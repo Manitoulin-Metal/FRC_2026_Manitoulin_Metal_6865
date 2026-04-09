@@ -225,7 +225,7 @@ public class RobotContainer {
             Commands.runOnce(
                 () -> {
                   if (intakeDeploy.getState() == IntakeDeploySubsystem.IntakeState.SHAKE) {
-                    intakeDeploy.stow();
+                    intakeDeploy.deploy();
                   } else {
                     intakeDeploy.shake();
                   }
