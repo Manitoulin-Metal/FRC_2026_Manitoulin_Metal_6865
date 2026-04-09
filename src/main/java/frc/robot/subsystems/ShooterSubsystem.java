@@ -59,11 +59,10 @@ public class ShooterSubsystem extends SubsystemBase {
   public void runShooter(double speedRps) {
     targetRps = speedRps;
     double rampRate = 25.0; // RPS/sec
-    currentRps =
-        MathUtil.clamp(
-            currentRps + Math.copySign(rampRate * (1.0 / 50.0), speedRps - currentRps),
-            -Math.abs(speedRps),
-            Math.abs(speedRps));
+    currentRps = MathUtil.clamp(
+        currentRps + Math.copySign(rampRate * (1.0 / 50.0), speedRps - currentRps),
+        -Math.abs(speedRps),
+        Math.abs(speedRps));
     shooter.setControl(velocityRequest.withVelocity(currentRps));
   }
 
@@ -84,10 +83,10 @@ public class ShooterSubsystem extends SubsystemBase {
   /** Timed shoot: spins shooter at given speed for 15 seconds */
   public Command timedShootCommand(double speed) {
     return Commands.runEnd(
-            () -> runShooter(speed), // start shooting
-            this::stopShooter, // stop shooting after finished
-            this // requires this subsystem
-            )
+        () -> runShooter(speed), // start shooting
+        this::stopShooter, // stop shooting after finished
+        this // requires this subsystem
+    )
         .withTimeout(15.0);
   }
 
@@ -128,9 +127,12 @@ public class ShooterSubsystem extends SubsystemBase {
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
         "Shooter/SupplyCurrent", supplyCurrent);
     String faultSummary = faultsRaw == 0 ? "OK" : "0x" + Integer.toHexString(faultsRaw);
-    if ((faultsRaw & 1) != 0) faultSummary += " SupplyCurrLimit";
-    if ((faultsRaw & 2) != 0) faultSummary += " HardwareCurrLimit";
-    if ((faultsRaw & 16) != 0) faultSummary += " UnderVoltage";
+    if ((faultsRaw & 1) != 0)
+      faultSummary += " SupplyCurrLimit";
+    if ((faultsRaw & 2) != 0)
+      faultSummary += " HardwareCurrLimit";
+    if ((faultsRaw & 16) != 0)
+      faultSummary += " UnderVoltage";
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
         "Shooter/FaultSummary", faultSummary);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
@@ -169,7 +171,8 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Calculate target RPS based on distance to shooting target using interpolation table.
+   * Calculate target RPS based on distance to shooting target using interpolation
+   * table.
    *
    * @param distanceMeters Distance to AprilTag (25 or 26)
    * @return Interpolated target RPS
@@ -194,8 +197,7 @@ public class ShooterSubsystem extends SubsystemBase {
     if (index == distances.length - 1) {
       return rpsValues[index]; // Past last point
     }
-    double fraction =
-        (distanceMeters - distances[index]) / (distances[index + 1] - distances[index]);
+    double fraction = (distanceMeters - distances[index]) / (distances[index + 1] - distances[index]);
     return MathUtil.interpolate(rpsValues[index], rpsValues[index + 1], fraction);
   }
 
@@ -216,7 +218,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     for (var fiducial : rawFiducials) {
       if ((fiducial.id == Constants.SHOOTING_TAG_IDS[0]
-              || fiducial.id == Constants.SHOOTING_TAG_IDS[1])
+          || fiducial.id == Constants.SHOOTING_TAG_IDS[1])
           && fiducial.distToRobot > Constants.MIN_SHOOT_DISTANCE_METERS
           && fiducial.distToRobot <= Constants.MAX_SHOOT_DISTANCE_METERS) {
         totalDist += fiducial.distToRobot;
@@ -228,7 +230,8 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Run shooter using vision distance. Automatically calculates and ramps to target RPS.
+   * Run shooter using vision distance. Automatically calculates and ramps to
+   * target RPS.
    *
    * @param vision VisionSubsystem
    */
