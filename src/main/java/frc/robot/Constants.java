@@ -15,10 +15,8 @@ import edu.wpi.first.wpilibj.RobotBase;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
- * This class defines the runtime mode used by AdvantageKit. The mode is always
- * \"real\" when
- * running on a roboRIO. Change the value of \"simMode\" to switch between
- * \"sim\" (physics sim) and
+ * This class defines the runtime mode used by AdvantageKit. The mode is always \"real\" when
+ * running on a roboRIO. Change the value of \"simMode\" to switch between \"sim\" (physics sim) and
  * \"replay\" (log replay from a file).
  */
 public final class Constants {
@@ -28,7 +26,8 @@ public final class Constants {
   public static final double X_ALIGN_P = 0;
   public static final double ROT_ALIGN_P = 4.0;
   public static final double TEST_SHOOTER_RPS = 10.0; // Temporary test speed
-  public static final double SHOOTER_VELOCITY_RPS = TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
+  public static final double SHOOTER_VELOCITY_RPS =
+      TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
   public static final double SHOOTER_KICKER_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for testing
   public static final double SHOOTER_WHIP_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for testing
   public static final double SHOOTER_AT_TARGET_TOLERANCE_RPS = 3.0;
@@ -36,7 +35,7 @@ public final class Constants {
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
   // public static final int[] SHOOTING_TAG_IDS = {};
-  public static final int[] SHOOTING_TAG_IDS = { 25, 26 };
+  public static final int[] SHOOTING_TAG_IDS = {25, 26};
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 75.0;
@@ -47,12 +46,13 @@ public final class Constants {
 
   public static final double WHIP_SLOW_SPEED = -0.15;
   public static final double TEST_SLOWSHOOTER_RPS = 6.0; // Temporary test speed
-  public static final double SLOWSHOOTER_VELOCITY_RPS = TEST_SLOWSHOOTER_RPS; // Tune this RPS (~60 RPM for test)
-  public static final double SLOWSHOOTER_KICKER_RPM_THRESHOLD = 3500.0; // Triggers kicker at shooter 60.0 RPS (1)
+  public static final double SLOWSHOOTER_VELOCITY_RPS =
+      TEST_SLOWSHOOTER_RPS; // Tune this RPS (~60 RPM for test)
+  public static final double SLOWSHOOTER_KICKER_RPM_THRESHOLD =
+      3500.0; // Triggers kicker at shooter 60.0 RPS (1)
 
   public static double getRPMForDistance(double distance) {
-    if (distance < 2.40)
-      return 3550;
+    if (distance < 2.40) return 3550;
     return 4200;
   }
 
@@ -67,8 +67,8 @@ public final class Constants {
   public static final double AUTO_BUMP_YAW_DEG = 10.0;
 
   // Dynamic shooter RPM by distance to shooting tags
-  public static final double[] SHOOTER_DISTANCE_BREAKPOINTS_METERS = { 1.5, 2.5, 3.5, 4.5, 5.5 };
-  public static final double[] SHOOTER_TARGET_RPS_BY_DISTANCE = { 65.0, 68.0, 70.0, 72.0, 75.0 };
+  public static final double[] SHOOTER_DISTANCE_BREAKPOINTS_METERS = {1.5, 2.5, 3.5, 4.5, 5.5};
+  public static final double[] SHOOTER_TARGET_RPS_BY_DISTANCE = {65.0, 68.0, 70.0, 72.0, 75.0};
 
   public static class Shooter {
     public static final double kP = 0.01; // Minimal PID enabled for better tracking
@@ -93,8 +93,8 @@ public final class Constants {
     // ---------------- Positions ----------------
     public static final double STOW_ANGLE = 0.0;
     public static final double DEPLOY_ANGLE = 84.0;
-    public static final double SHAKE_MIN_ANGLE = 30.0;
-    public static final double SHAKE_MAX_ANGLE = 40.0;
+    public static final double SHAKE_MIN_ANGLE = 50.0;
+    public static final double SHAKE_MAX_ANGLE = 60.0;
 
     // ---------------- PID ----------------
     public static final double kP = 0.14;
@@ -145,12 +145,13 @@ public final class Constants {
   // ================= CLIMB =================
   public static final int CLIMB_TAG_ID = 32;
   public static final int[] CLIMB_TAG_IDS = {
-      32, 16
+    32, 16
   }; // Add any additional tags you want to use for climbing
 
-  public static final Transform2d CLIMB_OFFSET = new Transform2d(
-      new Translation2d(-0.65, 0.10), // 🔥 REPLACE WITH YOUR MEASURED VALUES
-      Rotation2d.fromDegrees(180));
+  public static final Transform2d CLIMB_OFFSET =
+      new Transform2d(
+          new Translation2d(-0.65, 0.10), // 🔥 REPLACE WITH YOUR MEASURED VALUES
+          Rotation2d.fromDegrees(180));
 
   public static final double CLIMB_POS_TOLERANCE = 0.05;
   public static final double CLIMB_ROT_TOLERANCE = Math.toRadians(3);

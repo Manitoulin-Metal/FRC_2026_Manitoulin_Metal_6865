@@ -4,11 +4,8 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
@@ -18,17 +15,14 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
-import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.vision.*;
 import frc.robot.subsystems.WhipSubsystem;
-
-import java.util.Optional;
-import java.util.function.Supplier;
+import frc.robot.subsystems.drive.*;
+import frc.robot.subsystems.vision.*;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.*;
 
@@ -70,13 +64,16 @@ public class RobotContainer {
 
   private final Field2d field = new Field2d();
 
-  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert1 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
 
-  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert2 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
   // ============================================================
   // -------------------- CONSTRUCTOR ----------------------------
@@ -87,42 +84,42 @@ public class RobotContainer {
     // -------- Drive init --------
     switch (Constants.currentMode) {
       case REAL:
-        drive = new Drive(
-            new GyroIOPigeon2(),
-            new ModuleIOTalonFX(TunerConstants.FrontLeft),
-            new ModuleIOTalonFX(TunerConstants.FrontRight),
-            new ModuleIOTalonFX(TunerConstants.BackLeft),
-            new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOPigeon2(),
+                new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                new ModuleIOTalonFX(TunerConstants.FrontRight),
+                new ModuleIOTalonFX(TunerConstants.BackLeft),
+                new ModuleIOTalonFX(TunerConstants.BackRight));
         break;
 
       case SIM:
-        drive = new Drive(
-            new GyroIOSim(),
-            new ModuleIOSim(TunerConstants.FrontLeft),
-            new ModuleIOSim(TunerConstants.FrontRight),
-            new ModuleIOSim(TunerConstants.BackLeft),
-            new ModuleIOSim(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOSim(),
+                new ModuleIOSim(TunerConstants.FrontLeft),
+                new ModuleIOSim(TunerConstants.FrontRight),
+                new ModuleIOSim(TunerConstants.BackLeft),
+                new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default:
-        drive = new Drive(
-            new GyroIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            });
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
         break;
     }
 
     // -------- Vision setup --------
-    visionClimb = new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+    visionClimb =
+        new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
 
-    visionShoot = new VisionSubsystem(new VisionIOLimelight("limelight_forward", drive::getRotation), drive);
+    visionShoot =
+        new VisionSubsystem(new VisionIOLimelight("limelight_forward", drive::getRotation), drive);
 
     // -------- Default drive (now with robot-centric toggle) --------
     drive.setDefaultCommand(
@@ -143,7 +140,8 @@ public class RobotContainer {
     NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
 
     NamedCommands.registerCommand("collectFuel", intakeRoller.intakeCommand().withTimeout(4.0));
-    NamedCommands.registerCommand("ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
+    NamedCommands.registerCommand(
+        "ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
     NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.autoClimbUp(climb1));
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.autoClimbDown(climb1));
 
@@ -224,7 +222,10 @@ public class RobotContainer {
     // .onTrue(ClimbCommands.logClimbOffset(drive, fieldLayout, 32));
 
     // Toggle shake
-    driver.a().onTrue(intakeDeploy.shakeCommand()).onFalse(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+    driver
+        .a()
+        .onTrue(intakeDeploy.shakeCommand())
+        .onFalse(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
     // Run kicker test while held.
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
@@ -266,9 +267,7 @@ public class RobotContainer {
         .toggleOnTrue(ShooterCommands.shootWithWhip(shooter, whip, intakeDeploy, 75.0));
 
     // Run shooter at reduced speed while held.
-    operator
-        .y()
-        .whileTrue(ShooterCommands.runShooterAtRps(shooter, intakeDeploy, 60.0));
+    operator.y().whileTrue(ShooterCommands.runShooterAtRps(shooter, intakeDeploy, 60.0));
 
     // Toggle whip command on/off.
     operator.rightBumper().toggleOnTrue(whip.whipCommand());
@@ -322,7 +321,8 @@ public class RobotContainer {
     // Vision diagnostics inputs
     double tx = visionClimb.getTX();
     double ty = visionClimb.getTY();
-    double[] offsets = visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
+    double[] offsets =
+        visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
     SmartDashboard.putBoolean("Endgame 20s", alert20);
