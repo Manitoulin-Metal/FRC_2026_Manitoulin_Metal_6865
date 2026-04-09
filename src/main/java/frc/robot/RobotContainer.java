@@ -236,7 +236,7 @@ public class RobotContainer {
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // Run align-to-tag then climb while held.
-    driver.x().whileTrue(ClimbCommands.alignAndClimb(drive, visionClimb, climb1));
+    driver.y().whileTrue(ClimbCommands.alignAndClimb(drive, visionClimb, climb1));
 
     // Vision climb assist test while held (disabled).
     // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,

@@ -4,7 +4,9 @@
 
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.hardware.CANdle;
+import com.ctre.phoenix6.signals.RGBWColor;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.LEDPattern;
@@ -14,9 +16,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class LEDSubsystem extends SubsystemBase {
-  @SuppressWarnings({"deprecated", "removal"})
-  // CANdle support - uncomment when CTRE APIs are available
-  CANdle candle = new CANdle(4, "DriveCanivore");
+  @SuppressWarnings({ "deprecated", "removal" })
+  private final CANdle candle = new CANdle(4, "DriveCanivore");
+  private final SolidColor candleColorRequest = new SolidColor(0, 7);
 
   private static final int kPort = 9;
   private static final int kLength = 120;
@@ -30,6 +32,7 @@ public class LEDSubsystem extends SubsystemBase {
     m_ledBuffer = new AddressableLEDBuffer(kLength);
     m_led.setLength(kLength);
     m_led.start();
+    setCandleColor(0, 0, 0);
   }
 
   /**
@@ -38,8 +41,6 @@ public class LEDSubsystem extends SubsystemBase {
    * @return a command
    */
   public Command LEDCommand(String color) {
-    // Inline construction of command goes here.
-    // Subsystem::RunOnce implicitly requires `this` subsystem.
     return runOnce(
         () -> {
           switch (color) {
@@ -78,7 +79,11 @@ public class LEDSubsystem extends SubsystemBase {
   }
 
   public Command runPattern(LEDPattern pattern) {
-    return runOnce(() -> pattern.applyTo(m_ledBuffer));
+    return runOnce(
+        () -> {
+          pattern.applyTo(m_ledBuffer);
+          pushOutputs();
+        });
   }
 
   public void RED() {
@@ -116,16 +121,37 @@ public class LEDSubsystem extends SubsystemBase {
     setAllLEDs(0, 0, 0);
   }
 
-  private void setAllLEDs(int r, int g, int b) {
-    var color = new Color(r, g, b);
+  private void setAllLEDs(int red, int green, int blue) {
     for (int i = 0; i < m_ledBuffer.getLength(); i++) {
-      m_ledBuffer.setLED(i, color);
+      m_ledBuffer.setRGB(i, red, green, blue);
     }
+    pushOutputs();
+  }
+
+  private void pushOutputs() {
     m_led.setData(m_ledBuffer);
+    syncCandleFromBuffer();
+  }
+
+  private void syncCandleFromBuffer() {
+    if (m_ledBuffer.getLength() == 0) {
+      setCandleColor(0, 0, 0);
+      return;
+    }
+
+    Color firstPixel = m_ledBuffer.getLED(0);
+    int red = (int) Math.round(firstPixel.red * 255.0);
+    int green = (int) Math.round(firstPixel.green * 255.0);
+    int blue = (int) Math.round(firstPixel.blue * 255.0);
+    setCandleColor(red, green, blue);
+  }
+
+  private void setCandleColor(int red, int green, int blue) {
+    candle.clearAllAnimations();
+    candle.setControl(candleColorRequest.withColor(new RGBWColor(red, green, blue)));
   }
 
   public void TEAM_PATTERN1() {
-    // Simple yellow pattern with alternating LEDs
     for (int i = 0; i < m_ledBuffer.getLength(); i++) {
       if (i % 2 == 0) {
         m_ledBuffer.setLED(i, Color.kYellow);
@@ -133,43 +159,32 @@ public class LEDSubsystem extends SubsystemBase {
         m_ledBuffer.setLED(i, Color.kBlack);
       }
     }
-    m_led.setData(m_ledBuffer);
+    pushOutputs();
   }
 
   public void TEAM_PATTERN2() {
-    // Yellow gradient pattern
-    LEDPattern pattern =
-        LEDPattern.gradient(LEDPattern.GradientType.kDiscontinuous, Color.kYellow, Color.kBlack);
+    LEDPattern pattern = LEDPattern.gradient(LEDPattern.GradientType.kDiscontinuous, Color.kYellow, Color.kBlack);
     pattern.applyTo(m_ledBuffer);
-    m_led.setData(m_ledBuffer);
+    pushOutputs();
   }
 
   public void RAINBOW() {
-    // Rainbow pattern
     LEDPattern base = LEDPattern.rainbow(255, 128);
     base.applyTo(m_ledBuffer);
-    m_led.setData(m_ledBuffer);
+    pushOutputs();
   }
 
   /** Flashing red pattern for gyro disconnected alert */
   public void gyroDisconnectedAlert() {
-    // Alternate between red and off every 500ms
     boolean isRedPhase = (int) (System.currentTimeMillis() / 500) % 2 == 0;
     if (isRedPhase) {
-      setAllLEDs(255, 0, 0); // Red
+      setAllLEDs(255, 0, 0);
     } else {
-      setAllLEDs(0, 0, 0); // Off
+      setAllLEDs(0, 0, 0);
     }
   }
 
-  /*
-   * An example method querying a boolean state of the subsystem (for example, a
-   * digital sensor).
-   * @return value of some boolean subsystem state, such as a digital sensor.
-   */
-
   public boolean exampleCondition() {
-    // Query some boolean state, such as a digital sensor.
     return false;
   }
 
