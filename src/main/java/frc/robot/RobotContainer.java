@@ -219,15 +219,18 @@ public class RobotContainer {
                 3.0));
 
     // Log climb tag offset for calibration/debug.
-    driver
-        .a()
-        .onTrue(ClimbCommands.logClimbOffset(drive, fieldLayout, 32));
+    // driver
+    // .a()
+    // .onTrue(ClimbCommands.logClimbOffset(drive, fieldLayout, 32));
+
+    // Toggle shake
+    driver.a().onTrue(intakeDeploy.shakeCommand()).onFalse(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
     // Run kicker test while held.
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // Run align-to-tag then climb while held.
-    driver.a().whileTrue(ClimbCommands.alignAndClimb(drive, visionClimb, climb1));
+    driver.x().whileTrue(ClimbCommands.alignAndClimb(drive, visionClimb, climb1));
 
     // Vision climb assist test while held (disabled).
     // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,
@@ -243,9 +246,8 @@ public class RobotContainer {
     // Stow intake mechanism.
     operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
-    // Run intake deploy SHAKE mode while held.
-    operator.x().onTrue(intakeDeploy.shakeCommand()).onFalse(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
-
+    // Unused x button on operator
+    // operator.x().onTrue(
     // Raise climber while held.
     operator.pov(0).whileTrue(climb1.climbCommand(0.75)).onFalse(climb1.climbCommand(0));
 
