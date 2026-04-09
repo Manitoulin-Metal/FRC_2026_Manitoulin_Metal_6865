@@ -26,7 +26,9 @@ public final class ShooterCommands {
             ShooterSubsystem shooter, WhipSubsystem whip, double shooterRps) {
         return Commands.parallel(
                 Commands.run(() -> shooter.runShooter(shooterRps), shooter),
-                whip.whipCommand());
+                whip.whipCommand())
+                // Needed for toggle mode so shooter always shuts down when command ends.
+                .finallyDo(interrupted -> shooter.stopShooter());
     }
 
     /** Runs shooter at a constant RPS while held. */

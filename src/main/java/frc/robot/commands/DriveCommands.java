@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
+import frc.robot.LimelightHelpers;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.Optional;
@@ -370,8 +371,87 @@ public final class DriveCommands {
         .andThen(drive::stop);
   }
 
-  /** Align to AprilTag using WPILib PIDControllers and VisionSubsystem */
+  /**
+   * Align to AprilTag using WPILib PIDControllers and direct LimelightHelpers
+   * reads.
+   */
   public static Command alignToTag(int targetId, Drive drive, VisionSubsystem vision) {
+    PIDController strafeController = new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+    PIDController distanceController = new PIDController(alignDistanceKP.get(), alignDistanceKI.get(),
+        alignDistanceKD.get());
+    PIDController rotationController = new PIDController(alignRotationKP.get(), alignRotationKI.get(),
+        alignRotationKD.get());
+
+    // Set tolerances for convergence (degrees)
+    strafeController.setTolerance(1.0);
+    distanceController.setTolerance(0.5);
+    rotationController.setTolerance(1.0);
+
+    return Commands.run(
+        () -> {
+          // Use the same rear limelight used for climb alignment in RobotContainer.
+          final String limelightName = "limelight";
+
+          boolean hasTarget = LimelightHelpers.getTV(limelightName);
+          int fiducialId = (int) Math.round(LimelightHelpers.getFiducialID(limelightName));
+          if (!hasTarget || fiducialId != targetId) {
+            drive.stop();
+            SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
+            return;
+          }
+
+          SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
+
+          // Update PID gains live from NetworkTables
+          strafeController.setPID(
+              alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+          distanceController.setPID(
+              alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+          rotationController.setPID(
+              alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
+
+          double tx = LimelightHelpers.getTX(limelightName);
+          double ty = LimelightHelpers.getTY(limelightName);
+
+          // For rotation, use tx angle error (original used pose yaw which is ~tx)
+          double rotationError = tx; // degrees
+
+          SmartDashboard.putNumber("AlignTesting/tx", tx);
+          SmartDashboard.putNumber("AlignTesting/ty", ty);
+          SmartDashboard.putNumber("AlignTesting/rotationError", rotationError);
+
+          // PID-controlled outputs (replaces proportional gains)
+          double strafe = strafeController.calculate(tx, 0.0);
+          double distance = distanceController.calculate(ty, 0.0);
+          double omega = rotationController.calculate(rotationError, 0.0);
+
+          // Clamp to safe speeds (matching original)
+          double maxSpeed = 6.0;
+          strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
+          distance = MathUtil.clamp(distance, -maxSpeed, maxSpeed);
+          omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
+
+          // Robot-centric movement (same as original)
+          drive.runVelocity(
+              new ChassisSpeeds(
+                  distance, // forward/backward (ty - target_ty, but target_ty=0)
+                  strafe, // left/right (tx)
+                  omega // rotation
+          ));
+
+          // Log PID states
+          SmartDashboard.putBoolean(
+              "Align/PIDAtSetpoint",
+              strafeController.atSetpoint()
+                  && distanceController.atSetpoint()
+                  && rotationController.atSetpoint());
+        },
+        drive)
+        .withName("AlignToTag_PID");
+  }
+
+  /** Align to AprilTag using WPILib PIDControllers and VisionSubsystem. */
+  public static Command alignToTagWithVision(int targetId, Drive drive, VisionSubsystem vision) {
     PIDController strafeController = new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
     PIDController distanceController = new PIDController(alignDistanceKP.get(), alignDistanceKI.get(),
         alignDistanceKD.get());
@@ -441,6 +521,6 @@ public final class DriveCommands {
         },
         drive,
         vision)
-        .withName("AlignToTag_PID");
+        .withName("AlignToTagWithVision_PID");
   }
 }

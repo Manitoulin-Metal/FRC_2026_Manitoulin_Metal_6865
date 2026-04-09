@@ -258,12 +258,10 @@ public class RobotContainer {
         .whileTrue(intakeRoller.intakeCommand())
         .onFalse(intakeRoller.idleCommand());
 
-    // Run shooter + whip while held.
+    // Toggle shooter + whip on/off with each trigger press.
     operator
         .rightTrigger(0.5)
-        .whileTrue(ShooterCommands.shootWithWhip(shooter, whip, 75.0))
-        .onFalse(shooter.stopCommand())
-        .toggleOnFalse(whip.whipStopCommand());
+        .toggleOnTrue(ShooterCommands.shootWithWhip(shooter, whip, 75.0));
 
     // Run shooter at reduced speed while held.
     operator
