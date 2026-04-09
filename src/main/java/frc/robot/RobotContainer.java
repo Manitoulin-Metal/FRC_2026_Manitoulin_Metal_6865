@@ -167,6 +167,11 @@ public class RobotContainer {
   private void configureButtonBindings() {
     Logger.recordOutput("Bindings/Configured", true);
 
+    // ============================================================
+    // -------------------- DRIVER BINDINGS ------------------------
+    // ============================================================
+
+    // Toggle robot-centric driving mode.
     driver
         .start()
         .onTrue(
@@ -176,6 +181,7 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
                 }));
 
+    // Toggle vision-assisted behavior.
     driver
         .y()
         .onTrue(
@@ -185,19 +191,10 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
                 }));
 
-    // Intake deploy/stow
-    // controller1.a().onTrue(intakeDeploy.deployCommand());
-    // controller1.b().onTrue(intakeDeploy.stowCommand());
-
-    // New intake deploy
-    operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
-    // New intake stow
-    operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
-
-    // Stop drive (X)
+    // Stop drive outputs with X-lock.
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-    // Gyro reset
+    // Zero robot heading while preserving translation.
     driver
         .b()
         .onTrue(
@@ -205,7 +202,7 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
-    // Drive to Shoot Command
+    // Run vision-assisted drive-to-shoot while held.
     driver
         .rightTrigger(0.5)
         .whileTrue(
@@ -221,62 +218,60 @@ public class RobotContainer {
                 1.5,
                 3.0));
 
-    // Vision drive to fieldtag (shooting)
-    /*
-     * controller
-     * .rightTrigger(0.5)
-     * .whileTrue(
-     * DriveCommands.driveToShoot(
-     * drive,
-     * fieldLayout,
-     * 25, // example tag ID
-     * 0.5, // distance
-     * 1.5,
-     * 3.0));
-     */
-
-    // Debug offset calc
+    // Log climb tag offset for calibration/debug.
     driver
         .a()
         .onTrue(ClimbCommands.logClimbOffset(drive, fieldLayout, 32));
 
-    // Climb controls
+    // Run kicker test while held.
+    driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
+
+    // Run align-to-tag then climb while held.
+    driver.a().whileTrue(ClimbCommands.alignAndClimb(drive, visionClimb, climb1));
+
+    // Vision climb assist test while held (disabled).
+    // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,
+    // visionClimb));
+
+    // ============================================================
+    // -------------------- OPERATOR BINDINGS ----------------------
+    // ============================================================
+
+    // Deploy intake mechanism.
+    operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+
+    // Stow intake mechanism.
+    operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
+
+    // Raise climber while held.
     operator.pov(0).whileTrue(climb1.climbCommand(0.75)).onFalse(climb1.climbCommand(0));
+
+    // Lower climber while held.
     operator.pov(180).whileTrue(climb1.climbCommand(-0.75)).onFalse(climb1.climbCommand(0));
 
-    // Intake controls
+    // Run intake roller while held.
     operator
         .leftTrigger(0.1)
         .whileTrue(intakeRoller.intakeCommand())
         .onFalse(intakeRoller.idleCommand());
 
-    // Shooter controls
+    // Run shooter + whip while held.
     operator
         .rightTrigger(0.5)
         .whileTrue(ShooterCommands.shootWithWhip(shooter, whip, 75.0))
         .onFalse(shooter.stopCommand())
         .toggleOnFalse(whip.whipStopCommand());
 
-    // Shooter Slow controls
+    // Run shooter at reduced speed while held.
     operator
         .y()
         .whileTrue(ShooterCommands.runShooterAtRps(shooter, 60.0))
         .onFalse(shooter.stopCommand());
 
-    // Whip
+    // Toggle whip command on/off.
     operator.rightBumper().toggleOnTrue(whip.whipCommand());
 
-    // Kicker test
-    driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
-
-    // Vision for Climb
-    // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,
-    // visionClimb));
-
-    // Align to cage tag then climb
-    driver.a().whileTrue(ClimbCommands.alignAndClimb(drive, visionClimb, climb1));
-
-    // Shooter faults clear
+    // Clear shooter sticky faults.
     operator.leftBumper().onTrue(shooter.clearFaultsCommand());
   }
 
