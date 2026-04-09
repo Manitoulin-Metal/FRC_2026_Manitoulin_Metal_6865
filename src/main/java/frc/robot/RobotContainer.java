@@ -149,7 +149,7 @@ public class RobotContainer {
 
     NamedCommands.registerCommand(
         "timedShootCommand",
-        ShooterCommands.timedShoot(shooter, kicker, Constants.AUTO_SHOOT_RPS, 1.5));
+        ShooterCommands.timedShoot(shooter, kicker, intakeDeploy, Constants.AUTO_SHOOT_RPS, 1.5));
 
     // Load autos
     for (String autoName : AutoBuilder.getAllAutoNames()) {
@@ -261,13 +261,12 @@ public class RobotContainer {
     // Toggle shooter + whip on/off with each trigger press.
     operator
         .rightTrigger(0.5)
-        .toggleOnTrue(ShooterCommands.shootWithWhip(shooter, whip, 75.0));
+        .toggleOnTrue(ShooterCommands.shootWithWhip(shooter, whip, intakeDeploy, 75.0));
 
     // Run shooter at reduced speed while held.
     operator
         .y()
-        .whileTrue(ShooterCommands.runShooterAtRps(shooter, 60.0))
-        .onFalse(shooter.stopCommand());
+        .whileTrue(ShooterCommands.runShooterAtRps(shooter, intakeDeploy, 60.0));
 
     // Toggle whip command on/off.
     operator.rightBumper().toggleOnTrue(whip.whipCommand());
