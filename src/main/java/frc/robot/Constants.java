@@ -93,8 +93,8 @@ public final class Constants {
     // ---------------- Positions ----------------
     public static final double STOW_ANGLE = 0.0;
     public static final double DEPLOY_ANGLE = 84.0;
-    public static final double SHAKE_MIN_ANGLE = 30.0;
-    public static final double SHAKE_MAX_ANGLE = 40.0;
+    public static final double SHAKE_MIN_ANGLE = 40.0;
+    public static final double SHAKE_MAX_ANGLE = 50.0;
 
     // ---------------- PID ----------------
     public static final double kP = 0.14;
