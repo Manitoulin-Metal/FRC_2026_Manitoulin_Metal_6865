@@ -44,8 +44,8 @@ public class RobotContainer {
   private final LEDMinimal led = new LEDMinimal();
 
   // Vision (separate cameras)
-  private final VisionSubsystem visionClimb;
-  private final VisionSubsystem visionShoot;
+  private final Vision visionClimb;
+  private final Vision visionShoot;
   private boolean visionEnabled = true;
 
   // Toggle for robot-centric vs field-centric drive (default to field-centric)
@@ -64,16 +64,13 @@ public class RobotContainer {
 
   private final Field2d field = new Field2d();
 
-  private final AprilTagFieldLayout fieldLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
 
-  private final LoggedNetworkNumber endgameAlert2 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
   // ============================================================
   // -------------------- CONSTRUCTOR ----------------------------
@@ -84,42 +81,42 @@ public class RobotContainer {
     // -------- Drive init --------
     switch (Constants.currentMode) {
       case REAL:
-        drive =
-            new Drive(
-                new GyroIOPigeon2(),
-                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOPigeon2(),
+            new ModuleIOTalonFX(TunerConstants.FrontLeft),
+            new ModuleIOTalonFX(TunerConstants.FrontRight),
+            new ModuleIOTalonFX(TunerConstants.BackLeft),
+            new ModuleIOTalonFX(TunerConstants.BackRight));
         break;
 
       case SIM:
-        drive =
-            new Drive(
-                new GyroIOSim(),
-                new ModuleIOSim(TunerConstants.FrontLeft),
-                new ModuleIOSim(TunerConstants.FrontRight),
-                new ModuleIOSim(TunerConstants.BackLeft),
-                new ModuleIOSim(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOSim(),
+            new ModuleIOSim(TunerConstants.FrontLeft),
+            new ModuleIOSim(TunerConstants.FrontRight),
+            new ModuleIOSim(TunerConstants.BackLeft),
+            new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default:
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
+        drive = new Drive(
+            new GyroIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            });
         break;
     }
 
     // -------- Vision setup --------
-    visionClimb =
-        new VisionSubsystem(new VisionIOLimelight("limelight", drive::getRotation), drive);
+    visionClimb = new Vision(new VisionIOLimelight("limelight", drive::getRotation), drive);
 
-    visionShoot =
-        new VisionSubsystem(new VisionIOLimelight("limelight_forward", drive::getRotation), drive);
+    visionShoot = new Vision(new VisionIOLimelight("limelight_forward", drive::getRotation), drive);
 
     // -------- Default drive (now with robot-centric toggle) --------
     drive.setDefaultCommand(
@@ -202,20 +199,20 @@ public class RobotContainer {
                 drive));
 
     // Run vision-assisted drive-to-shoot while held.
-    driver
-        .rightTrigger(0.5)
-        .whileTrue(
-            DriveCommands.driveToShootVision(
-                drive,
-                visionShoot,
-                shooter,
-                fieldLayout,
-                () -> visionEnabled,
-                () -> -driver.getLeftY(),
-                () -> -driver.getLeftX(),
-                () -> -driver.getRightX(),
-                1.5,
-                3.0));
+    // driver
+    // .rightTrigger(0.5)
+    // .whileTrue(
+    // DriveCommands.driveToShootVision(
+    // drive,
+    // visionShoot,
+    // shooter,
+    // fieldLayout,
+    // () -> visionEnabled,
+    // () -> -driver.getLeftY(),
+    // () -> -driver.getLeftX(),
+    // () -> -driver.getRightX(),
+    // 1.5,
+    // 3.0));
 
     // Log climb tag offset for calibration/debug.
     // driver
@@ -327,8 +324,7 @@ public class RobotContainer {
     // Vision diagnostics inputs
     double tx = visionClimb.getTX();
     double ty = visionClimb.getTY();
-    double[] offsets =
-        visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
+    double[] offsets = visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
     SmartDashboard.putBoolean("Endgame 20s", alert20);
