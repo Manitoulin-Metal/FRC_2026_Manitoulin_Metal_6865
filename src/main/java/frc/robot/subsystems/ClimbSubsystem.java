@@ -33,6 +33,7 @@ public class ClimbSubsystem extends SubsystemBase {
 
   private ClimbState state = ClimbState.IDLE;
   private boolean homed = false;
+  private boolean upTargetReached = false;
 
   public ClimbSubsystem() {
     SparkFlexConfig config = new SparkFlexConfig();
@@ -55,6 +56,7 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void moveUp() {
+    upTargetReached = false;
     state = ClimbState.UP;
   }
 
@@ -103,9 +105,13 @@ public class ClimbSubsystem extends SubsystemBase {
     return encoder.getPosition();
   }
 
-  /** Returns true once the climber has reached the UP target (or passed it). */
+  /**
+   * Returns true only after periodic() has confirmed the climber physically
+   * reached
+   * the UP target. Cleared each time moveUp() is called.
+   */
   public boolean isAtUpTarget() {
-    return encoder.getPosition() >= Constants.Climb.upTargetEntry.get();
+    return upTargetReached;
   }
 
   @Override
@@ -117,8 +123,9 @@ public class ClimbSubsystem extends SubsystemBase {
 
     switch (state) {
       case UP:
-        if (climbPosition >= upTarget) {
+        if (upTarget > 1.0 && climbPosition >= upTarget) {
           output = 0.0;
+          upTargetReached = true;
           state = ClimbState.IDLE;
         } else {
           output = UP_SPEED;
