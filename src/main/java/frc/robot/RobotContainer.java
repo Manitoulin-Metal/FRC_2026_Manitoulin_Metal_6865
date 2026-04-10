@@ -143,9 +143,8 @@ public class RobotContainer {
 
     // -------- Named commands --------
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
-
+    NamedCommands.registerCommand("IntakeDeploy", intakeDeploy.deployCommand());
     NamedCommands.registerCommand("startIntake", intakeRoller.intakeToggleCommand());
-    // NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
 
     NamedCommands.registerCommand(
         "collectFuel", intakeRoller.intakeToggleCommand().withTimeout(4.0));
@@ -156,7 +155,7 @@ public class RobotContainer {
 
     NamedCommands.registerCommand(
         "timedShootCommand",
-        ShooterCommands.timedShoot(shooter, kicker, intakeDeploy, Constants.AUTO_SHOOT_RPS, 1.5));
+        ShooterCommands.timedShoot(shooter, kicker, intakeDeploy, Constants.AUTO_SHOOT_RPS, 0.25));
 
     // Load autos
     for (String autoName : AutoBuilder.getAllAutoNames()) {
@@ -348,15 +347,26 @@ public class RobotContainer {
     double tx = visionClimb.getTX();
     double ty = visionClimb.getTY();
     double[] offsets = new double[] { 0.0, 0.0, 0.0 };
-    var climbTagPose = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID);
-    if (climbTagPose.isPresent()) {
-      Transform2d tagToRobot = new Transform2d(climbTagPose.get().toPose2d(), drive.getPose());
+    var climbTagPoseBlue = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID_BLUE); // Uses The Climb Blue AprilTag ID
+    var climbTagPoseRed = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID_RED); // Uses The Climb Red AprilTag ID
+
+    // The Red AprilTag ID Pose
+    if (climbTagPoseRed.isPresent()) {
+      Transform2d tagToRobot = new Transform2d(climbTagPoseRed.get().toPose2d(), drive.getPose());
+      offsets[0] = tagToRobot.getX();
+      offsets[1] = tagToRobot.getY();
+      offsets[2] = drive.getPose().getTranslation().getDistance(climbTagPoseRed.get().toPose2d().getTranslation());
+    }
+
+    // The Blue AprilTag ID Pose
+    if (climbTagPoseBlue.isPresent()) {
+      Transform2d tagToRobot = new Transform2d(climbTagPoseBlue.get().toPose2d(), drive.getPose());
       offsets[0] = tagToRobot.getX();
       offsets[1] = tagToRobot.getY();
       offsets[2] = drive
           .getPose()
           .getTranslation()
-          .getDistance(climbTagPose.get().toPose2d().getTranslation());
+          .getDistance(climbTagPoseBlue.get().toPose2d().getTranslation());
     }
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------

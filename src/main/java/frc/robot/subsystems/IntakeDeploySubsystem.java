@@ -169,6 +169,18 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     state = IntakeState.MOVING_TO_STOW;
   }
 
+  public Command stowCommand() {
+    state = IntakeState.MOVING_TO_STOW;
+
+    return Commands.runOnce(this::stow, this);
+  }
+
+  public Command deployCommand() {
+    state = IntakeState.MOVING_TO_DEPLOY;
+
+    return Commands.runOnce(this::deploy, this);
+  }
+
   /** Starts continuous oscillation between 30 and 50 degrees using PID. */
   public void shake() {
     if (state == IntakeState.HOMING) return;

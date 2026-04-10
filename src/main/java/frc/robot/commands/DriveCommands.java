@@ -27,6 +27,8 @@ public final class DriveCommands {
   // -----------------------------
   // AlignToTag PID live tuning
   // -----------------------------
+
+  // These are the PID Controls for Strafe (TX)
   private static final LoggedNetworkNumber alignStrafeKP =
       new LoggedNetworkNumber("/AlignToTag/Strafe/kP", 0.05);
   private static final LoggedNetworkNumber alignStrafeKI =
@@ -34,6 +36,8 @@ public final class DriveCommands {
   private static final LoggedNetworkNumber alignStrafeKD =
       new LoggedNetworkNumber("/AlignToTag/Strafe/kD", 0.0);
 
+
+  // These are the PID Controls for Distance (TY)
   private static final LoggedNetworkNumber alignDistanceKP =
       new LoggedNetworkNumber("/AlignToTag/Distance/kP", 0.15);
   private static final LoggedNetworkNumber alignDistanceKI =
@@ -41,6 +45,7 @@ public final class DriveCommands {
   private static final LoggedNetworkNumber alignDistanceKD =
       new LoggedNetworkNumber("/AlignToTag/Distance/kD", 0.0);
 
+  // These are the PID Controls for Rotation (TZ)
   private static final LoggedNetworkNumber alignRotationKP =
       new LoggedNetworkNumber("/AlignToTag/Rotation/kP", 0.1);
   private static final LoggedNetworkNumber alignRotationKI =

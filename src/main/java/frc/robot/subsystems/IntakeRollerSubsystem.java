@@ -61,6 +61,18 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   // ================= COMMAND =================
 
+  public Command stopIntakeCommand() {
+    return startEnd(
+      () -> {
+        manualIntake = true;
+        setMode(Mode.IDLE);
+      },
+      () -> {
+        manualIntake = false;
+        setMode(Mode.IDLE);
+      });
+    }
+
   public Command intakeToggleCommand() {
     return startEnd(
         () -> {

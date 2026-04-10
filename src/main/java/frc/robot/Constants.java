@@ -171,7 +171,8 @@ public final class Constants {
   }
 
   // ================= CLIMB =================
-  public static final int CLIMB_TAG_ID = 32;
+  public static final int CLIMB_TAG_ID_BLUE = 32;
+  public static final int CLIMB_TAG_ID_RED = 16;
   public static final int[] CLIMB_TAG_IDS = {
       32, 16
   }; // Add any additional tags you want to use for climbing
@@ -180,11 +181,11 @@ public final class Constants {
       new Translation2d(-0.65, 0.10), // 🔥 REPLACE WITH YOUR MEASURED VALUES
       Rotation2d.fromDegrees(180));
 
-  public static final double CLIMB_POS_TOLERANCE = 0.05;
-  public static final double CLIMB_ROT_TOLERANCE = Math.toRadians(3);
+  public static final double CLIMB_POS_TOLERANCE = 0.05; // Climb Position Tolerance for Error!
+  public static final double CLIMB_ROT_TOLERANCE = Math.toRadians(3); // Climb Rotation Tolerance for Error!
 
   public static final double CLIMB_TARGET_TY = 9.15; // YOUR measured value
-  public static final double CLIMB_STRAFE_FACTOR = 0.02;
+  public static final double CLIMB_STRAFE_FACTOR = 0.02; // The Climb Strafe Factor
 
   public static final double CLIMB_kP_FORWARD = 0.08;
   public static final double CLIMB_kP_STRAFE = 0.03;
