@@ -1,7 +1,6 @@
 // Copyright (c) 2021-2026 Littleton Robotics
 // http://github.com/Mechanical-Advantage
-// This is being used by Team 6865, Manitoulin Metal
-
+//
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
@@ -15,39 +14,36 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
-import frc.robot.subsystems.vision.VisionIO.VisionIOInputs;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.inputs.LoggableInputs;
 
-public class VisionTemplate extends SubsystemBase {
-
+public class Vision extends SubsystemBase {
   private final VisionConsumer consumer;
   private final VisionIO[] io;
-  private final VisionIOInputs[] inputs;
+  private final VisionIOInputsAutoLogged[] inputs;
   private final Alert[] disconnectedAlerts;
 
-  public VisionTemplate(VisionConsumer consumer, VisionIO... io) {
+  public Vision(VisionConsumer consumer, VisionIO... io) {
     this.consumer = consumer;
     this.io = io;
 
     // Initialize inputs
-    this.inputs = new VisionIOInputs[io.length];
-
+    this.inputs = new VisionIOInputsAutoLogged[io.length];
     for (int i = 0; i < inputs.length; i++) {
-      inputs[i] = new VisionIOInputs();
+      inputs[i] = new VisionIOInputsAutoLogged();
     }
 
     // Initialize disconnected alerts
     this.disconnectedAlerts = new Alert[io.length];
-
     for (int i = 0; i < inputs.length; i++) {
       disconnectedAlerts[i] =
           new Alert(
@@ -64,12 +60,77 @@ public class VisionTemplate extends SubsystemBase {
     return inputs[cameraIndex].latestTargetObservation.tx();
   }
 
+  /** Returns true when any camera currently reports the requested tag id. */
+  public boolean hasTag(int targetId) {
+    for (int cameraIndex = 0; cameraIndex < inputs.length; cameraIndex++) {
+      for (int tagId : inputs[cameraIndex].tagIds) {
+        if (tagId == targetId) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /** Returns tx (degrees) from camera 0. */
+  public double getTX() {
+    if (inputs.length == 0) {
+      return 0.0;
+    }
+    return inputs[0].latestTargetObservation.tx().getDegrees();
+  }
+
+  /** Returns ty (degrees) from camera 0. */
+  public double getTY() {
+    if (inputs.length == 0) {
+      return 0.0;
+    }
+    return inputs[0].latestTargetObservation.ty().getDegrees();
+  }
+
+  /** Returns most recent estimated robot pose across all cameras, if any. */
+  public Pose2d getEstimatedPose() {
+    Pose2d bestPose = null;
+    double bestTimestamp = Double.NEGATIVE_INFINITY;
+
+    for (int cameraIndex = 0; cameraIndex < inputs.length; cameraIndex++) {
+      for (var observation : inputs[cameraIndex].poseObservations) {
+        if (observation.timestamp() > bestTimestamp) {
+          bestTimestamp = observation.timestamp();
+          bestPose = observation.pose().toPose2d();
+        }
+      }
+    }
+
+    return bestPose;
+  }
+
+  /** True when the climb tag is currently visible to any camera. */
+  public boolean shouldUseVisionForClimb() {
+    return hasTag(frc.robot.Constants.CLIMB_TAG_ID);
+  }
+
+  /**
+   * Returns a robot-relative error transform derived from current tx/ty. X is forward error from
+   * ty, Y is strafe error from tx.
+   */
+  public Optional<Transform2d> getRobotRelativeError() {
+    if (inputs.length == 0 || !inputs[0].connected) {
+      return Optional.empty();
+    }
+
+    Rotation2d tx = inputs[0].latestTargetObservation.tx();
+    Rotation2d ty = inputs[0].latestTargetObservation.ty();
+    Transform2d error =
+        new Transform2d(-ty.getDegrees(), tx.getDegrees(), Rotation2d.fromDegrees(tx.getDegrees()));
+    return Optional.of(error);
+  }
+
   @Override
   public void periodic() {
-
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
-      Logger.processInputs("Vision/Camera" + Integer.toString(i), (LoggableInputs) inputs[i]);
+      Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);
     }
 
     // Initialize logging values
@@ -79,7 +140,6 @@ public class VisionTemplate extends SubsystemBase {
     List<Pose3d> allRobotPosesRejected = new LinkedList<>();
 
     // Loop over cameras
-
     for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
       // Update disconnected alert
       disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
@@ -91,17 +151,14 @@ public class VisionTemplate extends SubsystemBase {
       List<Pose3d> robotPosesRejected = new LinkedList<>();
 
       // Add tag poses
-
       for (int tagId : inputs[cameraIndex].tagIds) {
         var tagPose = aprilTagLayout.getTagPose(tagId);
-
         if (tagPose.isPresent()) {
           tagPoses.add(tagPose.get());
         }
       }
 
       // Loop over pose observations
-
       for (var observation : inputs[cameraIndex].poseObservations) {
         // Check whether to reject pose
         boolean rejectPose =
@@ -119,7 +176,6 @@ public class VisionTemplate extends SubsystemBase {
 
         // Add pose to log
         robotPoses.add(observation.pose());
-
         if (rejectPose) {
           robotPosesRejected.add(observation.pose());
         } else {
@@ -127,7 +183,6 @@ public class VisionTemplate extends SubsystemBase {
         }
 
         // Skip if rejected
-
         if (rejectPose) {
           continue;
         }
@@ -138,13 +193,10 @@ public class VisionTemplate extends SubsystemBase {
         double linearStdDev = linearStdDevBaseline * stdDevFactor;
         double angularStdDev = angularStdDevBaseline * stdDevFactor;
         if (observation.type() == PoseObservationType.MEGATAG_2) {
-
           linearStdDev *= linearStdDevMegatag2Factor;
           angularStdDev *= angularStdDevMegatag2Factor;
         }
-
         if (cameraIndex < cameraStdDevFactors.length) {
-
           linearStdDev *= cameraStdDevFactors[cameraIndex];
           angularStdDev *= cameraStdDevFactors[cameraIndex];
         }
@@ -160,19 +212,15 @@ public class VisionTemplate extends SubsystemBase {
       Logger.recordOutput(
           "Vision/Camera" + Integer.toString(cameraIndex) + "/TagPoses",
           tagPoses.toArray(new Pose3d[0]));
-
       Logger.recordOutput(
           "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPoses",
           robotPoses.toArray(new Pose3d[0]));
-
       Logger.recordOutput(
           "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesAccepted",
           robotPosesAccepted.toArray(new Pose3d[0]));
-
       Logger.recordOutput(
           "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesRejected",
           robotPosesRejected.toArray(new Pose3d[0]));
-      // Add to summary data
       allTagPoses.addAll(tagPoses);
       allRobotPoses.addAll(robotPoses);
       allRobotPosesAccepted.addAll(robotPosesAccepted);
@@ -181,12 +229,9 @@ public class VisionTemplate extends SubsystemBase {
 
     // Log summary data
     Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
-
     Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
-
     Logger.recordOutput(
         "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
-
     Logger.recordOutput(
         "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
   }

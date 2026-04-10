@@ -1,7 +1,6 @@
 // Copyright (c) 2021-2026 Littleton Robotics
 // http://github.com/Mechanical-Advantage
-// This is being used by Team 6865, Manitoulin Metal
-
+//
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
@@ -40,13 +39,10 @@ public class VisionIOPhotonVision implements VisionIO {
     inputs.connected = camera.isConnected();
 
     // Read new camera observations
-
     Set<Short> tagIds = new HashSet<>();
     List<PoseObservation> poseObservations = new LinkedList<>();
-
     for (var result : camera.getAllUnreadResults()) {
       // Update latest target observation
-
       if (result.hasTargets()) {
         inputs.latestTargetObservation =
             new TargetObservation(
@@ -57,7 +53,6 @@ public class VisionIOPhotonVision implements VisionIO {
       }
 
       // Add pose observation
-
       if (result.multitagResult.isPresent()) { // Multitag result
         var multitagResult = result.multitagResult.get();
 
@@ -68,7 +63,6 @@ public class VisionIOPhotonVision implements VisionIO {
 
         // Calculate average tag distance
         double totalTagDistance = 0.0;
-
         for (var target : result.targets) {
           totalTagDistance += target.bestCameraToTarget.getTranslation().getNorm();
         }
@@ -91,7 +85,6 @@ public class VisionIOPhotonVision implements VisionIO {
 
         // Calculate robot pose
         var tagPose = aprilTagLayout.getTagPose(target.fiducialId);
-
         if (tagPose.isPresent()) {
           Transform3d fieldToTarget =
               new Transform3d(tagPose.get().getTranslation(), tagPose.get().getRotation());
@@ -118,7 +111,6 @@ public class VisionIOPhotonVision implements VisionIO {
 
     // Save pose observations to inputs object
     inputs.poseObservations = new PoseObservation[poseObservations.size()];
-
     for (int i = 0; i < poseObservations.size(); i++) {
       inputs.poseObservations[i] = poseObservations.get(i);
     }
@@ -126,7 +118,6 @@ public class VisionIOPhotonVision implements VisionIO {
     // Save tag IDs to inputs objects
     inputs.tagIds = new int[tagIds.size()];
     int i = 0;
-
     for (int id : tagIds) {
       inputs.tagIds[i++] = id;
     }

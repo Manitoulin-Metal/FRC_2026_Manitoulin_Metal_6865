@@ -1,7 +1,4 @@
-// This is being used by Team 6865, Manitoulin Metal
-// This was created by Team 6865, Manitoulin Metal
-
-package frc.robot.subsystems.intake.intakeroller;
+package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
@@ -19,13 +16,11 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 @SuppressWarnings("deprecated")
 public class IntakeRollerSubsystem extends SubsystemBase {
-  // Motor initialized in constructor
 
-  // Initialize the motor (Flex/MAX are setup the same way)
   private final SparkFlex intakeRoller = new SparkFlex(58, MotorType.kBrushless);
   private final SparkClosedLoopController velocityController;
 
-  // ================= LIVE TUNING ================= \\
+  // ===== Live tuning =====
   private final LoggedNetworkNumber kP = new LoggedNetworkNumber("/Intake/kP", 0.00025);
   private final LoggedNetworkNumber kFF = new LoggedNetworkNumber("/Intake/kFF", 0.00017);
   private final LoggedNetworkNumber targetRPM = new LoggedNetworkNumber("/Intake/TargetRPM", -3500);
@@ -35,29 +30,22 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   public enum Mode {
     IDLE,
-    INTAKE,
-    HOLD,
-    UNJAM
+    INTAKE
   }
 
   private Mode currentMode = Mode.IDLE;
 
-  // Fallback RPMs (used if network tables values are not set)
   private static final double IDLE_RPM = 0;
-  private static final double HOLD_RPM = 0;
-  private static final double UNJAM_RPM = 2000;
 
-  // Tracking
+  // ===== Driver control protection =====
+  private boolean manualIntake = false;
+  private final Timer intakeStartTimer = new Timer();
+
+  // ===== Tracking =====
   private int ballCount = 0;
-  private int jamCount = 0;
-
   private final Timer detectionTimer = new Timer();
   private boolean pieceLatched = false;
 
-  private final Timer jamTimer = new Timer();
-
-  /** Creates a new Subsystem. */
-  @SuppressWarnings("removal")
   public IntakeRollerSubsystem() {
     SparkMaxConfig config = new SparkMaxConfig();
 
@@ -68,28 +56,26 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     velocityController = intakeRoller.getClosedLoopController();
 
     detectionTimer.start();
-    jamTimer.start();
+    intakeStartTimer.start();
   }
 
-  /**
-   * Sets motor controllers to run-to-pos based off distance
-   *
-   * @return a command
-   */
+  // ================= COMMAND =================
 
-  // ----------------- COMMANDS ----------------- \\
-  public Command intakeCommand() {
-    return run(() -> setMode(Mode.INTAKE));
+  public Command intakeToggleCommand() {
+    return startEnd(
+        () -> {
+          manualIntake = true;
+          intakeStartTimer.reset();
+          intakeStartTimer.start();
+          setMode(Mode.INTAKE);
+        },
+        () -> {
+          manualIntake = false;
+          setMode(Mode.IDLE);
+        });
   }
 
-  public Command idleCommand() {
-    return run(() -> setMode(Mode.IDLE));
-  }
-
-  public void restBallCount() {
-    ballCount = 0;
-    jamCount = 0;
-  }
+  // ================= CONTROL =================
 
   public void setMode(Mode mode) {
     currentMode = mode;
@@ -99,8 +85,8 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     velocityController.setSetpoint(rpm, ControlType.kVelocity);
   }
 
-  // --------- Live PID Tuning Updates --------- \\
-  @SuppressWarnings("removal")
+  // ================= PID UPDATE =================
+
   private void updatePIDIfChanged() {
     double newKP = kP.get();
     double newKFF = kFF.get();
@@ -118,7 +104,8 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     }
   }
 
-  // --------- SENSOR METHODS --------- \\
+  // ================= SENSOR HELPERS =================
+
   public double getVelocity() {
     return intakeRoller.getEncoder().getVelocity();
   }
@@ -128,25 +115,22 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   }
 
   public boolean gamePieceDetected(double target) {
-    return getCurrent() > 30 || getVelocity() < target * 0.75;
+    return getCurrent() > 35 && getVelocity() < target * 0.6;
   }
 
-  public boolean jamDetected(double target) {
-    return getCurrent() > 40 && getVelocity() < target * 0.4;
-  }
+  // ================= PERIODIC =================
 
-  // ---------- PERIODIC ---------- \\
+  @Override
   public void periodic() {
-    // Apply live PID updates if changed
     updatePIDIfChanged();
 
     double velocity = getVelocity();
     double current = getCurrent();
-
-    // Safe way to get NetworkTable Values (To prevent Crashes)
     double target = targetRPM.get();
 
-    boolean detected = gamePieceDetected(target);
+    // Prevent false detection during spin-up
+    boolean allowDetection = intakeStartTimer.get() > 0.5;
+    boolean detected = allowDetection && gamePieceDetected(target);
 
     switch (currentMode) {
       case IDLE -> setVelocity(IDLE_RPM);
@@ -154,37 +138,23 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       case INTAKE -> {
         setVelocity(target);
 
-        if (jamDetected(target)) {
-          currentMode = Mode.UNJAM;
-          jamTimer.reset();
-          jamCount++;
-        }
-
+        // Only track pieces, DO NOT change mode
         if (detected && !pieceLatched && detectionTimer.get() > 0.25) {
           ballCount++;
           pieceLatched = true;
           detectionTimer.reset();
-          currentMode = Mode.HOLD;
         }
 
         if (!detected) pieceLatched = false;
       }
-      case HOLD -> setVelocity(HOLD_RPM);
-
-      case UNJAM -> {
-        setVelocity(UNJAM_RPM);
-        if (jamTimer.get() > 0.25) {
-          currentMode = Mode.INTAKE;
-        }
-      }
     }
 
-    // ----- LOGGING ----- \\
+    // ===== Logging =====
     Logger.recordOutput("Intake/Mode", currentMode.toString());
     Logger.recordOutput("Intake/RPM", velocity);
     Logger.recordOutput("Intake/TargetRPM", target);
     Logger.recordOutput("Intake/Current", current);
     Logger.recordOutput("Intake/BallCount", ballCount);
-    Logger.recordOutput("Intake/JamCount", jamCount);
+    Logger.recordOutput("Intake/Detected", detected);
   }
 }

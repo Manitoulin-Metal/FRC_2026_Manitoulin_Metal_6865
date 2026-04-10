@@ -11,21 +11,50 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
+import frc.robot.LimelightHelpers;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public final class DriveCommands {
 
   private DriveCommands() {}
 
   // -----------------------------
+  // AlignToTag PID live tuning
+  // -----------------------------
+  private static final LoggedNetworkNumber alignStrafeKP =
+      new LoggedNetworkNumber("/AlignToTag/Strafe/kP", 0.05);
+  private static final LoggedNetworkNumber alignStrafeKI =
+      new LoggedNetworkNumber("/AlignToTag/Strafe/kI", 0.0);
+  private static final LoggedNetworkNumber alignStrafeKD =
+      new LoggedNetworkNumber("/AlignToTag/Strafe/kD", 0.0);
+
+  private static final LoggedNetworkNumber alignDistanceKP =
+      new LoggedNetworkNumber("/AlignToTag/Distance/kP", 0.15);
+  private static final LoggedNetworkNumber alignDistanceKI =
+      new LoggedNetworkNumber("/AlignToTag/Distance/kI", 0.0);
+  private static final LoggedNetworkNumber alignDistanceKD =
+      new LoggedNetworkNumber("/AlignToTag/Distance/kD", 0.0);
+
+  private static final LoggedNetworkNumber alignRotationKP =
+      new LoggedNetworkNumber("/AlignToTag/Rotation/kP", 0.1);
+  private static final LoggedNetworkNumber alignRotationKI =
+      new LoggedNetworkNumber("/AlignToTag/Rotation/kI", 0.0);
+  private static final LoggedNetworkNumber alignRotationKD =
+      new LoggedNetworkNumber("/AlignToTag/Rotation/kD", 0.0);
+
+  private static final AprilTagFieldLayout alignFieldLayout =
+      AprilTagFieldLayout.loadField(edu.wpi.first.apriltag.AprilTagFields.k2026RebuiltWelded);
+
+  // -----------------------------
   // Tag selection
   // -----------------------------
-  private static int getClimbTagId() {
+  static int getClimbTagId() {
     return DriverStation.getAlliance().isPresent()
             && DriverStation.getAlliance().get() == DriverStation.Alliance.Red
         ? 16
@@ -259,8 +288,8 @@ public final class DriveCommands {
   // ============================================================
   public static Command driveToShootVision(
       Drive drive,
-      VisionSubsystem vision,
-      frc.robot.subsystems.shooter.ShooterSubsystem shooter,
+      Vision vision,
+      frc.robot.subsystems.ShooterSubsystem shooter,
       AprilTagFieldLayout fieldLayout,
       Supplier<Boolean> visionEnabled,
       Supplier<Double> driverX,
@@ -355,11 +384,14 @@ public final class DriveCommands {
         .andThen(drive::stop);
   }
 
-  /** Align to AprilTag using WPILib PIDControllers and VisionSubsystem */
-  public static Command alignToTag(int targetId, Drive drive, VisionSubsystem vision) {
-    PIDController strafeController = new PIDController(0.05, 0.0, 0.0);
-    PIDController distanceController = new PIDController(0.15, 0.0, 0.0);
-    PIDController rotationController = new PIDController(0.1, 0.0, 0.0);
+  /** Align to AprilTag using WPILib PIDControllers and direct LimelightHelpers reads. */
+  public static Command alignToTag(int targetId, Drive drive, Vision vision) {
+    PIDController strafeController =
+        new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+    PIDController distanceController =
+        new PIDController(alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+    PIDController rotationController =
+        new PIDController(alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
 
     // Set tolerances for convergence (degrees)
     strafeController.setTolerance(1.0);
@@ -368,8 +400,12 @@ public final class DriveCommands {
 
     return Commands.run(
             () -> {
-              // Check if correct tag is visible (replaces getFiducialID)
-              if (!vision.hasTag(targetId)) {
+              // Use the same rear limelight used for climb alignment in RobotContainer.
+              final String limelightName = "limelight";
+
+              boolean hasTarget = LimelightHelpers.getTV(limelightName);
+              int fiducialId = (int) Math.round(LimelightHelpers.getFiducialID(limelightName));
+              if (!hasTarget || fiducialId != targetId) {
                 drive.stop();
                 SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
                 return;
@@ -377,9 +413,16 @@ public final class DriveCommands {
 
               SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
 
-              // Use VisionSubsystem methods (replaces direct LimelightHelpers calls)
-              double tx = vision.getTX();
-              double ty = vision.getTY();
+              // Update PID gains live from NetworkTables
+              strafeController.setPID(
+                  alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+              distanceController.setPID(
+                  alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+              rotationController.setPID(
+                  alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
+
+              double tx = LimelightHelpers.getTX(limelightName);
+              double ty = LimelightHelpers.getTY(limelightName);
 
               // For rotation, use tx angle error (original used pose yaw which is ~tx)
               double rotationError = tx; // degrees
@@ -414,8 +457,140 @@ public final class DriveCommands {
                       && distanceController.atSetpoint()
                       && rotationController.atSetpoint());
             },
+            drive)
+        .finallyDo(
+            interrupted -> {
+              strafeController.close();
+              distanceController.close();
+              rotationController.close();
+            })
+        .withName("AlignToTag_PID");
+  }
+
+  /** Align to AprilTag using a tunable tag-relative target pose as PID setpoint. */
+  public static Command alignToTagWithVision(int targetId, Drive drive, Vision vision) {
+    PIDController strafeController =
+        new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+    PIDController distanceController =
+        new PIDController(alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+    PIDController rotationController =
+        new PIDController(alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
+
+    // Pose-loop tolerances: meters for X/Y, degrees for heading.
+    strafeController.setTolerance(0.05);
+    distanceController.setTolerance(0.05);
+    rotationController.setTolerance(2.0);
+    rotationController.enableContinuousInput(-180.0, 180.0);
+
+    return Commands.run(
+            () -> {
+              if (!vision.hasTag(targetId)) {
+                drive.stop();
+                SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
+                return;
+              }
+
+              Optional<Pose3d> tagPoseOpt = alignFieldLayout.getTagPose(targetId);
+              if (tagPoseOpt.isEmpty()) {
+                drive.stop();
+                SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
+                return;
+              }
+
+              SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
+
+              // Update PID gains live from NetworkTables
+              strafeController.setPID(
+                  alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+              distanceController.setPID(
+                  alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+              rotationController.setPID(
+                  alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
+
+              Pose2d currentPose = drive.getPose();
+              Pose2d targetPose =
+                  tagPoseOpt
+                      .get()
+                      .toPose2d()
+                      .transformBy(Constants.AlignToTag.getTargetTransformRelativeToTag());
+
+              double forward = distanceController.calculate(currentPose.getX(), targetPose.getX());
+              double strafe = strafeController.calculate(currentPose.getY(), targetPose.getY());
+              double omega =
+                  rotationController.calculate(
+                      currentPose.getRotation().getDegrees(),
+                      targetPose.getRotation().getDegrees());
+
+              double maxSpeed = 6.0;
+              forward = MathUtil.clamp(forward, -maxSpeed, maxSpeed);
+              strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
+              omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
+
+              drive.runVelocity(new ChassisSpeeds(forward, strafe, omega));
+
+              SmartDashboard.putNumber("Align/CurrentX", currentPose.getX());
+              SmartDashboard.putNumber("Align/CurrentY", currentPose.getY());
+              SmartDashboard.putNumber(
+                  "Align/CurrentHeadingDeg", currentPose.getRotation().getDegrees());
+              SmartDashboard.putNumber("Align/TargetX", targetPose.getX());
+              SmartDashboard.putNumber("Align/TargetY", targetPose.getY());
+              SmartDashboard.putNumber(
+                  "Align/TargetHeadingDeg", targetPose.getRotation().getDegrees());
+
+              SmartDashboard.putBoolean(
+                  "Align/PIDAtSetpoint",
+                  strafeController.atSetpoint()
+                      && distanceController.atSetpoint()
+                      && rotationController.atSetpoint());
+            },
             drive,
             vision)
-        .withName("AlignToTag_PID");
+        .finallyDo(
+            interrupted -> {
+              strafeController.close();
+              distanceController.close();
+              rotationController.close();
+            })
+        .withName("AlignToTagWithVision_PID");
+  }
+
+  /**
+   * Calibration command: drive the robot to the desired scoring position in front of the tag, then
+   * run this once to capture that pose as the align target. Writes the tag-relative offset back to
+   * the tunable NetworkTable entries so {@link #alignToTagWithVision} will use it immediately.
+   */
+  public static Command saveCurrentPoseAsAlignTarget(int targetId, Drive drive) {
+    return Commands.runOnce(
+            () -> {
+              Optional<Pose3d> tagPoseOpt = alignFieldLayout.getTagPose(targetId);
+              if (tagPoseOpt.isEmpty()) {
+                System.out.println("[AlignCal] Tag " + targetId + " not found in field layout.");
+                return;
+              }
+
+              Pose2d tagPose = tagPoseOpt.get().toPose2d();
+              Pose2d robotPose = drive.getPose();
+
+              // Transform from tag frame to robot pose: tagPose.transformBy(result) == robotPose
+              Transform2d tagToRobot = new Transform2d(tagPose, robotPose);
+
+              Constants.AlignToTag.targetXEntry.set(tagToRobot.getX());
+              Constants.AlignToTag.targetYEntry.set(tagToRobot.getY());
+              Constants.AlignToTag.targetHeadingDegEntry.set(tagToRobot.getRotation().getDegrees());
+
+              SmartDashboard.putNumber("AlignCal/SavedX", tagToRobot.getX());
+              SmartDashboard.putNumber("AlignCal/SavedY", tagToRobot.getY());
+              SmartDashboard.putNumber(
+                  "AlignCal/SavedHeadingDeg", tagToRobot.getRotation().getDegrees());
+
+              System.out.printf(
+                  "[AlignCal] Saved tag-%d offset: X=%.3f  Y=%.3f  Heading=%.1f deg%n",
+                  targetId,
+                  tagToRobot.getX(),
+                  tagToRobot.getY(),
+                  tagToRobot.getRotation().getDegrees());
+            },
+            drive)
+        .withName("SaveAlignTarget");
   }
 }

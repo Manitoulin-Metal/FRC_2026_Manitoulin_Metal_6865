@@ -1,7 +1,7 @@
 // This is being used by Team 6865, Manitoulin Metal
 // This was created by Team 6865, Manitoulin Metal
 
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.LimelightHelpers;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -37,6 +37,14 @@ public class ShooterSubsystem extends SubsystemBase {
   private final LoggedNetworkNumber kDEntry = Constants.Shooter.kDEntry;
   private final LoggedNetworkNumber kVEntry = Constants.Shooter.kVEntry;
   private final LoggedNetworkNumber kSEntry = Constants.Shooter.kSEntry;
+
+  // Cache for PID values to avoid constant resets
+  private double cachedKP = Constants.Shooter.kP;
+  private double cachedKI = Constants.Shooter.kI;
+  private double cachedKD = Constants.Shooter.kD;
+  private double cachedKV = Constants.Shooter.kV;
+  private double cachedKS = Constants.Shooter.kS;
+
   private double targetRps = 95.0;
   private double currentRps = 0.0;
 
@@ -153,14 +161,28 @@ public class ShooterSubsystem extends SubsystemBase {
     double newKV = kVEntry.get();
     double newKS = kSEntry.get();
 
-    Slot0Configs config = new Slot0Configs();
-    config.kP = newKP;
-    config.kI = newKI;
-    config.kD = newKD;
-    config.kV = newKV;
-    config.kS = newKS;
+    // Only apply config if any value changed
+    if (newKP != cachedKP
+        || newKI != cachedKI
+        || newKD != cachedKD
+        || newKV != cachedKV
+        || newKS != cachedKS) {
+      Slot0Configs config = new Slot0Configs();
+      config.kP = newKP;
+      config.kI = newKI;
+      config.kD = newKD;
+      config.kV = newKV;
+      config.kS = newKS;
 
-    shooter.getConfigurator().apply(config);
+      shooter.getConfigurator().apply(config);
+
+      // Update cache
+      cachedKP = newKP;
+      cachedKI = newKI;
+      cachedKD = newKD;
+      cachedKV = newKV;
+      cachedKS = newKS;
+    }
   }
 
   /** Get current shooter velocity in rotations per second (RPS) */
@@ -205,7 +227,7 @@ public class ShooterSubsystem extends SubsystemBase {
    * @param vision VisionSubsystem instance
    * @return Average distToRobot in meters, or -1 if no valid targets
    */
-  public double getTargetDistance(VisionSubsystem vision) {
+  public double getTargetDistance(Vision vision) {
     var rawFiducials = LimelightHelpers.getRawFiducials("limelight");
     if (rawFiducials.length == 0) {
       return -1.0;
@@ -232,7 +254,7 @@ public class ShooterSubsystem extends SubsystemBase {
    *
    * @param vision VisionSubsystem
    */
-  public void runVisionShooter(VisionSubsystem vision) {
+  public void runVisionShooter(Vision vision) {
     double distance = getTargetDistance(vision);
     if (distance > 0) {
       double targetRps = calculateTargetRPS(distance);

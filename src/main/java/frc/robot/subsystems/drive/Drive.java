@@ -40,7 +40,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -97,7 +97,7 @@ public class Drive extends SubsystemBase {
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
 
-  private VisionSubsystem m_vision;
+  private Vision m_vision;
 
   public Drive(
       GyroIO gyroIO,
@@ -372,7 +372,7 @@ public class Drive extends SubsystemBase {
 
   /** Resets the current odometry pose. */
   /** Set vision subsystem reference for bump correction. */
-  public void setVision(VisionSubsystem vision) {
+  public void setVision(Vision vision) {
     m_vision = vision;
   }
 
