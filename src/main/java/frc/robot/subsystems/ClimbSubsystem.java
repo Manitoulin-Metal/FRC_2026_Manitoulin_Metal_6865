@@ -20,7 +20,9 @@ public class ClimbSubsystem extends SubsystemBase {
     IDLE,
     UP,
     DOWN,
-    HOMING
+    HOMING,
+    AT_TOP,
+    AT_BOTTOM
   }
 
   private final SparkFlex climbMotor = new SparkFlex(60, MotorType.kBrushless);
@@ -30,6 +32,7 @@ public class ClimbSubsystem extends SubsystemBase {
   private static final double UP_SPEED = 0.75;
   private static final double DOWN_SPEED = -0.75;
   private static final double HOMING_SPEED = -0.35;
+  private static final double BOTTOM_ENCODER_TOLERANCE_ROTATIONS = 0.5;
 
   private ClimbState state = ClimbState.IDLE;
   private boolean homed = false;
@@ -56,11 +59,22 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void moveUp() {
+    if (isTopLimitReached()) {
+      upTargetReached = true;
+      state = ClimbState.AT_TOP;
+      return;
+    }
+
     upTargetReached = false;
     state = ClimbState.UP;
   }
 
   public void moveDown() {
+    if (isBottomLimitReached()) {
+      state = ClimbState.AT_BOTTOM;
+      return;
+    }
+
     state = ClimbState.DOWN;
   }
 
@@ -72,7 +86,7 @@ public class ClimbSubsystem extends SubsystemBase {
     if (isLimitSwitchPressed()) {
       encoder.setPosition(0.0);
       homed = true;
-      state = ClimbState.IDLE;
+      state = ClimbState.AT_BOTTOM;
       return;
     }
 
@@ -86,9 +100,9 @@ public class ClimbSubsystem extends SubsystemBase {
     return Commands.runEnd(
         () -> {
           if (speed > 0.0) {
-            state = ClimbState.UP;
+            moveUp();
           } else if (speed < 0.0) {
-            state = ClimbState.DOWN;
+            moveDown();
           } else {
             state = ClimbState.IDLE;
           }
@@ -114,6 +128,15 @@ public class ClimbSubsystem extends SubsystemBase {
     return upTargetReached;
   }
 
+  private boolean isTopLimitReached() {
+    double upTarget = Constants.Climb.upTargetEntry.get();
+    return upTarget > 1.0 && encoder.getPosition() >= upTarget;
+  }
+
+  private boolean isBottomLimitReached() {
+    return isLimitSwitchPressed() || encoder.getPosition() <= BOTTOM_ENCODER_TOLERANCE_ROTATIONS;
+  }
+
   @Override
   public void periodic() {
     boolean pressed = isLimitSwitchPressed();
@@ -126,18 +149,20 @@ public class ClimbSubsystem extends SubsystemBase {
         if (upTarget > 1.0 && climbPosition >= upTarget) {
           output = 0.0;
           upTargetReached = true;
-          state = ClimbState.IDLE;
+          state = ClimbState.AT_TOP;
         } else {
           output = UP_SPEED;
         }
         break;
 
       case DOWN:
-        if (pressed) {
+        if (pressed || climbPosition <= BOTTOM_ENCODER_TOLERANCE_ROTATIONS) {
           output = 0.0;
           encoder.setPosition(0.0);
-          state = ClimbState.IDLE;
-          homed = true;
+          state = ClimbState.AT_BOTTOM;
+          if (pressed) {
+            homed = true;
+          }
         } else {
           output = DOWN_SPEED;
         }
@@ -147,11 +172,19 @@ public class ClimbSubsystem extends SubsystemBase {
         if (pressed) {
           output = 0.0;
           encoder.setPosition(0.0);
-          state = ClimbState.IDLE;
+          state = ClimbState.AT_BOTTOM;
           homed = true;
         } else {
           output = HOMING_SPEED;
         }
+        break;
+
+      case AT_TOP:
+        output = 0.0;
+        break;
+
+      case AT_BOTTOM:
+        output = 0.0;
         break;
 
       case IDLE:
@@ -172,5 +205,9 @@ public class ClimbSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("Climb/SpeedCommand", output);
     SmartDashboard.putNumber("Climb/EncoderPosition", climbPosition);
     SmartDashboard.putNumber("Climb/UpTargetRotations", upTarget);
+    SmartDashboard.putBoolean("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >= upTarget);
+    SmartDashboard.putBoolean(
+        "Climb/BottomLimitReached",
+        pressed || climbPosition <= BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
   }
 }
