@@ -240,6 +240,10 @@ public class RobotContainer {
     // Run kicker test while held.
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
+    // Driver climb controls: hold bumper to move, release to idle.
+    driver.leftBumper().whileTrue(ClimbCommands.climbUp(climb1));
+    driver.rightBumper().whileTrue(ClimbCommands.climbDown(climb1));
+
     // Run align-to-tag then climb while held.
     driver.y().whileTrue(DriveCommands.alignToTagWithVision(32, drive, visionClimb));
 
@@ -291,6 +295,7 @@ public class RobotContainer {
   // ---------- ENABLE HOMING METHOD ----------
   public void enableHoming() {
     intakeDeploy.startHoming();
+    climb1.startHoming();
   }
 
   public Command getAutonomousCommand() {

@@ -30,7 +30,7 @@ public final class ClimbCommands {
    * climber upward until interrupted.
    */
   public static Command alignAndClimb(Drive drive, Vision vision, ClimbSubsystem climb) {
-    return DriveCommands.alignToTag(DriveCommands.getClimbTagId(), drive, vision)
+    return DriveCommands.alignToTagWithVision(DriveCommands.getClimbTagId(), drive, vision)
         .withTimeout(5.0)
         .andThen(climb.climbCommand(0.75));
   }
@@ -60,6 +60,16 @@ public final class ClimbCommands {
   /** Runs the climber downward for autonomous sequences. */
   public static Command autoClimbDown(ClimbSubsystem climb) {
     return climb.climbCommand(-0.5).withTimeout(6);
+  }
+
+  /** Runs climb UP state while held, then returns to IDLE. */
+  public static Command climbUp(ClimbSubsystem climb) {
+    return Commands.runEnd(climb::moveUp, climb::stop, climb);
+  }
+
+  /** Runs climb DOWN state while held, then returns to IDLE. */
+  public static Command climbDown(ClimbSubsystem climb) {
+    return Commands.runEnd(climb::moveDown, climb::stop, climb);
   }
 
   /**
