@@ -106,8 +106,12 @@ public class Vision extends SubsystemBase {
   }
 
   /** True when the climb tag is currently visible to any camera. */
-  public boolean shouldUseVisionForClimb() {
-    return hasTag(frc.robot.Constants.CLIMB_TAG_ID);
+  public boolean shouldUseVisionForClimbBlue() {
+    return hasTag(frc.robot.Constants.CLIMB_TAG_ID_BLUE);
+  }
+
+  public boolean shouldUseVisionForClimbRed() {
+    return hasTag(frc.robot.Constants.CLIMB_TAG_ID_RED);
   }
 
   /**

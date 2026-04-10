@@ -87,7 +87,7 @@ public final class ClimbCommands {
           double strafe = 0;
           double turn = 0;
 
-          if (!vision.shouldUseVisionForClimb()) {
+          if (!vision.shouldUseVisionForClimbBlue() || !vision.shouldUseVisionForClimbRed()) {
             // Search mode
             turn = 0.5;
           } else {
@@ -128,7 +128,7 @@ public final class ClimbCommands {
   public static Command limelightClimbFull(Drive drive, Vision vision) {
     return Commands.run(
         () -> {
-          boolean seesTag = vision.hasTag(Constants.CLIMB_TAG_ID);
+          boolean seesTag = vision.hasTag(Constants.CLIMB_TAG_ID_BLUE) || vision.hasTag(Constants.CLIMB_TAG_ID_RED);
 
           double forward = 0;
           double strafe = 0;
