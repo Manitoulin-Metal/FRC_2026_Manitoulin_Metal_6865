@@ -247,6 +247,11 @@ public class RobotContainer {
     // Run climb sequence: climb up, align to tag (timeout), then climb down.
     driver.y().onTrue(ClimbCommands.climbUpAlignThenDown(32, drive, visionClimb, climb1));
 
+    // Pit calibration: position the robot where it should stop relative to the
+    // climb tag,
+    // then press Start to capture the current pose as the align target.
+    driver.start().onTrue(DriveCommands.saveCurrentPoseAsAlignTarget(32, drive));
+
     // Vision climb assist test while held (disabled).
     // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,
     // visionClimb));

@@ -8,6 +8,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -121,6 +122,25 @@ public final class Constants {
     public static final double UP_TARGET_ROTATIONS = 377.5;
     public static final LoggedNetworkNumber upTargetEntry = new LoggedNetworkNumber("Tuning/Climb/UpTargetRotations",
         UP_TARGET_ROTATIONS);
+  }
+
+  public static class AlignToTag {
+    public static final Pose2d DEFAULT_TARGET_POSE_RELATIVE_TO_TAG = new Pose2d(-0.65, 0.10,
+        Rotation2d.fromDegrees(180.0));
+
+    public static final LoggedNetworkNumber targetXEntry = new LoggedNetworkNumber("/SmartDashboard/AlignToTag/TargetX",
+        DEFAULT_TARGET_POSE_RELATIVE_TO_TAG.getX());
+    public static final LoggedNetworkNumber targetYEntry = new LoggedNetworkNumber("/SmartDashboard/AlignToTag/TargetY",
+        DEFAULT_TARGET_POSE_RELATIVE_TO_TAG.getY());
+    public static final LoggedNetworkNumber targetHeadingDegEntry = new LoggedNetworkNumber(
+        "/SmartDashboard/AlignToTag/TargetHeadingDeg",
+        DEFAULT_TARGET_POSE_RELATIVE_TO_TAG.getRotation().getDegrees());
+
+    public static Transform2d getTargetTransformRelativeToTag() {
+      return new Transform2d(
+          new Translation2d(targetXEntry.get(), targetYEntry.get()),
+          Rotation2d.fromDegrees(targetHeadingDegEntry.get()));
+    }
   }
 
   public static class ClimbVision {

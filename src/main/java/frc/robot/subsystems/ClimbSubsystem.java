@@ -103,6 +103,11 @@ public class ClimbSubsystem extends SubsystemBase {
     return encoder.getPosition();
   }
 
+  /** Returns true once the climber has reached the UP target (or passed it). */
+  public boolean isAtUpTarget() {
+    return encoder.getPosition() >= Constants.Climb.upTargetEntry.get();
+  }
+
   @Override
   public void periodic() {
     boolean pressed = isLimitSwitchPressed();
