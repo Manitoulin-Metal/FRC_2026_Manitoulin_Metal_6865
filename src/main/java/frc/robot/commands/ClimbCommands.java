@@ -17,16 +17,14 @@ import frc.robot.subsystems.vision.Vision;
 
 public final class ClimbCommands {
 
-  private ClimbCommands() {
-  }
+  private ClimbCommands() {}
 
   // -----------------------------
   // Teleop: align to cage tag then climb
   // -----------------------------
 
   /**
-   * Aligns to the alliance-appropriate cage AprilTag (with a 5-second timeout),
-   * then runs the
+   * Aligns to the alliance-appropriate cage AprilTag (with a 5-second timeout), then runs the
    * climber upward until interrupted.
    */
   public static Command alignAndClimb(Drive drive, Vision vision, ClimbSubsystem climb) {
@@ -40,8 +38,7 @@ public final class ClimbCommands {
   // -----------------------------
 
   /**
-   * Drives to the cage AprilTag using field-relative odometry (used in
-   * PathPlanner named commands).
+   * Drives to the cage AprilTag using field-relative odometry (used in PathPlanner named commands).
    */
   public static Command autoClimbDrive(Drive drive, AprilTagFieldLayout fieldLayout) {
     return DriveCommands.driveToClimb(
@@ -72,10 +69,7 @@ public final class ClimbCommands {
     return Commands.runEnd(climb::moveDown, climb::stop, climb);
   }
 
-  /**
-   * Sets climb to UP, aligns to the requested AprilTag using vision, then sets
-   * climb to DOWN.
-   */
+  /** Sets climb to UP, aligns to the requested AprilTag using vision, then sets climb to DOWN. */
   public static Command climbUpAlignThenDown(
       int targetId, Drive drive, Vision vision, ClimbSubsystem climb) {
     return Commands.sequence(
@@ -85,9 +79,7 @@ public final class ClimbCommands {
         Commands.runOnce(climb::moveDown, climb));
   }
 
-  /**
-   * Field-relative climb alignment using camera-reported robot-relative error.
-   */
+  /** Field-relative climb alignment using camera-reported robot-relative error. */
   public static Command driveToClimbVision(Drive drive, Vision vision) {
     return Commands.run(
         () -> {
