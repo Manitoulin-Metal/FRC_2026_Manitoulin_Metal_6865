@@ -87,6 +87,13 @@ public class RobotContainer {
             new ModuleIOTalonFX(TunerConstants.FrontRight),
             new ModuleIOTalonFX(TunerConstants.BackLeft),
             new ModuleIOTalonFX(TunerConstants.BackRight));
+
+        // vision =
+        // new Vision(
+        // drive::addVisionMeasurement,
+        // new VisionIOLimelight("limelight", drive::getRotation),
+        // new VisionIOLimelight("limelight_forward", drive::getRotation));
+
         break;
 
       case SIM:
@@ -114,18 +121,14 @@ public class RobotContainer {
     }
 
     // -------- Vision setup --------
-    visionClimb = new Vision(new VisionIOLimelight("limelight", drive::getRotation), drive);
-
-    visionShoot = new Vision(new VisionIOLimelight("limelight_forward", drive::getRotation), drive);
+    visionClimb = new Vision(drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
+    visionShoot = new Vision(drive::addVisionMeasurement,
+        new VisionIOLimelight("limelight_forward", drive::getRotation));
+    drive.setVision(visionClimb);
 
     // -------- Default drive (now with robot-centric toggle) --------
-    drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
-            drive,
-            () -> -driver.getLeftY(),
-            () -> -driver.getLeftX(),
-            () -> -driver.getRightX(),
-            () -> robotCentric));
+    drive.setDefaultCommand(DriveCommands.joystickDrive(drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(),
+        () -> -driver.getRightX(), () -> robotCentric));
 
     // -------- Auto chooser --------
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -136,23 +139,23 @@ public class RobotContainer {
     NamedCommands.registerCommand("startIntake", intakeRoller.intakeToggleCommand());
     // NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
 
-    NamedCommands.registerCommand(
-        "collectFuel", intakeRoller.intakeToggleCommand().withTimeout(4.0));
-    NamedCommands.registerCommand(
-        "ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
+    NamedCommands.registerCommand("collectFuel", intakeRoller.intakeToggleCommand().withTimeout(4.0));
+    NamedCommands.registerCommand("ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
     NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.autoClimbUp(climb1));
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.autoClimbDown(climb1));
 
-    NamedCommands.registerCommand(
-        "timedShootCommand",
+    NamedCommands.registerCommand("timedShootCommand",
         ShooterCommands.timedShoot(shooter, kicker, intakeDeploy, Constants.AUTO_SHOOT_RPS, 1.5));
 
     // Load autos
-    for (String autoName : AutoBuilder.getAllAutoNames()) {
+    for (
+
+    String autoName : AutoBuilder.getAllAutoNames()) {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
 
     configureButtonBindings();
+
     // CameraServer.startAutomaticCapture(0);
   }
 
@@ -324,7 +327,14 @@ public class RobotContainer {
     // Vision diagnostics inputs
     double tx = visionClimb.getTX();
     double ty = visionClimb.getTY();
-    double[] offsets = visionClimb.getCameraToTagOffset(fieldLayout, Constants.CLIMB_TAG_ID, tx, ty);
+    double[] offsets = new double[] { 0.0, 0.0, 0.0 };
+    var climbTagPose = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID);
+    if (climbTagPose.isPresent()) {
+      Transform2d tagToRobot = new Transform2d(climbTagPose.get().toPose2d(), drive.getPose());
+      offsets[0] = tagToRobot.getX();
+      offsets[1] = tagToRobot.getY();
+      offsets[2] = drive.getPose().getTranslation().getDistance(climbTagPose.get().toPose2d().getTranslation());
+    }
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
     SmartDashboard.putBoolean("Endgame 20s", alert20);

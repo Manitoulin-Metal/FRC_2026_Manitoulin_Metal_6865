@@ -13,21 +13,23 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 
 public final class ClimbCommands {
 
-  private ClimbCommands() {}
+  private ClimbCommands() {
+  }
 
   // -----------------------------
   // Teleop: align to cage tag then climb
   // -----------------------------
 
   /**
-   * Aligns to the alliance-appropriate cage AprilTag (with a 5-second timeout), then runs the
+   * Aligns to the alliance-appropriate cage AprilTag (with a 5-second timeout),
+   * then runs the
    * climber upward until interrupted.
    */
-  public static Command alignAndClimb(Drive drive, VisionSubsystem vision, ClimbSubsystem climb) {
+  public static Command alignAndClimb(Drive drive, Vision vision, ClimbSubsystem climb) {
     return DriveCommands.alignToTag(DriveCommands.getClimbTagId(), drive, vision)
         .withTimeout(5.0)
         .andThen(climb.climbCommand(0.75));
@@ -38,7 +40,8 @@ public final class ClimbCommands {
   // -----------------------------
 
   /**
-   * Drives to the cage AprilTag using field-relative odometry (used in PathPlanner named commands).
+   * Drives to the cage AprilTag using field-relative odometry (used in
+   * PathPlanner named commands).
    */
   public static Command autoClimbDrive(Drive drive, AprilTagFieldLayout fieldLayout) {
     return DriveCommands.driveToClimb(
@@ -59,8 +62,10 @@ public final class ClimbCommands {
     return climb.climbCommand(-0.5).withTimeout(6);
   }
 
-  /** Field-relative climb alignment using camera-reported robot-relative error. */
-  public static Command driveToClimbVision(Drive drive, VisionSubsystem vision) {
+  /**
+   * Field-relative climb alignment using camera-reported robot-relative error.
+   */
+  public static Command driveToClimbVision(Drive drive, Vision vision) {
     return Commands.run(
         () -> {
           double forward = 0;
@@ -105,7 +110,7 @@ public final class ClimbCommands {
   }
 
   /** Limelight-only climb alignment fallback command. */
-  public static Command limelightClimbFull(Drive drive, VisionSubsystem vision) {
+  public static Command limelightClimbFull(Drive drive, Vision vision) {
     return Commands.run(
         () -> {
           boolean seesTag = vision.hasTag(Constants.CLIMB_TAG_ID);

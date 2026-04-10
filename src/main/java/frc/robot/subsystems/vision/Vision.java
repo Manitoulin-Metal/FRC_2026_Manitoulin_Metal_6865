@@ -14,6 +14,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
@@ -22,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
@@ -56,6 +58,74 @@ public class Vision extends SubsystemBase {
    */
   public Rotation2d getTargetX(int cameraIndex) {
     return inputs[cameraIndex].latestTargetObservation.tx();
+  }
+
+  /** Returns true when any camera currently reports the requested tag id. */
+  public boolean hasTag(int targetId) {
+    for (int cameraIndex = 0; cameraIndex < inputs.length; cameraIndex++) {
+      for (int tagId : inputs[cameraIndex].tagIds) {
+        if (tagId == targetId) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /** Returns tx (degrees) from camera 0. */
+  public double getTX() {
+    if (inputs.length == 0) {
+      return 0.0;
+    }
+    return inputs[0].latestTargetObservation.tx().getDegrees();
+  }
+
+  /** Returns ty (degrees) from camera 0. */
+  public double getTY() {
+    if (inputs.length == 0) {
+      return 0.0;
+    }
+    return inputs[0].latestTargetObservation.ty().getDegrees();
+  }
+
+  /** Returns most recent estimated robot pose across all cameras, if any. */
+  public Pose2d getEstimatedPose() {
+    Pose2d bestPose = null;
+    double bestTimestamp = Double.NEGATIVE_INFINITY;
+
+    for (int cameraIndex = 0; cameraIndex < inputs.length; cameraIndex++) {
+      for (var observation : inputs[cameraIndex].poseObservations) {
+        if (observation.timestamp() > bestTimestamp) {
+          bestTimestamp = observation.timestamp();
+          bestPose = observation.pose().toPose2d();
+        }
+      }
+    }
+
+    return bestPose;
+  }
+
+  /** True when the climb tag is currently visible to any camera. */
+  public boolean shouldUseVisionForClimb() {
+    return hasTag(frc.robot.Constants.CLIMB_TAG_ID);
+  }
+
+  /**
+   * Returns a robot-relative error transform derived from current tx/ty.
+   * X is forward error from ty, Y is strafe error from tx.
+   */
+  public Optional<Transform2d> getRobotRelativeError() {
+    if (inputs.length == 0 || !inputs[0].connected) {
+      return Optional.empty();
+    }
+
+    Rotation2d tx = inputs[0].latestTargetObservation.tx();
+    Rotation2d ty = inputs[0].latestTargetObservation.ty();
+    Transform2d error = new Transform2d(
+        -ty.getDegrees(),
+        tx.getDegrees(),
+        Rotation2d.fromDegrees(tx.getDegrees()));
+    return Optional.of(error);
   }
 
   @Override
