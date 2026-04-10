@@ -45,14 +45,14 @@ public class Vision extends SubsystemBase {
     // Initialize disconnected alerts
     this.disconnectedAlerts = new Alert[io.length];
     for (int i = 0; i < inputs.length; i++) {
-      disconnectedAlerts[i] = new Alert(
-          "Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
+      disconnectedAlerts[i] =
+          new Alert(
+              "Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
     }
   }
 
   /**
-   * Returns the X angle to the best target, which can be used for simple servoing
-   * with vision.
+   * Returns the X angle to the best target, which can be used for simple servoing with vision.
    *
    * @param cameraIndex The index of the camera to use.
    */
@@ -111,8 +111,8 @@ public class Vision extends SubsystemBase {
   }
 
   /**
-   * Returns a robot-relative error transform derived from current tx/ty.
-   * X is forward error from ty, Y is strafe error from tx.
+   * Returns a robot-relative error transform derived from current tx/ty. X is forward error from
+   * ty, Y is strafe error from tx.
    */
   public Optional<Transform2d> getRobotRelativeError() {
     if (inputs.length == 0 || !inputs[0].connected) {
@@ -121,10 +121,8 @@ public class Vision extends SubsystemBase {
 
     Rotation2d tx = inputs[0].latestTargetObservation.tx();
     Rotation2d ty = inputs[0].latestTargetObservation.ty();
-    Transform2d error = new Transform2d(
-        -ty.getDegrees(),
-        tx.getDegrees(),
-        Rotation2d.fromDegrees(tx.getDegrees()));
+    Transform2d error =
+        new Transform2d(-ty.getDegrees(), tx.getDegrees(), Rotation2d.fromDegrees(tx.getDegrees()));
     return Optional.of(error);
   }
 
@@ -163,16 +161,18 @@ public class Vision extends SubsystemBase {
       // Loop over pose observations
       for (var observation : inputs[cameraIndex].poseObservations) {
         // Check whether to reject pose
-        boolean rejectPose = observation.tagCount() == 0 // Must have at least one tag
-            || (observation.tagCount() == 1
-                && observation.ambiguity() > maxAmbiguity) // Cannot be high ambiguity
-            || Math.abs(observation.pose().getZ()) > maxZError // Must have realistic Z coordinate
+        boolean rejectPose =
+            observation.tagCount() == 0 // Must have at least one tag
+                || (observation.tagCount() == 1
+                    && observation.ambiguity() > maxAmbiguity) // Cannot be high ambiguity
+                || Math.abs(observation.pose().getZ())
+                    > maxZError // Must have realistic Z coordinate
 
-            // Must be within the field boundaries
-            || observation.pose().getX() < 0.0
-            || observation.pose().getX() > aprilTagLayout.getFieldLength()
-            || observation.pose().getY() < 0.0
-            || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+                // Must be within the field boundaries
+                || observation.pose().getX() < 0.0
+                || observation.pose().getX() > aprilTagLayout.getFieldLength()
+                || observation.pose().getY() < 0.0
+                || observation.pose().getY() > aprilTagLayout.getFieldWidth();
 
         // Add pose to log
         robotPoses.add(observation.pose());
@@ -188,7 +188,8 @@ public class Vision extends SubsystemBase {
         }
 
         // Calculate standard deviations
-        double stdDevFactor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
+        double stdDevFactor =
+            Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
         double linearStdDev = linearStdDevBaseline * stdDevFactor;
         double angularStdDev = angularStdDevBaseline * stdDevFactor;
         if (observation.type() == PoseObservationType.MEGATAG_2) {
