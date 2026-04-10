@@ -124,6 +124,7 @@ public class RobotContainer {
     visionClimb = new Vision(drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
     visionShoot = new Vision(drive::addVisionMeasurement,
         new VisionIOLimelight("limelight_forward", drive::getRotation));
+
     drive.setVision(visionClimb);
 
     // -------- Default drive (now with robot-centric toggle) --------
@@ -345,6 +346,11 @@ public class RobotContainer {
     SmartDashboard.putNumber("CameraToTag/X", offsets[0]);
     SmartDashboard.putNumber("CameraToTag/Y", offsets[1]);
     SmartDashboard.putNumber("CameraToTag/Distance", offsets[2]);
+
+    Pose2d robotPose = drive.getPose();
+    SmartDashboard.putNumber("Odometry/RobotX", robotPose.getX());
+    SmartDashboard.putNumber("Odometry/RobotY", robotPose.getY());
+    SmartDashboard.putNumber("Odometry/RobotRotation", robotPose.getRotation().getDegrees());
 
     SmartDashboard.putNumber("Driver/LeftY", driverLeftY);
     SmartDashboard.putNumber("Operator/LeftY", operatorLeftY);

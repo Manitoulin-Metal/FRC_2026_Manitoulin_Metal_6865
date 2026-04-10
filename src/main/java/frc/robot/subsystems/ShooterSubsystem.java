@@ -37,6 +37,14 @@ public class ShooterSubsystem extends SubsystemBase {
   private final LoggedNetworkNumber kDEntry = Constants.Shooter.kDEntry;
   private final LoggedNetworkNumber kVEntry = Constants.Shooter.kVEntry;
   private final LoggedNetworkNumber kSEntry = Constants.Shooter.kSEntry;
+
+  // Cache for PID values to avoid constant resets
+  private double cachedKP = Constants.Shooter.kP;
+  private double cachedKI = Constants.Shooter.kI;
+  private double cachedKD = Constants.Shooter.kD;
+  private double cachedKV = Constants.Shooter.kV;
+  private double cachedKS = Constants.Shooter.kS;
+
   private double targetRps = 95.0;
   private double currentRps = 0.0;
 
@@ -155,14 +163,24 @@ public class ShooterSubsystem extends SubsystemBase {
     double newKV = kVEntry.get();
     double newKS = kSEntry.get();
 
-    Slot0Configs config = new Slot0Configs();
-    config.kP = newKP;
-    config.kI = newKI;
-    config.kD = newKD;
-    config.kV = newKV;
-    config.kS = newKS;
+    // Only apply config if any value changed
+    if (newKP != cachedKP || newKI != cachedKI || newKD != cachedKD || newKV != cachedKV || newKS != cachedKS) {
+      Slot0Configs config = new Slot0Configs();
+      config.kP = newKP;
+      config.kI = newKI;
+      config.kD = newKD;
+      config.kV = newKV;
+      config.kS = newKS;
 
-    shooter.getConfigurator().apply(config);
+      shooter.getConfigurator().apply(config);
+
+      // Update cache
+      cachedKP = newKP;
+      cachedKI = newKI;
+      cachedKD = newKD;
+      cachedKV = newKV;
+      cachedKS = newKS;
+    }
   }
 
   /** Get current shooter velocity in rotations per second (RPS) */
