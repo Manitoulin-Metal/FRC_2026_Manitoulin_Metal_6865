@@ -183,7 +183,7 @@ public class RobotContainer {
 
     // Toggle vision-assisted behavior.
     driver
-        .y()
+        .back()
         .onTrue(
             Commands.runOnce(
                 () -> {
@@ -244,8 +244,8 @@ public class RobotContainer {
     driver.leftBumper().whileTrue(ClimbCommands.climbUp(climb1));
     driver.rightBumper().whileTrue(ClimbCommands.climbDown(climb1));
 
-    // Run align-to-tag then climb while held.
-    driver.y().whileTrue(DriveCommands.alignToTagWithVision(32, drive, visionClimb));
+    // Run climb sequence: climb up, align to tag (timeout), then climb down.
+    driver.y().onTrue(ClimbCommands.climbUpAlignThenDown(32, drive, visionClimb, climb1));
 
     // Vision climb assist test while held (disabled).
     // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,

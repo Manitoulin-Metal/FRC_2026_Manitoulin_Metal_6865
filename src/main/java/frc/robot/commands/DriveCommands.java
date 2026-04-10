@@ -447,6 +447,12 @@ public final class DriveCommands {
                   && rotationController.atSetpoint());
         },
         drive)
+        .finallyDo(
+            interrupted -> {
+              strafeController.close();
+              distanceController.close();
+              rotationController.close();
+            })
         .withName("AlignToTag_PID");
   }
 
@@ -521,6 +527,12 @@ public final class DriveCommands {
         },
         drive,
         vision)
+        .finallyDo(
+            interrupted -> {
+              strafeController.close();
+              distanceController.close();
+              rotationController.close();
+            })
         .withName("AlignToTagWithVision_PID");
   }
 }

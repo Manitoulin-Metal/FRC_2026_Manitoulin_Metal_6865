@@ -73,6 +73,18 @@ public final class ClimbCommands {
   }
 
   /**
+   * Sets climb to UP, aligns to the requested AprilTag using vision, then sets
+   * climb to DOWN.
+   */
+  public static Command climbUpAlignThenDown(
+      int targetId, Drive drive, Vision vision, ClimbSubsystem climb) {
+    return Commands.sequence(
+        Commands.runOnce(climb::moveUp, climb),
+        DriveCommands.alignToTagWithVision(targetId, drive, vision).withTimeout(3.0),
+        Commands.runOnce(climb::moveDown, climb));
+  }
+
+  /**
    * Field-relative climb alignment using camera-reported robot-relative error.
    */
   public static Command driveToClimbVision(Drive drive, Vision vision) {

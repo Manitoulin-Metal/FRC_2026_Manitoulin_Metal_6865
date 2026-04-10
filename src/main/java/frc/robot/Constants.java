@@ -118,7 +118,7 @@ public final class Constants {
 
   public static class Climb {
     public static final int LIMIT_SWITCH_CHANNEL = 8;
-    public static final double UP_TARGET_ROTATIONS = 110.0;
+    public static final double UP_TARGET_ROTATIONS = 377.5;
     public static final LoggedNetworkNumber upTargetEntry = new LoggedNetworkNumber("Tuning/Climb/UpTargetRotations",
         UP_TARGET_ROTATIONS);
   }
