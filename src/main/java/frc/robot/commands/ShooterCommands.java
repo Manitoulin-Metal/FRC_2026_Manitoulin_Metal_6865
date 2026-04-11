@@ -44,7 +44,7 @@ public final class ShooterCommands {
         .finallyDo(
             interrupted -> {
               shooter.stopShooter();
-              intakeDeploy.stow();
+              intakeDeploy.deploy();
             });
   }
 
@@ -64,7 +64,7 @@ public final class ShooterCommands {
         .finallyDo(
             interrupted -> {
               shooter.stopShooter();
-              intakeDeploy.stow();
+              intakeDeploy.deploy(); // When interrupted, the IntakeDeploy sets itself to Deploy Mode
             });
   }
 }
