@@ -63,8 +63,9 @@ public final class ShooterCommands {
         .andThen(Commands.run(() -> shooter.runShooter(shooterRps), shooter))
         .finallyDo(
             interrupted -> {
-              shooter.stopShooter();
-              intakeDeploy.deploy(); // When interrupted, the IntakeDeploy sets itself to Deploy Mode
+              shooter.stopShooter(); // When interrupted, the Shooter stops running
+              intakeDeploy
+                  .deploy(); // When interrupted, the IntakeDeploy sets itself to Deploy Mode
             });
   }
 }

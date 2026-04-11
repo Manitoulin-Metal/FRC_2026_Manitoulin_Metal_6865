@@ -181,7 +181,8 @@ public class RobotContainer {
     // -------------------- DRIVER BINDINGS ------------------------
     // ============================================================
 
-    // Toggle robot-centric driving mode.
+    // Toggle robot-centric driving mode. Press Again To Disable Robot-Centric Driving Mode And
+    // Switch To Field-Centric Driving Mode
     driver
         .start()
         .onTrue(
@@ -191,7 +192,7 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
                 }));
 
-    // Toggle vision-assisted behavior.
+    // Toggle vision-assisted behavior. Press Again To Turn Off Vision.
     driver
         .y()
         .onTrue(
@@ -201,7 +202,7 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
                 }));
 
-    // Stop drive outputs with X-lock.
+    // Stop drive outputs with X-lock (All Wheels Turn Inwards For A Full Stop).
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // Zero robot heading while preserving translation.
@@ -247,10 +248,10 @@ public class RobotContainer {
                 },
                 intakeDeploy));
 
-    // Run kicker test while held.
+    // Run Kicker Test While Holding Left Trigger On Driver Controller.
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
-    // Run align-to-tag then climb while held.
+    // Run Align-To-Tag Then Climb While Holding Y Button On Driver Controller.
     driver.y().whileTrue(DriveCommands.alignToTag(32, drive, visionClimb));
 
     // Vision climb assist test while held (disabled).
@@ -261,34 +262,35 @@ public class RobotContainer {
     // -------------------- OPERATOR BINDINGS ----------------------
     // ============================================================
 
-    // Deploy intake mechanism.
+    // Deploy Intake Deploy Mechanism Toggled When A Button Pressed On Operator Controller.
     operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
-    // Stow intake mechanism.
+    // Stow Intake Deploy Mechanism Toggled When B Button Pressed On Operator Controller.
     operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
     // Unused x button on operator
     // operator.x().onTrue(
-    // lowers climber while held.
+
+    // Lowers The Climber While Holding D-Pad Up.
     operator.pov(0).whileTrue(climb1.climbCommand(0.75)).onFalse(climb1.climbCommand(0));
 
-    // raises climber while held.
+    // Raises The Climber While Holding D-Pad Down.
     operator.pov(180).whileTrue(climb1.climbCommand(-0.75)).onFalse(climb1.climbCommand(0));
 
-    // Run intake roller toggle.
+    // Run Intake Roller With A Toggle When Left Trigger Pressed On Operator Controller.
     operator.leftTrigger(0.1).toggleOnTrue(intakeRoller.intakeToggleCommand());
 
-    // Toggle shooter + whip on/off with each trigger press.
+    // Toggles Shooter + Whip On/Off With Each Trigger Press.
     operator
         .rightTrigger(0.5)
         .toggleOnTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0));
 
-    // Run shooter at reduced speed while held.
+    // Run Shooter At Reduced Speed While Operator Holds Y Button.
     operator
         .y()
         .whileTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 60.0));
 
-    // Toggle whip command on/off.
+    // Toggle Whip Command On/Off (Solo Command).
     // operator.rightBumper().toggleOnTrue(whip.whipCommand());
 
     // Clear shooter sticky faults.
