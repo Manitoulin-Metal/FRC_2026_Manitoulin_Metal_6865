@@ -8,6 +8,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -17,6 +18,7 @@ import frc.robot.Constants;
 public class ClimbSubsystem extends SubsystemBase {
 
   public enum ClimbState {
+    DISABLED,
     IDLE,
     UP,
     DOWN,
@@ -29,14 +31,10 @@ public class ClimbSubsystem extends SubsystemBase {
   private final RelativeEncoder encoder;
   private final DigitalInput limitSwitch = new DigitalInput(Constants.Climb.LIMIT_SWITCH_CHANNEL);
 
-  private static final double UP_SPEED = 0.75;
-  private static final double DOWN_SPEED = -0.75;
-  private static final double HOMING_SPEED = -0.35;
-  private static final double BOTTOM_ENCODER_TOLERANCE_ROTATIONS = 0.5;
-
   private ClimbState state = ClimbState.IDLE;
   private boolean homed = false;
   private boolean upTargetReached = false;
+  private double homingStartTimestamp = -1.0;
 
   public ClimbSubsystem() {
     SparkFlexConfig config = new SparkFlexConfig();
@@ -58,7 +56,20 @@ public class ClimbSubsystem extends SubsystemBase {
     return homed;
   }
 
+  public boolean isDisabled() {
+    return state == ClimbState.DISABLED;
+  }
+
+  public void disable() {
+    state = ClimbState.DISABLED;
+    homingStartTimestamp = -1.0;
+  }
+
   public void moveUp() {
+    if (isDisabled()) {
+      return;
+    }
+
     if (isTopLimitReached()) {
       upTargetReached = true;
       state = ClimbState.AT_TOP;
@@ -70,6 +81,10 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void moveDown() {
+    if (isDisabled()) {
+      return;
+    }
+
     if (isBottomLimitReached()) {
       state = ClimbState.AT_BOTTOM;
       return;
@@ -79,19 +94,27 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void stop() {
-    state = ClimbState.IDLE;
+    if (!isDisabled()) {
+      state = ClimbState.IDLE;
+    }
   }
 
   public void startHoming() {
+    if (isDisabled()) {
+      return;
+    }
+
     if (isLimitSwitchPressed()) {
       encoder.setPosition(0.0);
       homed = true;
       state = ClimbState.AT_BOTTOM;
+      homingStartTimestamp = -1.0;
       return;
     }
 
     homed = false;
     state = ClimbState.HOMING;
+    homingStartTimestamp = Timer.getFPGATimestamp();
   }
 
   // ========================= COMMANDS =========================
@@ -99,6 +122,10 @@ public class ClimbSubsystem extends SubsystemBase {
   public Command climbCommand(double speed) {
     return Commands.runEnd(
         () -> {
+          if (isDisabled()) {
+            return;
+          }
+
           if (speed > 0.0) {
             moveUp();
           } else if (speed < 0.0) {
@@ -107,12 +134,24 @@ public class ClimbSubsystem extends SubsystemBase {
             state = ClimbState.IDLE;
           }
         },
-        () -> state = ClimbState.IDLE,
+        this::stop,
         this);
   }
 
   public Command homeCommand() {
-    return Commands.runOnce(this::startHoming, this);
+    return Commands.sequence(
+        Commands.runOnce(this::startHoming, this),
+        Commands
+            .waitUntil(() -> isHomed() || isDisabled())
+            .withTimeout(Constants.Climb.HOMING_TIMEOUT_SECONDS))
+        .andThen(
+            Commands.runOnce(
+                () -> {
+                  if (!isHomed()) {
+                    disable();
+                  }
+                },
+                this));
   }
 
   public double getEncoderPosition() {
@@ -134,7 +173,8 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   private boolean isBottomLimitReached() {
-    return isLimitSwitchPressed() || encoder.getPosition() <= BOTTOM_ENCODER_TOLERANCE_ROTATIONS;
+    return isLimitSwitchPressed()
+        || encoder.getPosition() <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS;
   }
 
   @Override
@@ -151,12 +191,12 @@ public class ClimbSubsystem extends SubsystemBase {
           upTargetReached = true;
           state = ClimbState.AT_TOP;
         } else {
-          output = UP_SPEED;
+          output = Constants.Climb.UP_SPEED;
         }
         break;
 
       case DOWN:
-        if (pressed || climbPosition <= BOTTOM_ENCODER_TOLERANCE_ROTATIONS) {
+        if (pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS) {
           output = 0.0;
           encoder.setPosition(0.0);
           state = ClimbState.AT_BOTTOM;
@@ -164,7 +204,7 @@ public class ClimbSubsystem extends SubsystemBase {
             homed = true;
           }
         } else {
-          output = DOWN_SPEED;
+          output = Constants.Climb.DOWN_SPEED;
         }
         break;
 
@@ -174,9 +214,19 @@ public class ClimbSubsystem extends SubsystemBase {
           encoder.setPosition(0.0);
           state = ClimbState.AT_BOTTOM;
           homed = true;
+          homingStartTimestamp = -1.0;
+        } else if (homingStartTimestamp > 0.0
+            && (Timer.getFPGATimestamp() - homingStartTimestamp) >= Constants.Climb.HOMING_TIMEOUT_SECONDS) {
+          output = 0.0;
+          state = ClimbState.DISABLED;
+          homingStartTimestamp = -1.0;
         } else {
-          output = HOMING_SPEED;
+          output = Constants.Climb.HOMING_SPEED;
         }
+        break;
+
+      case DISABLED:
+        output = 0.0;
         break;
 
       case AT_TOP:
@@ -201,6 +251,7 @@ public class ClimbSubsystem extends SubsystemBase {
 
     SmartDashboard.putString("Climb/State", state.name());
     SmartDashboard.putBoolean("Climb/Homed", homed);
+    SmartDashboard.putBoolean("Climb/Disabled", isDisabled());
     SmartDashboard.putBoolean("Climb/LimitSwitchPressed", pressed);
     SmartDashboard.putNumber("Climb/SpeedCommand", output);
     SmartDashboard.putNumber("Climb/EncoderPosition", climbPosition);
@@ -208,6 +259,6 @@ public class ClimbSubsystem extends SubsystemBase {
     SmartDashboard.putBoolean("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >= upTarget);
     SmartDashboard.putBoolean(
         "Climb/BottomLimitReached",
-        pressed || climbPosition <= BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
+        pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
   }
 }

@@ -249,8 +249,11 @@ public class RobotContainer {
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // Driver climb controls: hold bumper to move, release to idle.
-    driver.leftBumper().whileTrue(ClimbCommands.climbUp(climb1));
-    driver.rightBumper().whileTrue(ClimbCommands.climbDown(climb1));
+    driver.leftBumper().and(() -> !climb1.isDisabled()).whileTrue(ClimbCommands.climbUp(climb1));
+    driver
+        .rightBumper()
+        .and(() -> !climb1.isDisabled())
+        .whileTrue(ClimbCommands.climbDown(climb1));
 
     // Run climb sequence: climb up, align to tag (timeout), then climb down.
     driver.y().onTrue(ClimbCommands.climbUpAlignThenDown(32, drive, visionClimb, climb1));
@@ -278,10 +281,13 @@ public class RobotContainer {
     // operator.x().onTrue(
 
     // D-pad up moves climber up while held, respecting top lockout.
-    operator.pov(0).whileTrue(ClimbCommands.climbUp(climb1));
+    operator.pov(0).and(() -> !climb1.isDisabled()).whileTrue(ClimbCommands.climbUp(climb1));
 
     // D-pad down moves climber down while held, respecting bottom lockout.
-    operator.pov(180).whileTrue(ClimbCommands.climbDown(climb1));
+    operator
+        .pov(180)
+        .and(() -> !climb1.isDisabled())
+        .whileTrue(ClimbCommands.climbDown(climb1));
 
     // Run intake roller toggle.
     operator.leftTrigger(0.1).toggleOnTrue(intakeRoller.intakeToggleCommand());
@@ -309,7 +315,7 @@ public class RobotContainer {
   // ---------- ENABLE HOMING METHOD ----------
   public void enableHoming() {
     intakeDeploy.startHoming();
-    climb1.startHoming();
+    CommandScheduler.getInstance().schedule(climb1.homeCommand());
   }
 
   public Command getAutonomousCommand() {
