@@ -64,16 +64,13 @@ public class RobotContainer {
 
   private final Field2d field = new Field2d();
 
-  private final AprilTagFieldLayout fieldLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
 
-  private final LoggedNetworkNumber endgameAlert2 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
   // ============================================================
   // -------------------- CONSTRUCTOR ----------------------------
@@ -84,13 +81,12 @@ public class RobotContainer {
     // -------- Drive init --------
     switch (Constants.currentMode) {
       case REAL:
-        drive =
-            new Drive(
-                new GyroIOPigeon2(),
-                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOPigeon2(),
+            new ModuleIOTalonFX(TunerConstants.FrontLeft),
+            new ModuleIOTalonFX(TunerConstants.FrontRight),
+            new ModuleIOTalonFX(TunerConstants.BackLeft),
+            new ModuleIOTalonFX(TunerConstants.BackRight));
 
         // vision =
         // new Vision(
@@ -101,34 +97,35 @@ public class RobotContainer {
         break;
 
       case SIM:
-        drive =
-            new Drive(
-                new GyroIOSim(),
-                new ModuleIOSim(TunerConstants.FrontLeft),
-                new ModuleIOSim(TunerConstants.FrontRight),
-                new ModuleIOSim(TunerConstants.BackLeft),
-                new ModuleIOSim(TunerConstants.BackRight));
+        drive = new Drive(
+            new GyroIOSim(),
+            new ModuleIOSim(TunerConstants.FrontLeft),
+            new ModuleIOSim(TunerConstants.FrontRight),
+            new ModuleIOSim(TunerConstants.BackLeft),
+            new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default:
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
+        drive = new Drive(
+            new GyroIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            },
+            new ModuleIO() {
+            });
         break;
     }
 
     // -------- Vision setup --------
-    visionClimb =
-        new Vision(
-            drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
-    visionShoot =
-        new Vision(
-            drive::addVisionMeasurement,
-            new VisionIOLimelight("limelight_forward", drive::getRotation));
+    visionClimb = new Vision(
+        drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
+    visionShoot = new Vision(
+        drive::addVisionMeasurement,
+        new VisionIOLimelight("limelight_forward", drive::getRotation));
     drive.setVision(visionClimb);
 
     // -------- Default drive (now with robot-centric toggle) --------
@@ -150,7 +147,7 @@ public class RobotContainer {
     // NamedCommands.registerCommand("stopIntake", intakeRoller.idleCommand());
 
     NamedCommands.registerCommand(
-        "collectFuel", intakeRoller.intakeToggleCommand().withTimeout(4.0));
+        "collectFuel", intakeRoller.intakeToggleCommand().withTimeout(3.0));
     NamedCommands.registerCommand(
         "ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
     NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.autoClimbUp(climb1));
@@ -158,9 +155,9 @@ public class RobotContainer {
 
     NamedCommands.registerCommand(
         "timedShootCommand",
-        ShooterCommands.timedShoot(shooter, kicker, intakeDeploy, Constants.AUTO_SHOOT_RPS, 1.5));
-
-    // Load autos
+        ShooterCommands.timedShoot(shooter, kicker, intakeDeploy, Constants.AUTO_SHOOT_RPS, 2.5));
+    NamedCommands.registerCommand("intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+    // Load auto
     for (String autoName : AutoBuilder.getAllAutoNames()) {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
@@ -181,7 +178,8 @@ public class RobotContainer {
     // -------------------- DRIVER BINDINGS ------------------------
     // ============================================================
 
-    // Toggle robot-centric driving mode. Press Again To Disable Robot-Centric Driving Mode And
+    // Toggle robot-centric driving mode. Press Again To Disable Robot-Centric
+    // Driving Mode And
     // Switch To Field-Centric Driving Mode
     driver
         .start()
@@ -262,10 +260,12 @@ public class RobotContainer {
     // -------------------- OPERATOR BINDINGS ----------------------
     // ============================================================
 
-    // Deploy Intake Deploy Mechanism Toggled When A Button Pressed On Operator Controller.
+    // Deploy Intake Deploy Mechanism Toggled When A Button Pressed On Operator
+    // Controller.
     operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
-    // Stow Intake Deploy Mechanism Toggled When B Button Pressed On Operator Controller.
+    // Stow Intake Deploy Mechanism Toggled When B Button Pressed On Operator
+    // Controller.
     operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
     // Unused x button on operator
@@ -277,7 +277,8 @@ public class RobotContainer {
     // Raises The Climber While Holding D-Pad Down.
     operator.pov(180).whileTrue(climb1.climbCommand(-0.75)).onFalse(climb1.climbCommand(0));
 
-    // Run Intake Roller With A Toggle When Left Trigger Pressed On Operator Controller.
+    // Run Intake Roller With A Toggle When Left Trigger Pressed On Operator
+    // Controller.
     operator.leftTrigger(0.1).toggleOnTrue(intakeRoller.intakeToggleCommand());
 
     // Toggles Shooter + Whip On/Off With Each Trigger Press.
@@ -315,7 +316,7 @@ public class RobotContainer {
   // ============================================================
 
   public void periodic() {
-    
+
     // Snapshot inputs once so outputs are consistent between sinks.
     double driverLeftY = driver.getLeftY();
     double driverLeftX = driver.getLeftX();
@@ -342,17 +343,16 @@ public class RobotContainer {
     // Vision diagnostics inputs
     double tx = visionClimb.getTX();
     double ty = visionClimb.getTY();
-    double[] offsets = new double[] {0.0, 0.0, 0.0};
+    double[] offsets = new double[] { 0.0, 0.0, 0.0 };
     var climbTagPose = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID);
     if (climbTagPose.isPresent()) {
       Transform2d tagToRobot = new Transform2d(climbTagPose.get().toPose2d(), drive.getPose());
       offsets[0] = tagToRobot.getX();
       offsets[1] = tagToRobot.getY();
-      offsets[2] =
-          drive
-              .getPose()
-              .getTranslation()
-              .getDistance(climbTagPose.get().toPose2d().getTranslation());
+      offsets[2] = drive
+          .getPose()
+          .getTranslation()
+          .getDistance(climbTagPose.get().toPose2d().getTranslation());
     }
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------

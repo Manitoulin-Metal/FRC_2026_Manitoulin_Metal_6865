@@ -1,0 +1,7 @@
+Things to not do:
+1. DON'T PUT COMMENTS INSIDE A BLOCK OF IMPORTS, IT'LL PREVENT THE CODE FROM BUILDING WITH SPOTLESS JAVA
+2. 
+
+Things to Know:
+1. Comments will help others understand the code better
+2. 

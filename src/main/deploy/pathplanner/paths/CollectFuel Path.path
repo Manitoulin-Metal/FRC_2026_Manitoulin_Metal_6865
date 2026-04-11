@@ -16,16 +16,32 @@
     },
     {
       "anchor": {
-        "x": 7.638,
-        "y": 5.622
+        "x": 7.7265763195435095,
+        "y": 6.085777460770328
       },
       "prevControl": {
-        "x": 6.638,
-        "y": 5.622
+        "x": 7.569634707424415,
+        "y": 6.939273260421619
+      },
+      "nextControl": {
+        "x": 7.883517931662604,
+        "y": 5.232281661119036
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.920656205420826,
+        "y": 4.183794579172611
+      },
+      "prevControl": {
+        "x": 7.700699001426534,
+        "y": 4.882482168330956
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "collectFuel path end"
     }
   ],
   "rotationTargets": [],
@@ -33,10 +49,15 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "IntakeDeploy",
-      "waypointRelativePos": 0.008670520231213872,
+      "name": "collectFuel",
+      "waypointRelativePos": 0.0,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "collectFuel"
+        }
+      }
     }
   ],
   "globalConstraints": {
@@ -54,7 +75,7 @@
   "reversed": false,
   "folder": null,
   "idealStartingState": {
-    "velocity": 2.5,
+    "velocity": 0.0,
     "rotation": 0.0
   },
   "useDefaultConstraints": true
