@@ -1,0 +1,82 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.707,
+        "y": 7.42
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.175711805555555,
+        "y": 7.562222222222221
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.251569186875892,
+        "y": 6.758587731811698
+      },
+      "prevControl": {
+        "x": 6.094627574756797,
+        "y": 7.612083531462989
+      },
+      "nextControl": {
+        "x": 6.408510798994986,
+        "y": 5.905091932160406
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.707,
+        "y": 5.89169757489301
+      },
+      "prevControl": {
+        "x": 4.487042796005707,
+        "y": 6.590385164051355
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "fake end of fuel"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "collectFuel",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "collectFuel"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 2.5,
+    "maxAcceleration": 2.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.0,
+    "rotation": -47.291
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0.0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}

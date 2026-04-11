@@ -25,7 +25,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "CollectFuel Path"
+            "pathName": "fake CollectFuel Path"
           }
         },
         {
@@ -37,7 +37,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "From Centre To Shoot"
+            "pathName": "fake From Centre To Shoot"
           }
         },
         {
@@ -61,7 +61,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Kaden's Wishes"
+            "pathName": "fake Kaden's Wishes"
           }
         },
         {
