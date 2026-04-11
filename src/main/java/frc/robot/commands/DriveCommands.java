@@ -22,32 +22,40 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public final class DriveCommands {
 
-  private DriveCommands() {
-  }
+  private DriveCommands() {}
 
   // -----------------------------
   // AlignToTag PID live tuning
   // -----------------------------
-  private static final LoggedNetworkNumber alignStrafeKP = new LoggedNetworkNumber("/AlignToTag/Strafe/kP", 0.05);
-  private static final LoggedNetworkNumber alignStrafeKI = new LoggedNetworkNumber("/AlignToTag/Strafe/kI", 0.0);
-  private static final LoggedNetworkNumber alignStrafeKD = new LoggedNetworkNumber("/AlignToTag/Strafe/kD", 0.0);
+  private static final LoggedNetworkNumber alignStrafeKP =
+      new LoggedNetworkNumber("/AlignToTag/Strafe/kP", 0.05);
+  private static final LoggedNetworkNumber alignStrafeKI =
+      new LoggedNetworkNumber("/AlignToTag/Strafe/kI", 0.0);
+  private static final LoggedNetworkNumber alignStrafeKD =
+      new LoggedNetworkNumber("/AlignToTag/Strafe/kD", 0.0);
 
-  private static final LoggedNetworkNumber alignDistanceKP = new LoggedNetworkNumber("/AlignToTag/Distance/kP", 0.15);
-  private static final LoggedNetworkNumber alignDistanceKI = new LoggedNetworkNumber("/AlignToTag/Distance/kI", 0.0);
-  private static final LoggedNetworkNumber alignDistanceKD = new LoggedNetworkNumber("/AlignToTag/Distance/kD", 0.0);
+  private static final LoggedNetworkNumber alignDistanceKP =
+      new LoggedNetworkNumber("/AlignToTag/Distance/kP", 0.15);
+  private static final LoggedNetworkNumber alignDistanceKI =
+      new LoggedNetworkNumber("/AlignToTag/Distance/kI", 0.0);
+  private static final LoggedNetworkNumber alignDistanceKD =
+      new LoggedNetworkNumber("/AlignToTag/Distance/kD", 0.0);
 
-  private static final LoggedNetworkNumber alignRotationKP = new LoggedNetworkNumber("/AlignToTag/Rotation/kP", 0.1);
-  private static final LoggedNetworkNumber alignRotationKI = new LoggedNetworkNumber("/AlignToTag/Rotation/kI", 0.0);
-  private static final LoggedNetworkNumber alignRotationKD = new LoggedNetworkNumber("/AlignToTag/Rotation/kD", 0.0);
+  private static final LoggedNetworkNumber alignRotationKP =
+      new LoggedNetworkNumber("/AlignToTag/Rotation/kP", 0.1);
+  private static final LoggedNetworkNumber alignRotationKI =
+      new LoggedNetworkNumber("/AlignToTag/Rotation/kI", 0.0);
+  private static final LoggedNetworkNumber alignRotationKD =
+      new LoggedNetworkNumber("/AlignToTag/Rotation/kD", 0.0);
 
   // -----------------------------
   // Tag selection
   // -----------------------------
   static int getClimbTagId() {
     return DriverStation.getAlliance().isPresent()
-        && DriverStation.getAlliance().get() == DriverStation.Alliance.Red
-            ? 16
-            : 32;
+            && DriverStation.getAlliance().get() == DriverStation.Alliance.Red
+        ? 16
+        : 32;
   }
 
   // -----------------------------
@@ -74,8 +82,9 @@ public final class DriveCommands {
           if (robotCentricSupplier.get()) {
             speeds = new ChassisSpeeds(xSpeed, ySpeed, omegaSpeed);
           } else {
-            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                xSpeed, ySpeed, omegaSpeed, drive.getRotation());
+            speeds =
+                ChassisSpeeds.fromFieldRelativeSpeeds(
+                    xSpeed, ySpeed, omegaSpeed, drive.getRotation());
           }
 
           drive.runVelocity(speeds);
@@ -103,34 +112,35 @@ public final class DriveCommands {
       Drive drive, Pose2d targetPose, double kPLinear, double kPRotation) {
 
     return Commands.run(
-        () -> {
-          Pose2d current = drive.getPose();
+            () -> {
+              Pose2d current = drive.getPose();
 
-          double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
-          double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
+              double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
+              double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
 
-          double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
+              double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
 
-          double rotSpeed = rotError * kPRotation;
+              double rotSpeed = rotError * kPRotation;
 
-          // Clamp
-          double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
-          double maxAngular = drive.getMaxAngularSpeedRadPerSec();
+              // Clamp
+              double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
+              double maxAngular = drive.getMaxAngularSpeedRadPerSec();
 
-          xSpeed = MathUtil.clamp(xSpeed, -maxLinear, maxLinear);
-          ySpeed = MathUtil.clamp(ySpeed, -maxLinear, maxLinear);
-          rotSpeed = MathUtil.clamp(rotSpeed, -maxAngular, maxAngular);
+              xSpeed = MathUtil.clamp(xSpeed, -maxLinear, maxLinear);
+              ySpeed = MathUtil.clamp(ySpeed, -maxLinear, maxLinear);
+              rotSpeed = MathUtil.clamp(rotSpeed, -maxAngular, maxAngular);
 
-          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-        },
-        drive)
+              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+            },
+            drive)
         .until(
             () -> {
               Pose2d current = drive.getPose();
 
               double dist = current.getTranslation().getDistance(targetPose.getTranslation());
 
-              double angle = Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
+              double angle =
+                  Math.abs(current.getRotation().minus(targetPose.getRotation()).getRadians());
 
               return dist < 0.05 && angle < 0.05;
             })
@@ -148,43 +158,41 @@ public final class DriveCommands {
       double kPRotation) {
 
     return Commands.run(
-        () -> {
-          int tagId = getClimbTagId();
+            () -> {
+              int tagId = getClimbTagId();
 
-          Optional<Pose3d> tagOpt = fieldLayout.getTagPose(tagId);
-          if (tagOpt.isEmpty())
-            return;
+              Optional<Pose3d> tagOpt = fieldLayout.getTagPose(tagId);
+              if (tagOpt.isEmpty()) return;
 
-          Pose2d tagPose = tagOpt.get().toPose2d();
+              Pose2d tagPose = tagOpt.get().toPose2d();
 
-          Pose2d targetPose = tagPose.transformBy(offset);
+              Pose2d targetPose = tagPose.transformBy(offset);
 
-          Pose2d current = drive.getPose();
+              Pose2d current = drive.getPose();
 
-          double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
-          double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
+              double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
+              double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
 
-          double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
+              double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
 
-          double rotSpeed = rotError * kPRotation;
+              double rotSpeed = rotError * kPRotation;
 
-          double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
-          double maxAngular = drive.getMaxAngularSpeedRadPerSec();
+              double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
+              double maxAngular = drive.getMaxAngularSpeedRadPerSec();
 
-          xSpeed = MathUtil.clamp(xSpeed, -maxLinear, maxLinear);
-          ySpeed = MathUtil.clamp(ySpeed, -maxLinear, maxLinear);
-          rotSpeed = MathUtil.clamp(rotSpeed, -maxAngular, maxAngular);
+              xSpeed = MathUtil.clamp(xSpeed, -maxLinear, maxLinear);
+              ySpeed = MathUtil.clamp(ySpeed, -maxLinear, maxLinear);
+              rotSpeed = MathUtil.clamp(rotSpeed, -maxAngular, maxAngular);
 
-          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-        },
-        drive)
+              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+            },
+            drive)
         .until(
             () -> {
               int tagId = getClimbTagId();
 
               Optional<Pose3d> tagOpt = fieldLayout.getTagPose(tagId);
-              if (tagOpt.isEmpty())
-                return false;
+              if (tagOpt.isEmpty()) return false;
 
               Pose2d target = tagOpt.get().toPose2d().transformBy(offset);
 
@@ -192,7 +200,8 @@ public final class DriveCommands {
 
               double dist = current.getTranslation().getDistance(target.getTranslation());
 
-              double angle = Math.abs(current.getRotation().minus(target.getRotation()).getRadians());
+              double angle =
+                  Math.abs(current.getRotation().minus(target.getRotation()).getRadians());
 
               return dist < 0.05 && angle < 0.05;
             })
@@ -211,55 +220,56 @@ public final class DriveCommands {
       double kPRotation) {
 
     return Commands.run(
-        () -> {
-          Optional<Pose3d> tagOpt = fieldLayout.getTagPose(tagId);
-          if (tagOpt.isEmpty())
-            return;
+            () -> {
+              Optional<Pose3d> tagOpt = fieldLayout.getTagPose(tagId);
+              if (tagOpt.isEmpty()) return;
 
-          Pose2d tagPose = tagOpt.get().toPose2d();
+              Pose2d tagPose = tagOpt.get().toPose2d();
 
-          Pose2d current = drive.getPose();
+              Pose2d current = drive.getPose();
 
-          Translation2d tagToRobot = current.getTranslation().minus(tagPose.getTranslation());
+              Translation2d tagToRobot = current.getTranslation().minus(tagPose.getTranslation());
 
-          double currentDist = tagToRobot.getNorm();
+              double currentDist = tagToRobot.getNorm();
 
-          Translation2d direction = tagToRobot.div(currentDist);
+              Translation2d direction = tagToRobot.div(currentDist);
 
-          Translation2d targetTranslation = tagPose.getTranslation().plus(direction.times(distance));
+              Translation2d targetTranslation =
+                  tagPose.getTranslation().plus(direction.times(distance));
 
-          Rotation2d targetRotation = tagPose.getTranslation().minus(targetTranslation).getAngle();
+              Rotation2d targetRotation =
+                  tagPose.getTranslation().minus(targetTranslation).getAngle();
 
-          Pose2d targetPose = new Pose2d(targetTranslation, targetRotation);
+              Pose2d targetPose = new Pose2d(targetTranslation, targetRotation);
 
-          double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
-          double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
+              double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
+              double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
 
-          double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
+              double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
 
-          double rotSpeed = rotError * kPRotation;
+              double rotSpeed = rotError * kPRotation;
 
-          double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
-          double maxAngular = drive.getMaxAngularSpeedRadPerSec();
+              double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
+              double maxAngular = drive.getMaxAngularSpeedRadPerSec();
 
-          xSpeed = MathUtil.clamp(xSpeed, -maxLinear, maxLinear);
-          ySpeed = MathUtil.clamp(ySpeed, -maxLinear, maxLinear);
-          rotSpeed = MathUtil.clamp(rotSpeed, -maxAngular, maxAngular);
+              xSpeed = MathUtil.clamp(xSpeed, -maxLinear, maxLinear);
+              ySpeed = MathUtil.clamp(ySpeed, -maxLinear, maxLinear);
+              rotSpeed = MathUtil.clamp(rotSpeed, -maxAngular, maxAngular);
 
-          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-        },
-        drive)
+              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+            },
+            drive)
         .until(
             () -> {
               Optional<Pose3d> tagOpt = fieldLayout.getTagPose(tagId);
-              if (tagOpt.isEmpty())
-                return false;
+              if (tagOpt.isEmpty()) return false;
 
-              Pose2d target = tagOpt
-                  .get()
-                  .toPose2d()
-                  .transformBy(
-                      new Transform2d(new Translation2d(distance, 0), new Rotation2d()));
+              Pose2d target =
+                  tagOpt
+                      .get()
+                      .toPose2d()
+                      .transformBy(
+                          new Transform2d(new Translation2d(distance, 0), new Rotation2d()));
 
               Pose2d current = drive.getPose();
 
@@ -286,101 +296,99 @@ public final class DriveCommands {
       double kPRotation) {
 
     return Commands.run(
-        () -> {
+            () -> {
 
-          // =========================
-          // VISION OVERRIDE CHECK
-          // =========================
-          if (!visionEnabled.get()) {
-            drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
-            return;
-          }
+              // =========================
+              // VISION OVERRIDE CHECK
+              // =========================
+              if (!visionEnabled.get()) {
+                drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
+                return;
+              }
 
-          // =========================
-          // AUTO TAG SELECTION
-          // =========================
-          Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-          int targetTag = (alliance == Alliance.Blue) ? 25 : 9;
+              // =========================
+              // AUTO TAG SELECTION
+              // =========================
+              Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+              int targetTag = (alliance == Alliance.Blue) ? 25 : 9;
 
-          if (!vision.hasTag(targetTag)) {
-            // fallback to driver control
-            drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
-            return;
-          }
+              if (!vision.hasTag(targetTag)) {
+                // fallback to driver control
+                drive.runVelocity(new ChassisSpeeds(driverX.get(), driverY.get(), driverRot.get()));
+                return;
+              }
 
-          // =========================
-          // REAL TAG POSE MATH
-          // =========================
-          Optional<Pose3d> tagPose3d = fieldLayout.getTagPose(targetTag);
-          if (tagPose3d.isEmpty())
-            return;
+              // =========================
+              // REAL TAG POSE MATH
+              // =========================
+              Optional<Pose3d> tagPose3d = fieldLayout.getTagPose(targetTag);
+              if (tagPose3d.isEmpty()) return;
 
-          Pose2d tagPose = tagPose3d.get().toPose2d();
-          Pose2d robotPose = drive.getPose();
+              Pose2d tagPose = tagPose3d.get().toPose2d();
+              Pose2d robotPose = drive.getPose();
 
-          // 2m shooting offset (arc target)
-          Transform2d offset = new Transform2d(new Translation2d(-2.0, 0.0), Rotation2d.fromDegrees(180));
+              // 2m shooting offset (arc target)
+              Transform2d offset =
+                  new Transform2d(new Translation2d(-2.0, 0.0), Rotation2d.fromDegrees(180));
 
-          Pose2d targetPose = tagPose.transformBy(offset);
+              Pose2d targetPose = tagPose.transformBy(offset);
 
-          Transform2d error = targetPose.minus(robotPose);
+              Transform2d error = targetPose.minus(robotPose);
 
-          double distance = robotPose.getTranslation().getDistance(targetPose.getTranslation());
+              double distance = robotPose.getTranslation().getDistance(targetPose.getTranslation());
 
-          // RPM from your table
-          double targetRPM = Constants.getRPMForDistance(distance);
+              // RPM from your table
+              double targetRPM = Constants.getRPMForDistance(distance);
 
-          // Convert to RPS for shooter
-          double targetRps = targetRPM / 60.0;
+              // Convert to RPS for shooter
+              double targetRps = targetRPM / 60.0;
 
-          // Send to shooter
-          shooter.runShooter(targetRps);
+              // Send to shooter
+              shooter.runShooter(targetRps);
 
-          // Dashboard display
-          SmartDashboard.putString(
-              "Shooter Status",
-              String.format("Shooting to %.2f m at %.0f RPM", distance, targetRPM));
+              // Dashboard display
+              SmartDashboard.putString(
+                  "Shooter Status",
+                  String.format("Shooting to %.2f m at %.0f RPM", distance, targetRPM));
 
-          // =========================
-          // ARC + BLENDING
-          // =========================
-          double visionWeight = 0.7;
-          double driverWeight = 1.0 - visionWeight;
+              // =========================
+              // ARC + BLENDING
+              // =========================
+              double visionWeight = 0.7;
+              double driverWeight = 1.0 - visionWeight;
 
-          double forwardVision = error.getX() * kPLinear;
-          double strafeVision = error.getY() * kPLinear;
-          double rotVision = error.getRotation().getRadians() * kPRotation;
+              double forwardVision = error.getX() * kPLinear;
+              double strafeVision = error.getY() * kPLinear;
+              double rotVision = error.getRotation().getRadians() * kPRotation;
 
-          double vx = driverX.get() * driverWeight + forwardVision * visionWeight;
-          double vy = driverY.get() * driverWeight + strafeVision * visionWeight;
-          double vr = driverRot.get() * driverWeight + rotVision * visionWeight;
+              double vx = driverX.get() * driverWeight + forwardVision * visionWeight;
+              double vy = driverY.get() * driverWeight + strafeVision * visionWeight;
+              double vr = driverRot.get() * driverWeight + rotVision * visionWeight;
 
-          // Clamp
-          double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
-          double maxAngular = drive.getMaxAngularSpeedRadPerSec();
+              // Clamp
+              double maxLinear = drive.getMaxLinearSpeedMetersPerSec();
+              double maxAngular = drive.getMaxAngularSpeedRadPerSec();
 
-          vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
-          vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
-          vr = MathUtil.clamp(vr, -maxAngular, maxAngular);
+              vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
+              vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
+              vr = MathUtil.clamp(vr, -maxAngular, maxAngular);
 
-          // Drive
-          drive.runVelocity(new ChassisSpeeds(vx, vy, vr));
-        },
-        drive)
+              // Drive
+              drive.runVelocity(new ChassisSpeeds(vx, vy, vr));
+            },
+            drive)
         .until(() -> Math.abs(vision.getTX()) < 1.0 && Math.abs(vision.getTY()) < 1.0)
         .andThen(drive::stop);
   }
 
-  /**
-   * Align to AprilTag using WPILib PIDControllers and direct LimelightHelpers
-   * reads.
-   */
+  /** Align to AprilTag using WPILib PIDControllers and direct LimelightHelpers reads. */
   public static Command alignToTag(int targetId, Drive drive, Vision vision) {
-    PIDController strafeController = new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
-    PIDController distanceController = new PIDController(alignDistanceKP.get(), alignDistanceKI.get(),
-        alignDistanceKD.get());
-    PIDController rotationController = new PIDController(alignRotationKP.get(), alignRotationKI.get(),
-        alignRotationKD.get());
+    PIDController strafeController =
+        new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+    PIDController distanceController =
+        new PIDController(alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+    PIDController rotationController =
+        new PIDController(alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
 
     // Set tolerances for convergence (degrees)
     strafeController.setTolerance(1.0);
@@ -388,75 +396,76 @@ public final class DriveCommands {
     rotationController.setTolerance(1.0);
 
     return Commands.run(
-        () -> {
-          // Use the same rear limelight used for climb alignment in RobotContainer.
-          final String limelightName = "limelight";
+            () -> {
+              // Use the same rear limelight used for climb alignment in RobotContainer.
+              final String limelightName = "limelight";
 
-          boolean hasTarget = LimelightHelpers.getTV(limelightName);
-          int fiducialId = (int) Math.round(LimelightHelpers.getFiducialID(limelightName));
-          if (!hasTarget || fiducialId != targetId) {
-            drive.stop();
-            SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
-            return;
-          }
+              boolean hasTarget = LimelightHelpers.getTV(limelightName);
+              int fiducialId = (int) Math.round(LimelightHelpers.getFiducialID(limelightName));
+              if (!hasTarget || fiducialId != targetId) {
+                drive.stop();
+                SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
+                return;
+              }
 
-          SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
+              SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
 
-          // Update PID gains live from NetworkTables
-          strafeController.setPID(
-              alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
-          distanceController.setPID(
-              alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
-          rotationController.setPID(
-              alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
+              // Update PID gains live from NetworkTables
+              strafeController.setPID(
+                  alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+              distanceController.setPID(
+                  alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+              rotationController.setPID(
+                  alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
 
-          double tx = LimelightHelpers.getTX(limelightName);
-          double ty = LimelightHelpers.getTY(limelightName);
+              double tx = LimelightHelpers.getTX(limelightName);
+              double ty = LimelightHelpers.getTY(limelightName);
 
-          // For rotation, use tx angle error (original used pose yaw which is ~tx)
-          double rotationError = tx; // degrees
+              // For rotation, use tx angle error (original used pose yaw which is ~tx)
+              double rotationError = tx; // degrees
 
-          SmartDashboard.putNumber("AlignTesting/tx", tx);
-          SmartDashboard.putNumber("AlignTesting/ty", ty);
-          SmartDashboard.putNumber("AlignTesting/rotationError", rotationError);
+              SmartDashboard.putNumber("AlignTesting/tx", tx);
+              SmartDashboard.putNumber("AlignTesting/ty", ty);
+              SmartDashboard.putNumber("AlignTesting/rotationError", rotationError);
 
-          // PID-controlled outputs (replaces proportional gains)
-          double strafe = strafeController.calculate(tx, 0.0);
-          double distance = distanceController.calculate(ty, 0.0);
-          double omega = rotationController.calculate(rotationError, 0.0);
+              // PID-controlled outputs (replaces proportional gains)
+              double strafe = strafeController.calculate(tx, 0.0);
+              double distance = distanceController.calculate(ty, 0.0);
+              double omega = rotationController.calculate(rotationError, 0.0);
 
-          // Clamp to safe speeds (matching original)
-          double maxSpeed = 6.0;
-          strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
-          distance = MathUtil.clamp(distance, -maxSpeed, maxSpeed);
-          omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
+              // Clamp to safe speeds (matching original)
+              double maxSpeed = 6.0;
+              strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
+              distance = MathUtil.clamp(distance, -maxSpeed, maxSpeed);
+              omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
 
-          // Robot-centric movement (same as original)
-          drive.runVelocity(
-              new ChassisSpeeds(
-                  distance, // forward/backward (ty - target_ty, but target_ty=0)
-                  strafe, // left/right (tx)
-                  omega // rotation
-          ));
+              // Robot-centric movement (same as original)
+              drive.runVelocity(
+                  new ChassisSpeeds(
+                      distance, // forward/backward (ty - target_ty, but target_ty=0)
+                      strafe, // left/right (tx)
+                      omega // rotation
+                      ));
 
-          // Log PID states
-          SmartDashboard.putBoolean(
-              "Align/PIDAtSetpoint",
-              strafeController.atSetpoint()
-                  && distanceController.atSetpoint()
-                  && rotationController.atSetpoint());
-        },
-        drive)
+              // Log PID states
+              SmartDashboard.putBoolean(
+                  "Align/PIDAtSetpoint",
+                  strafeController.atSetpoint()
+                      && distanceController.atSetpoint()
+                      && rotationController.atSetpoint());
+            },
+            drive)
         .withName("AlignToTag_PID");
   }
 
   /** Align to AprilTag using WPILib PIDControllers and VisionSubsystem. */
   public static Command alignToTagWithVision(int targetId, Drive drive, Vision vision) {
-    PIDController strafeController = new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
-    PIDController distanceController = new PIDController(alignDistanceKP.get(), alignDistanceKI.get(),
-        alignDistanceKD.get());
-    PIDController rotationController = new PIDController(alignRotationKP.get(), alignRotationKI.get(),
-        alignRotationKD.get());
+    PIDController strafeController =
+        new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+    PIDController distanceController =
+        new PIDController(alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+    PIDController rotationController =
+        new PIDController(alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
 
     // Set tolerances for convergence (degrees)
     strafeController.setTolerance(1.0);
@@ -464,63 +473,63 @@ public final class DriveCommands {
     rotationController.setTolerance(1.0);
 
     return Commands.run(
-        () -> {
-          // Check if correct tag is visible (replaces getFiducialID)
-          if (!vision.hasTag(targetId)) {
-            drive.stop();
-            SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
-            return;
-          }
+            () -> {
+              // Check if correct tag is visible (replaces getFiducialID)
+              if (!vision.hasTag(targetId)) {
+                drive.stop();
+                SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
+                return;
+              }
 
-          SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
+              SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", true);
 
-          // Update PID gains live from NetworkTables
-          strafeController.setPID(
-              alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
-          distanceController.setPID(
-              alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
-          rotationController.setPID(
-              alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
+              // Update PID gains live from NetworkTables
+              strafeController.setPID(
+                  alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
+              distanceController.setPID(
+                  alignDistanceKP.get(), alignDistanceKI.get(), alignDistanceKD.get());
+              rotationController.setPID(
+                  alignRotationKP.get(), alignRotationKI.get(), alignRotationKD.get());
 
-          // Use VisionSubsystem methods (replaces direct LimelightHelpers calls)
-          double tx = vision.getTX();
-          double ty = vision.getTY();
+              // Use VisionSubsystem methods (replaces direct LimelightHelpers calls)
+              double tx = vision.getTX();
+              double ty = vision.getTY();
 
-          // For rotation, use tx angle error (original used pose yaw which is ~tx)
-          double rotationError = tx; // degrees
+              // For rotation, use tx angle error (original used pose yaw which is ~tx)
+              double rotationError = tx; // degrees
 
-          SmartDashboard.putNumber("AlignTesting/tx", tx);
-          SmartDashboard.putNumber("AlignTesting/ty", ty);
-          SmartDashboard.putNumber("AlignTesting/rotationError", rotationError);
+              SmartDashboard.putNumber("AlignTesting/tx", tx);
+              SmartDashboard.putNumber("AlignTesting/ty", ty);
+              SmartDashboard.putNumber("AlignTesting/rotationError", rotationError);
 
-          // PID-controlled outputs (replaces proportional gains)
-          double strafe = strafeController.calculate(tx, 0.0);
-          double distance = distanceController.calculate(ty, 0.0);
-          double omega = rotationController.calculate(rotationError, 0.0);
+              // PID-controlled outputs (replaces proportional gains)
+              double strafe = strafeController.calculate(tx, 0.0);
+              double distance = distanceController.calculate(ty, 0.0);
+              double omega = rotationController.calculate(rotationError, 0.0);
 
-          // Clamp to safe speeds (matching original)
-          double maxSpeed = 6.0;
-          strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
-          distance = MathUtil.clamp(distance, -maxSpeed, maxSpeed);
-          omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
+              // Clamp to safe speeds (matching original)
+              double maxSpeed = 6.0;
+              strafe = MathUtil.clamp(strafe, -maxSpeed, maxSpeed);
+              distance = MathUtil.clamp(distance, -maxSpeed, maxSpeed);
+              omega = MathUtil.clamp(omega, -maxSpeed, maxSpeed);
 
-          // Robot-centric movement (same as original)
-          drive.runVelocity(
-              new ChassisSpeeds(
-                  distance, // forward/backward (ty - target_ty, but target_ty=0)
-                  strafe, // left/right (tx)
-                  omega // rotation
-          ));
+              // Robot-centric movement (same as original)
+              drive.runVelocity(
+                  new ChassisSpeeds(
+                      distance, // forward/backward (ty - target_ty, but target_ty=0)
+                      strafe, // left/right (tx)
+                      omega // rotation
+                      ));
 
-          // Log PID states
-          SmartDashboard.putBoolean(
-              "Align/PIDAtSetpoint",
-              strafeController.atSetpoint()
-                  && distanceController.atSetpoint()
-                  && rotationController.atSetpoint());
-        },
-        drive,
-        vision)
+              // Log PID states
+              SmartDashboard.putBoolean(
+                  "Align/PIDAtSetpoint",
+                  strafeController.atSetpoint()
+                      && distanceController.atSetpoint()
+                      && rotationController.atSetpoint());
+            },
+            drive,
+            vision)
         .withName("AlignToTagWithVision_PID");
   }
 }
