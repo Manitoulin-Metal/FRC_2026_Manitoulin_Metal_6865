@@ -106,9 +106,8 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   /**
-   * Returns true only after periodic() has confirmed the climber physically
-   * reached
-   * the UP target. Cleared each time moveUp() is called.
+   * Returns true only after periodic() has confirmed the climber physically reached the UP target.
+   * Cleared each time moveUp() is called.
    */
   public boolean isAtUpTarget() {
     return upTargetReached;
