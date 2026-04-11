@@ -45,7 +45,6 @@ public class RobotContainer {
 
   // Vision (separate cameras)
   private final Vision visionClimb;
-  private final Vision visionShoot;
   private boolean visionEnabled = true;
 
   // Toggle for robot-centric vs field-centric drive (default to field-centric)
@@ -125,10 +124,6 @@ public class RobotContainer {
     visionClimb =
         new Vision(
             drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
-    visionShoot =
-        new Vision(
-            drive::addVisionMeasurement,
-            new VisionIOLimelight("limelight_forward", drive::getRotation));
     drive.setVision(visionClimb);
 
     // -------- Default drive (now with robot-centric toggle) --------

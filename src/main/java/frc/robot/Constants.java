@@ -28,7 +28,7 @@ public final class Constants {
   public static final double TEST_SHOOTER_RPS = 10.0; // Temporary test speed
   public static final double SHOOTER_VELOCITY_RPS =
       TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
-  public static final double SHOOTER_KICKER_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for testing
+  public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4200.0; // Lowered to 60 RPS for testing
   public static final double SHOOTER_WHIP_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for testing
   public static final double SHOOTER_AT_TARGET_TOLERANCE_RPS = 3.0;
   public static final double SHOOTER_MIN_RPS = 50.0;
@@ -49,7 +49,7 @@ public final class Constants {
   public static final double SLOWSHOOTER_VELOCITY_RPS =
       TEST_SLOWSHOOTER_RPS; // Tune this RPS (~60 RPM for test)
   public static final double SLOWSHOOTER_KICKER_RPM_THRESHOLD =
-      3500.0; // Triggers kicker at shooter 60.0 RPS (1)
+      3200.0; // Triggers kicker at shooter 60.0 RPS (1)
 
   public static double getRPMForDistance(double distance) {
     if (distance < 2.40) return 3550;
@@ -92,7 +92,7 @@ public final class Constants {
 
     // ---------------- Positions ----------------
     public static final double STOW_ANGLE = 0.0;
-    public static final double DEPLOY_ANGLE = 84.0;
+    public static final double DEPLOY_ANGLE = 85.5;
     public static final double SHAKE_MIN_ANGLE = 40.0;
     public static final double SHAKE_MAX_ANGLE = 50.0;
 

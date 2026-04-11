@@ -2,6 +2,7 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -21,13 +22,14 @@ public final class ShooterCommands {
     return Commands.runOnce(intakeDeploy::shake, intakeDeploy)
         .andThen(
             Commands.parallel(
-                    Commands.run(() -> shooter.runShooter(shooterRps), shooter),
+                    Commands.run(() -> shooter.runShooter(shooterRps), shooter)
+                    .andThen(new WaitCommand(1)),
                     kicker.kickerCommand())
                 .withTimeout(timeoutSeconds))
         .finallyDo(
             interrupted -> {
               shooter.stopShooter();
-              intakeDeploy.stow();
+              intakeDeploy.deploy();
             });
   }
 
