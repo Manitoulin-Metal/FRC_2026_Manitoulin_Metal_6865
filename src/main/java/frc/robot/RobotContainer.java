@@ -305,6 +305,7 @@ public class RobotContainer {
     intakeDeploy.startHoming();
   }
 
+  // Allows the Shuffleboard/SmartDashBoard to select an auto
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }
@@ -314,6 +315,7 @@ public class RobotContainer {
   // ============================================================
 
   public void periodic() {
+    
     // Snapshot inputs once so outputs are consistent between sinks.
     double driverLeftY = driver.getLeftY();
     double driverLeftX = driver.getLeftX();
