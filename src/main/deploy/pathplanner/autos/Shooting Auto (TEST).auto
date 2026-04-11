@@ -5,15 +5,21 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "Under Trench"
-          }
-        },
-        {
           "type": "named",
           "data": {
             "name": "IntakeDeploy"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 1.5
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Under Trench"
           }
         },
         {
@@ -50,6 +56,36 @@
           "type": "named",
           "data": {
             "name": "timedShootCommand"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbAutoUp"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.5
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Kaden's Wishes"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 1.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbAutoDown"
           }
         }
       ]
