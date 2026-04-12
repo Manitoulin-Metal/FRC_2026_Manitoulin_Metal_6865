@@ -13,6 +13,8 @@ public class KickerSubsystem extends SubsystemBase {
   // Motor
   private final SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
   private final ShooterSubsystem m_shooter;
+    private final Timer readyTimer = new Timer();
+    private boolean wasReady = false;
 
   /** Creates a new Kicker subsystem. */
   @SuppressWarnings("deprecation")
@@ -30,6 +32,30 @@ public class KickerSubsystem extends SubsystemBase {
 
   /** Runs the kicker at constant speed if the shooter is ready. */
   public void kicker() {
+        boolean isReady = kickerCondition();
+
+    if (isReady) {
+      // Shooter just became ready → start timer
+      if (!wasReady) {
+        readyTimer.reset();
+        readyTimer.start();
+      }
+
+      // Only run after 1 second delay
+      if (readyTimer.hasElapsed(1.0)) {
+        kicker.set(0.5);
+      } else {
+        kicker.set(0.0);
+      }
+
+    } else {
+      // Reset everything if shooter falls out of range
+      readyTimer.stop();
+      readyTimer.reset();
+      kicker.set(0.0);
+    }
+
+    wasReady = isReady;
     if (kickerCondition()) {
       kicker.set(0.5);
     } else {
