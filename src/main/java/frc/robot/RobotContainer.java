@@ -47,6 +47,7 @@ public class RobotContainer {
   private final Vision visionClimb;
   private final Vision visionShoot;
   private boolean visionEnabled = true;
+  
 
   // Toggle for robot-centric vs field-centric drive (default to field-centric)
   private boolean robotCentric = false;
@@ -137,6 +138,9 @@ public class RobotContainer {
             () -> -driver.getLeftX(),
             () -> -driver.getRightX(),
             () -> robotCentric));
+
+              // -------- Default commands --------
+  kicker.setDefaultCommand(kicker.kickerCommand());
 
     // -------- Auto chooser --------
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -246,7 +250,7 @@ public class RobotContainer {
                 intakeDeploy));
 
     // Run kicker test while held.
-    driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
+   // driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // Driver climb controls: hold bumper to move, release to idle.
     driver.leftBumper().and(() -> !climb1.isDisabled()).whileTrue(ClimbCommands.climbUp(climb1));

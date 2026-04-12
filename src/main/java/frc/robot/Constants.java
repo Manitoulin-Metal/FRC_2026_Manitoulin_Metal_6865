@@ -127,7 +127,7 @@ public final class Constants {
     // This value tells the climber how far to go up. Cant
     // translate exactly to distance because of the way winches
     // work.
-    public static final double UP_TARGET_ROTATIONS = 377.5;
+    public static final double UP_TARGET_ROTATIONS = 375;
     public static final LoggedNetworkNumber upTargetEntry = new LoggedNetworkNumber("Tuning/Climb/UpTargetRotations",
         UP_TARGET_ROTATIONS);
   }
