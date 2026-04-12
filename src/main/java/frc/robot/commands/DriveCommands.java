@@ -354,7 +354,7 @@ public final class DriveCommands {
               // =========================
               // ARC + BLENDING
               // =========================
-              double visionWeight = 0.7;
+              double visionWeight = 0.5;
               double driverWeight = 1.0 - visionWeight;
 
               double forwardVision = error.getX() * kPLinear;
