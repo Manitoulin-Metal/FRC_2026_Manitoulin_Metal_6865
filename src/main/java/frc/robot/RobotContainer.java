@@ -48,89 +48,88 @@ public class RobotContainer {
 
   // Vision (separate cameras)
   private Vision vision;
-    private boolean visionEnabled = true;
-  
-    // Toggle for robot-centric vs field-centric drive (default to field-centric)
-    private boolean robotCentric = false;
-  
-    // ============================================================
-    // -------------------- CONTROLLERS ----------------------------
-    // ============================================================
-  
-    private final CommandXboxController driver = new CommandXboxController(0);
-    private final CommandXboxController operator = new CommandXboxController(1);
-  
-    // ============================================================
-    // -------------------- FIELD / AUTO ---------------------------
-    // ============================================================
-  
-    private final Field2d field = new Field2d();
-  
-    private final AprilTagFieldLayout fieldLayout =
-        AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-  
-    private final LoggedDashboardChooser<Command> autoChooser;
-  
-    private final LoggedNetworkNumber endgameAlert1 =
-        new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
-  
-    private final LoggedNetworkNumber endgameAlert2 =
-        new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
-  
-    // ============================================================
-    // -------------------- CONSTRUCTOR ----------------------------
-    // ============================================================
-  
-    public RobotContainer() {
-  
-      // -------- Drive init --------
-      switch (Constants.currentMode) {
-        case REAL:
-          drive =
-              new Drive(
-                  new GyroIOPigeon2(),
-                  new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                  new ModuleIOTalonFX(TunerConstants.FrontRight),
-                  new ModuleIOTalonFX(TunerConstants.BackLeft),
-                  new ModuleIOTalonFX(TunerConstants.BackRight));
-          vision =
-              new Vision(
+  private boolean visionEnabled = true;
+
+  // Toggle for robot-centric vs field-centric drive (default to field-centric)
+  private boolean robotCentric = false;
+
+  // ============================================================
+  // -------------------- CONTROLLERS ----------------------------
+  // ============================================================
+
+  private final CommandXboxController driver = new CommandXboxController(0);
+  private final CommandXboxController operator = new CommandXboxController(1);
+
+  // ============================================================
+  // -------------------- FIELD / AUTO ---------------------------
+  // ============================================================
+
+  private final Field2d field = new Field2d();
+
+  private final AprilTagFieldLayout fieldLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+
+  private final LoggedDashboardChooser<Command> autoChooser;
+
+  private final LoggedNetworkNumber endgameAlert1 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+
+  private final LoggedNetworkNumber endgameAlert2 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+
+  // ============================================================
+  // -------------------- CONSTRUCTOR ----------------------------
+  // ============================================================
+
+  public RobotContainer() {
+
+    // -------- Drive init --------
+    switch (Constants.currentMode) {
+      case REAL:
+        drive =
+            new Drive(
+                new GyroIOPigeon2(),
+                new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                new ModuleIOTalonFX(TunerConstants.FrontRight),
+                new ModuleIOTalonFX(TunerConstants.BackLeft),
+                new ModuleIOTalonFX(TunerConstants.BackRight));
+        vision =
+            new Vision(
                 drive::addVisionMeasurement,
                 new VisionIOLimelight(camera0Name, drive::getRotation),
-                new VisionIOLimelight(camera1Name, drive::getRotation)
-              );
-  
-          // vision =
-          // new Vision(
-          // drive::addVisionMeasurement,
-          // new VisionIOLimelight("limelight", drive::getRotation),
-          // new VisionIOLimelight("limelight_forward", drive::getRotation));
-  
-          break;
-  
-        case SIM:
-          drive =
-              new Drive(
-                  new GyroIOSim(),
-                  new ModuleIOSim(TunerConstants.FrontLeft),
-                  new ModuleIOSim(TunerConstants.FrontRight),
-                  new ModuleIOSim(TunerConstants.BackLeft),
-                  new ModuleIOSim(TunerConstants.BackRight));
-          break;
-  
-        default:
-          drive =
-              new Drive(
-                  new GyroIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {});
-          break;
-      }
-  
-      // -------- Vision setup --------
-      vision =
+                new VisionIOLimelight(camera1Name, drive::getRotation));
+
+        // vision =
+        // new Vision(
+        // drive::addVisionMeasurement,
+        // new VisionIOLimelight("limelight", drive::getRotation),
+        // new VisionIOLimelight("limelight_forward", drive::getRotation));
+
+        break;
+
+      case SIM:
+        drive =
+            new Drive(
+                new GyroIOSim(),
+                new ModuleIOSim(TunerConstants.FrontLeft),
+                new ModuleIOSim(TunerConstants.FrontRight),
+                new ModuleIOSim(TunerConstants.BackLeft),
+                new ModuleIOSim(TunerConstants.BackRight));
+        break;
+
+      default:
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
+        break;
+    }
+
+    // -------- Vision setup --------
+    vision =
         new Vision(
             drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
     drive.setVision(vision);
@@ -172,9 +171,10 @@ public class RobotContainer {
 
     // ========== NEW AS OF 9:46AM 4/12/2026 ========== \\
     autoChooser.addOption(
-      "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-    autoChooser.addOption("Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
-     autoChooser.addOption(
+        "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
+    autoChooser.addOption(
+        "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
+    autoChooser.addOption(
         "Drive SysId (Quasistatic Forward)",
         drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
@@ -184,8 +184,8 @@ public class RobotContainer {
         "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-//  \\ ================================================= //
- 
+    //  \\ ================================================= //
+
     configureButtonBindings();
 
     // CameraServer.startAutomaticCapture(0);
@@ -202,12 +202,9 @@ public class RobotContainer {
     // -------------------- DRIVER BINDINGS ------------------------
     // ============================================================
 
-        drive.setDefaultCommand(
+    drive.setDefaultCommand(
         DriveCommands.JoystickDrive(
-            drive,
-            () -> -driver.getLeftY(),
-            () -> -driver.getLeftX(),
-            () -> -driver.getRightX()));
+            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
     // Toggle robot-centric driving mode. Press Again To Disable Robot-Centric
     // Driving Mode And
     // Switch To Field-Centric Driving Mode

@@ -3,9 +3,9 @@ package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class KickerSubsystem extends SubsystemBase {
@@ -13,8 +13,8 @@ public class KickerSubsystem extends SubsystemBase {
   // Motor
   private final SparkMax kicker = new SparkMax(62, MotorType.kBrushless);
   private final ShooterSubsystem m_shooter;
-    private final Timer readyTimer = new Timer();
-    private boolean wasReady = false;
+  private final Timer readyTimer = new Timer();
+  private boolean wasReady = false;
 
   /** Creates a new Kicker subsystem. */
   @SuppressWarnings("deprecation")
@@ -32,7 +32,7 @@ public class KickerSubsystem extends SubsystemBase {
 
   /** Runs the kicker at constant speed if the shooter is ready. */
   public void kicker() {
-        boolean isReady = kickerCondition();
+    boolean isReady = kickerCondition();
 
     if (isReady) {
       // Shooter just became ready → start timer

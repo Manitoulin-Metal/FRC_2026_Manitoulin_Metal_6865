@@ -40,8 +40,8 @@ import java.util.Queue;
 /**
  * Module IO implementation for Talon FX drive motor controller, Talon FX turn motor controller, and
  * CANcoder. Configured using a set of module constants from Phoenix. Device configuration and other
- * 
- * behaviors not exposed by TunerConstants can be customized here.
+ *
+ * <p>behaviors not exposed by TunerConstants can be customized here.
  */
 public class ModuleIOTalonFX implements ModuleIO {
   private final SwerveModuleConstants<

@@ -23,7 +23,7 @@ public final class ShooterCommands {
         .andThen(
             Commands.parallel(
                     Commands.run(() -> shooter.runShooter(shooterRps), shooter)
-                    .andThen(new WaitCommand(1)),
+                        .andThen(new WaitCommand(1)),
                     kicker.kickerCommand())
                 .withTimeout(timeoutSeconds))
         .finallyDo(
