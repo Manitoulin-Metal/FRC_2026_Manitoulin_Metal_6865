@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.ClimbCommands;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCommands;
@@ -34,6 +35,8 @@ public class RobotContainer {
   // ============================================================
 
   private final Drive drive;
+  public static String camera0Name = "camera_0";
+  public static String camera1Name = "camera_1";
 
   private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
@@ -44,87 +47,93 @@ public class RobotContainer {
   private final LEDMinimal led = new LEDMinimal();
 
   // Vision (separate cameras)
-  private final Vision visionClimb;
-  private boolean visionEnabled = true;
-
-  // Toggle for robot-centric vs field-centric drive (default to field-centric)
-  private boolean robotCentric = false;
-
-  // ============================================================
-  // -------------------- CONTROLLERS ----------------------------
-  // ============================================================
-
-  private final CommandXboxController driver = new CommandXboxController(0);
-  private final CommandXboxController operator = new CommandXboxController(1);
-
-  // ============================================================
-  // -------------------- FIELD / AUTO ---------------------------
-  // ============================================================
-
-  private final Field2d field = new Field2d();
-
-  private final AprilTagFieldLayout fieldLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-
-  private final LoggedDashboardChooser<Command> autoChooser;
-
-  private final LoggedNetworkNumber endgameAlert1 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
-
-  private final LoggedNetworkNumber endgameAlert2 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
-
-  // ============================================================
-  // -------------------- CONSTRUCTOR ----------------------------
-  // ============================================================
-
-  public RobotContainer() {
-
-    // -------- Drive init --------
-    switch (Constants.currentMode) {
-      case REAL:
-        drive =
-            new Drive(
-                new GyroIOPigeon2(),
-                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                new ModuleIOTalonFX(TunerConstants.BackRight));
-
-        // vision =
-        // new Vision(
-        // drive::addVisionMeasurement,
-        // new VisionIOLimelight("limelight", drive::getRotation),
-        // new VisionIOLimelight("limelight_forward", drive::getRotation));
-
-        break;
-
-      case SIM:
-        drive =
-            new Drive(
-                new GyroIOSim(),
-                new ModuleIOSim(TunerConstants.FrontLeft),
-                new ModuleIOSim(TunerConstants.FrontRight),
-                new ModuleIOSim(TunerConstants.BackLeft),
-                new ModuleIOSim(TunerConstants.BackRight));
-        break;
-
-      default:
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
-        break;
-    }
-
-    // -------- Vision setup --------
-    visionClimb =
+  private Vision vision;
+    private boolean visionEnabled = true;
+  
+    // Toggle for robot-centric vs field-centric drive (default to field-centric)
+    private boolean robotCentric = false;
+  
+    // ============================================================
+    // -------------------- CONTROLLERS ----------------------------
+    // ============================================================
+  
+    private final CommandXboxController driver = new CommandXboxController(0);
+    private final CommandXboxController operator = new CommandXboxController(1);
+  
+    // ============================================================
+    // -------------------- FIELD / AUTO ---------------------------
+    // ============================================================
+  
+    private final Field2d field = new Field2d();
+  
+    private final AprilTagFieldLayout fieldLayout =
+        AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  
+    private final LoggedDashboardChooser<Command> autoChooser;
+  
+    private final LoggedNetworkNumber endgameAlert1 =
+        new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  
+    private final LoggedNetworkNumber endgameAlert2 =
+        new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  
+    // ============================================================
+    // -------------------- CONSTRUCTOR ----------------------------
+    // ============================================================
+  
+    public RobotContainer() {
+  
+      // -------- Drive init --------
+      switch (Constants.currentMode) {
+        case REAL:
+          drive =
+              new Drive(
+                  new GyroIOPigeon2(),
+                  new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                  new ModuleIOTalonFX(TunerConstants.FrontRight),
+                  new ModuleIOTalonFX(TunerConstants.BackLeft),
+                  new ModuleIOTalonFX(TunerConstants.BackRight));
+          vision =
+              new Vision(
+                drive::addVisionMeasurement,
+                new VisionIOLimelight(camera0Name, drive::getRotation),
+                new VisionIOLimelight(camera1Name, drive::getRotation)
+              );
+  
+          // vision =
+          // new Vision(
+          // drive::addVisionMeasurement,
+          // new VisionIOLimelight("limelight", drive::getRotation),
+          // new VisionIOLimelight("limelight_forward", drive::getRotation));
+  
+          break;
+  
+        case SIM:
+          drive =
+              new Drive(
+                  new GyroIOSim(),
+                  new ModuleIOSim(TunerConstants.FrontLeft),
+                  new ModuleIOSim(TunerConstants.FrontRight),
+                  new ModuleIOSim(TunerConstants.BackLeft),
+                  new ModuleIOSim(TunerConstants.BackRight));
+          break;
+  
+        default:
+          drive =
+              new Drive(
+                  new GyroIO() {},
+                  new ModuleIO() {},
+                  new ModuleIO() {},
+                  new ModuleIO() {},
+                  new ModuleIO() {});
+          break;
+      }
+  
+      // -------- Vision setup --------
+      vision =
         new Vision(
             drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
-    drive.setVision(visionClimb);
+    drive.setVision(vision);
 
     // -------- Default drive (now with robot-centric toggle) --------
     drive.setDefaultCommand(
@@ -136,7 +145,7 @@ public class RobotContainer {
             () -> robotCentric));
 
     // -------- Auto chooser --------
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices");
+    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
     // -------- Named commands --------
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
@@ -161,6 +170,21 @@ public class RobotContainer {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
 
+    // ========== NEW AS OF 9:46AM 4/12/2026 ========== \\
+    autoChooser.addOption(
+      "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
+    autoChooser.addOption("Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
+     autoChooser.addOption(
+        "Drive SysId (Quasistatic Forward)",
+        drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption(
+        "Drive SysId (Quasistatic Reverse)",
+        drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+    autoChooser.addOption(
+        "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption(
+        "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+  
     configureButtonBindings();
 
     // CameraServer.startAutomaticCapture(0);
@@ -177,6 +201,12 @@ public class RobotContainer {
     // -------------------- DRIVER BINDINGS ------------------------
     // ============================================================
 
+        drive.setDefaultCommand(
+        DriveCommands.JoystickDrive(
+            drive,
+            () -> -driver.getLeftY(),
+            () -> -driver.getLeftX(),
+            () -> -driver.getRightX()));
     // Toggle robot-centric driving mode. Press Again To Disable Robot-Centric
     // Driving Mode And
     // Switch To Field-Centric Driving Mode
@@ -249,7 +279,7 @@ public class RobotContainer {
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // Run Align-To-Tag Then Climb While Holding Y Button On Driver Controller.
-    driver.y().whileTrue(DriveCommands.alignToTag(32, drive, visionClimb));
+    driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
 
     // Vision climb assist test while held (disabled).
     // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,
@@ -340,8 +370,8 @@ public class RobotContainer {
     // troubleshooting.
 
     // Vision diagnostics inputs
-    double tx = visionClimb.getTX();
-    double ty = visionClimb.getTY();
+    double tx = vision.getTX();
+    double ty = vision.getTY();
     double[] offsets = new double[] {0.0, 0.0, 0.0};
     var climbTagPose = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID);
     if (climbTagPose.isPresent()) {
