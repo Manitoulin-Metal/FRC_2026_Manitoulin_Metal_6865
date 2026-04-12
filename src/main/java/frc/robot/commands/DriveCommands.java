@@ -60,7 +60,7 @@ public final class DriveCommands {
   }
 
   // -----------------------------
-  // AlignToTag PID live tuning
+  // AlignToTag PID live tuning (Tune These If Need Be)
   // -----------------------------
   private static final LoggedNetworkNumber alignStrafeKP =
       new LoggedNetworkNumber("/AlignToTag/Strafe/kP", 0.05);
@@ -68,14 +68,12 @@ public final class DriveCommands {
       new LoggedNetworkNumber("/AlignToTag/Strafe/kI", 0.0);
   private static final LoggedNetworkNumber alignStrafeKD =
       new LoggedNetworkNumber("/AlignToTag/Strafe/kD", 0.0);
-
   private static final LoggedNetworkNumber alignDistanceKP =
       new LoggedNetworkNumber("/AlignToTag/Distance/kP", 0.15);
   private static final LoggedNetworkNumber alignDistanceKI =
       new LoggedNetworkNumber("/AlignToTag/Distance/kI", 0.0);
   private static final LoggedNetworkNumber alignDistanceKD =
       new LoggedNetworkNumber("/AlignToTag/Distance/kD", 0.0);
-
   private static final LoggedNetworkNumber alignRotationKP =
       new LoggedNetworkNumber("/AlignToTag/Rotation/kP", 0.1);
   private static final LoggedNetworkNumber alignRotationKI =
@@ -97,6 +95,7 @@ public final class DriveCommands {
   // TELEOP JOYSTICK DRIVE
   // -----------------------------
 
+  // ========== NEW AS OF 10:15AM 4/12/2026 ========== \\
   public static Command joystickDrive(
       Drive drive,
       DoubleSupplier xSupplier,
