@@ -5,12 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "RaiseClimber"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "centre to shot"
@@ -26,24 +20,6 @@
           "type": "named",
           "data": {
             "name": "timedShootCommand"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.5
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Hang From Shoot"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimbAutoDown"
           }
         }
       ]
