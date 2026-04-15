@@ -11,9 +11,21 @@
           }
         },
         {
+          "type": "path",
+          "data": {
+            "pathName": "Centre Path Blue"
+          }
+        },
+        {
           "type": "named",
           "data": {
             "name": "driveToClimb"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AlignToTagStop"
           }
         },
         {

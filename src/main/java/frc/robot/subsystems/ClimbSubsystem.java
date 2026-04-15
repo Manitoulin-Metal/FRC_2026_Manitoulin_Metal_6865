@@ -140,10 +140,9 @@ public class ClimbSubsystem extends SubsystemBase {
 
   public Command homeCommand() {
     return Commands.sequence(
-        Commands.runOnce(this::startHoming, this),
-        Commands
-            .waitUntil(() -> isHomed() || isDisabled())
-            .withTimeout(Constants.Climb.HOMING_TIMEOUT_SECONDS))
+            Commands.runOnce(this::startHoming, this),
+            Commands.waitUntil(() -> isHomed() || isDisabled())
+                .withTimeout(Constants.Climb.HOMING_TIMEOUT_SECONDS))
         .andThen(
             Commands.runOnce(
                 () -> {
@@ -159,9 +158,8 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   /**
-   * Returns true only after periodic() has confirmed the climber physically
-   * reached
-   * the UP target. Cleared each time moveUp() is called.
+   * Returns true only after periodic() has confirmed the climber physically reached the UP target.
+   * Cleared each time moveUp() is called.
    */
   public boolean isAtUpTarget() {
     return upTargetReached;
@@ -216,7 +214,8 @@ public class ClimbSubsystem extends SubsystemBase {
           homed = true;
           homingStartTimestamp = -1.0;
         } else if (homingStartTimestamp > 0.0
-            && (Timer.getFPGATimestamp() - homingStartTimestamp) >= Constants.Climb.HOMING_TIMEOUT_SECONDS) {
+            && (Timer.getFPGATimestamp() - homingStartTimestamp)
+                >= Constants.Climb.HOMING_TIMEOUT_SECONDS) {
           output = 0.0;
           state = ClimbState.DISABLED;
           homingStartTimestamp = -1.0;

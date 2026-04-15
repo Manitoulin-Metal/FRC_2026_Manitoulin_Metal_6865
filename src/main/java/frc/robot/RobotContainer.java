@@ -47,7 +47,6 @@ public class RobotContainer {
   private final Vision visionClimb;
   private final Vision visionShoot;
   private boolean visionEnabled = true;
-  
 
   // Toggle for robot-centric vs field-centric drive (default to field-centric)
   private boolean robotCentric = false;
@@ -65,13 +64,16 @@ public class RobotContainer {
 
   private final Field2d field = new Field2d();
 
-  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
-  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
+  private final LoggedNetworkNumber endgameAlert1 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #1", 20.0);
 
-  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
+  private final LoggedNetworkNumber endgameAlert2 =
+      new LoggedNetworkNumber("/Tuning/Endgame Alert #2", 10.0);
 
   // ============================================================
   // -------------------- CONSTRUCTOR ----------------------------
@@ -82,12 +84,13 @@ public class RobotContainer {
     // -------- Drive init --------
     switch (Constants.currentMode) {
       case REAL:
-        drive = new Drive(
-            new GyroIOPigeon2(),
-            new ModuleIOTalonFX(TunerConstants.FrontLeft),
-            new ModuleIOTalonFX(TunerConstants.FrontRight),
-            new ModuleIOTalonFX(TunerConstants.BackLeft),
-            new ModuleIOTalonFX(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOPigeon2(),
+                new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                new ModuleIOTalonFX(TunerConstants.FrontRight),
+                new ModuleIOTalonFX(TunerConstants.BackLeft),
+                new ModuleIOTalonFX(TunerConstants.BackRight));
 
         // vision =
         // new Vision(
@@ -98,35 +101,34 @@ public class RobotContainer {
         break;
 
       case SIM:
-        drive = new Drive(
-            new GyroIOSim(),
-            new ModuleIOSim(TunerConstants.FrontLeft),
-            new ModuleIOSim(TunerConstants.FrontRight),
-            new ModuleIOSim(TunerConstants.BackLeft),
-            new ModuleIOSim(TunerConstants.BackRight));
+        drive =
+            new Drive(
+                new GyroIOSim(),
+                new ModuleIOSim(TunerConstants.FrontLeft),
+                new ModuleIOSim(TunerConstants.FrontRight),
+                new ModuleIOSim(TunerConstants.BackLeft),
+                new ModuleIOSim(TunerConstants.BackRight));
         break;
 
       default:
-        drive = new Drive(
-            new GyroIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            },
-            new ModuleIO() {
-            });
+        drive =
+            new Drive(
+                new GyroIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {},
+                new ModuleIO() {});
         break;
     }
 
     // -------- Vision setup --------
-    visionClimb = new Vision(
-        drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
-    visionShoot = new Vision(
-        drive::addVisionMeasurement,
-        new VisionIOLimelight("limelight_forward", drive::getRotation));
+    visionClimb =
+        new Vision(
+            drive::addVisionMeasurement, new VisionIOLimelight("limelight", drive::getRotation));
+    visionShoot =
+        new Vision(
+            drive::addVisionMeasurement,
+            new VisionIOLimelight("limelight_forward", drive::getRotation));
 
     drive.setVision(visionClimb);
 
@@ -139,8 +141,8 @@ public class RobotContainer {
             () -> -driver.getRightX(),
             () -> robotCentric));
 
-              // -------- Default commands --------
-  kicker.setDefaultCommand(kicker.kickerCommand());
+    // -------- Default commands --------
+    kicker.setDefaultCommand(kicker.kickerCommand());
 
     // -------- Auto chooser --------
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -250,14 +252,11 @@ public class RobotContainer {
                 intakeDeploy));
 
     // Run kicker test while held.
-   // driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
+    // driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // Driver climb controls: hold bumper to move, release to idle.
     driver.leftBumper().and(() -> !climb1.isDisabled()).whileTrue(ClimbCommands.climbUp(climb1));
-    driver
-        .rightBumper()
-        .and(() -> !climb1.isDisabled())
-        .whileTrue(ClimbCommands.climbDown(climb1));
+    driver.rightBumper().and(() -> !climb1.isDisabled()).whileTrue(ClimbCommands.climbDown(climb1));
 
     // Run climb sequence: climb up, align to tag (timeout), then climb down.
     driver.y().onTrue(ClimbCommands.climbUpAlignThenDown(32, drive, visionClimb, climb1));
@@ -288,10 +287,7 @@ public class RobotContainer {
     operator.pov(0).and(() -> !climb1.isDisabled()).whileTrue(ClimbCommands.climbUp(climb1));
 
     // D-pad down moves climber down while held, respecting bottom lockout.
-    operator
-        .pov(180)
-        .and(() -> !climb1.isDisabled())
-        .whileTrue(ClimbCommands.climbDown(climb1));
+    operator.pov(180).and(() -> !climb1.isDisabled()).whileTrue(ClimbCommands.climbDown(climb1));
 
     // Run intake roller toggle.
     operator.leftTrigger(0.1).toggleOnTrue(intakeRoller.intakeToggleCommand());
@@ -357,16 +353,17 @@ public class RobotContainer {
     // Vision diagnostics inputs
     double tx = visionClimb.getTX();
     double ty = visionClimb.getTY();
-    double[] offsets = new double[] { 0.0, 0.0, 0.0 };
+    double[] offsets = new double[] {0.0, 0.0, 0.0};
     var climbTagPose = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID);
     if (climbTagPose.isPresent()) {
       Transform2d tagToRobot = new Transform2d(climbTagPose.get().toPose2d(), drive.getPose());
       offsets[0] = tagToRobot.getX();
       offsets[1] = tagToRobot.getY();
-      offsets[2] = drive
-          .getPose()
-          .getTranslation()
-          .getDistance(climbTagPose.get().toPose2d().getTranslation());
+      offsets[2] =
+          drive
+              .getPose()
+              .getTranslation()
+              .getDistance(climbTagPose.get().toPose2d().getTranslation());
     }
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
