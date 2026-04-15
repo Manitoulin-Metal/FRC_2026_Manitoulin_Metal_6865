@@ -36,7 +36,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   private Mode currentMode = Mode.IDLE;
 
   private static final double IDLE_RPM = 0;
-  private static final double INTAKE_RPM = 4500;
+  private static final double INTAKE_RPM = -4500;
 
   // ===== Driver control protection =====
   private boolean manualIntake = false;
