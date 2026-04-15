@@ -331,6 +331,7 @@ public class RobotContainer {
   // ---------- ENABLE HOMING METHOD ----------
   public void enableHoming() {
     intakeDeploy.startHoming();
+    CommandScheduler.getInstance().schedule(climb1.homeCommand());
   }
 
   // Allows the Shuffleboard/SmartDashBoard to select an auto

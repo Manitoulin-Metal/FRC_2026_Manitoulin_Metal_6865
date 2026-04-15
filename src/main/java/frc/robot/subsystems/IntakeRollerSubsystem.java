@@ -36,6 +36,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   private Mode currentMode = Mode.IDLE;
 
   private static final double IDLE_RPM = 0;
+  private static final double INTAKE_RPM = 4500;
 
   // ===== Driver control protection =====
   private boolean manualIntake = false;
@@ -136,7 +137,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       case IDLE -> setVelocity(IDLE_RPM);
 
       case INTAKE -> {
-        setVelocity(target);
+        setVelocity(INTAKE_RPM);
 
         // Only track pieces, DO NOT change mode
         if (detected && !pieceLatched && detectionTimer.get() > 0.25) {

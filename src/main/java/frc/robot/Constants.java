@@ -118,6 +118,14 @@ public final class Constants {
 
   public static class Climb {
     public static final int LIMIT_SWITCH_CHANNEL = 8;
+    public static final double UP_SPEED = 0.75;
+    public static final double DOWN_SPEED = -0.75;
+    public static final double HOMING_SPEED = -0.35;
+    public static final double BOTTOM_ENCODER_TOLERANCE_ROTATIONS = 0.5;
+    public static final double HOMING_TIMEOUT_SECONDS = 20.0;
+    public static final double UP_TARGET_ROTATIONS = 350;
+    public static final LoggedNetworkNumber upTargetEntry =
+        new LoggedNetworkNumber("Tuning/Climb/UpTargetRotations", UP_TARGET_ROTATIONS);
   }
 
   public static class ClimbVision {
