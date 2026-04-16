@@ -158,15 +158,16 @@ public class RobotContainer {
         "ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
     NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.autoClimbUp(climb1));
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.autoClimbDown(climb1));
-    
-    // New (UNTESTED)
+
+    // New (UNTESTED) - Should Fix The Shooter not Shooting Problem
     NamedCommands.registerCommand(
         "timedShootCommand",
         ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(5));
     
     NamedCommands.registerCommand(
         "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
-    // Load auto
+
+    // This loads the autos for the technician to choose an auto on SmartDashboard/Shuffleboard
     for (String autoName : AutoBuilder.getAllAutoNames()) {
       autoChooser.addOption(autoName, AutoBuilder.buildAuto(autoName));
     }
