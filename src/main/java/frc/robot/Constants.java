@@ -129,22 +129,22 @@ public final class Constants {
   }
 
   public static class ClimbVision {
-    // 🎯 Rear Limelight name
+    // Rear Limelight name
     public static final String REAR_LIMELIGHT = "limelight0";
 
-    // 🎯 Target pose in vision-space (your measured values)
+    // Target pose in vision-space (your measured values)
     public static final double TARGET_TX = -16.10;
     public static final double TARGET_TY = 9.15;
 
-    // 🎯 Distance target (meters, tune this!)
+    // Distance target (meters, tune this!)
     public static final double TARGET_DISTANCE = 1.2;
 
-    // 🎛️ Gains
+    // Gains
     public static final double kP_TURN = 0.025;
     public static final double kP_FORWARD = 0.6;
     public static final double kP_STRAFE = 0.03;
 
-    // ✅ Tolerances
+    // Tolerances
     public static final double TX_TOL = 1.5;
     public static final double TY_TOL = 1.5;
     public static final double DIST_TOL = 0.15;
@@ -158,7 +158,7 @@ public final class Constants {
 
   public static final Transform2d CLIMB_OFFSET =
       new Transform2d(
-          new Translation2d(-0.65, 0.10), // 🔥 REPLACE WITH YOUR MEASURED VALUES
+          new Translation2d(-0.65, 0.10), // REPLACE WITH YOUR MEASURED VALUES
           Rotation2d.fromDegrees(180));
 
   public static final double CLIMB_POS_TOLERANCE = 0.05;
