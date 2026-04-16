@@ -30,7 +30,8 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   public enum Mode {
     IDLE,
-    INTAKE
+    INTAKE,
+    REVERSING
   }
 
   private Mode currentMode = Mode.IDLE;
@@ -74,6 +75,12 @@ public class IntakeRollerSubsystem extends SubsystemBase {
           manualIntake = false;
           setMode(Mode.IDLE);
         });
+  }
+
+  public Command intakeReverseCommand() {
+    return startEnd(
+        () -> setMode(Mode.REVERSING),
+        () -> setMode(Mode.IDLE));
   }
 
   // ================= CONTROL =================
@@ -146,8 +153,11 @@ public class IntakeRollerSubsystem extends SubsystemBase {
           detectionTimer.reset();
         }
 
-        if (!detected) pieceLatched = false;
+        if (!detected)
+          pieceLatched = false;
       }
+
+      case REVERSING -> setVelocity(INTAKE_RPM * -1);
     }
 
     // ===== Logging =====
