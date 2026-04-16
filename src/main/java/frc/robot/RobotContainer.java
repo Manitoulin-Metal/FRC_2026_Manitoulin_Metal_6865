@@ -395,13 +395,11 @@ public class RobotContainer {
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
     SmartDashboard.putBoolean("Endgame 20s", alert20);
     SmartDashboard.putBoolean("Endgame 10s", alert10);
-
     SmartDashboard.putNumber("CameraToTag/measuredTX", tx);
     SmartDashboard.putNumber("CameraToTag/measuredTY", ty);
     SmartDashboard.putNumber("CameraToTag/X", offsets[0]);
     SmartDashboard.putNumber("CameraToTag/Y", offsets[1]);
     SmartDashboard.putNumber("CameraToTag/Distance", offsets[2]);
-
     SmartDashboard.putNumber("Driver/LeftY", driverLeftY);
     SmartDashboard.putNumber("Operator/LeftY", operatorLeftY);
     SmartDashboard.putBoolean("Vision Enabled", visionEnabled);

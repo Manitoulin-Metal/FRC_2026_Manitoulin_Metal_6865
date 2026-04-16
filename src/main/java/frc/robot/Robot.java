@@ -1,7 +1,6 @@
 // Copyright (c) 2021-2026 Littleton Robotics
 // http://github.com/Mechanical-Advantage
 // This is being used by Team 6865, Manitoulin Metal
-
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file at the root directory of this project.
 
@@ -16,7 +15,6 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
-@SuppressWarnings("removal")
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -71,10 +69,10 @@ public class Robot extends LoggedRobot {
         break;
     }
 
-    // Starts AdvantageKit logger
+    // Starts the AdvantageKit logger
     Logger.start();
 
-    // Instantiate our RobotContainer. This will perform all our button bindings,
+    // Instantiate our RobotContainer.java file. This will perform all our button bindings,
     // and put our autonomous chooser on the dashboard.
     robotContainer = new RobotContainer();
   }

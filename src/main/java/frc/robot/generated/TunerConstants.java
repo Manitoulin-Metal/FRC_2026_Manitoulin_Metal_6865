@@ -63,9 +63,8 @@ public class TunerConstants {
       new TalonFXConfiguration()
           .withCurrentLimits(
               new CurrentLimitsConfigs()
-                  // Swerve azimuth does not require much torque output, so we can set a relatively
-                  // low
-                  // stator current limit to help avoid brownouts without impacting performance.
+                  // Swerve azimuth does not require much torque output, so we can set a relatively low
+                  // Stator current limit to help avoid brownouts without impacting performance.
                   .withStatorCurrentLimit(Amps.of(60))
                   .withStatorCurrentLimitEnable(true));
   private static final CANcoderConfiguration encoderInitialConfigs = new CANcoderConfiguration();
@@ -78,7 +77,7 @@ public class TunerConstants {
 
   // Theoretical free speed (m/s) at 12 V applied output;
   // This needs to be tuned to your individual robot
-  public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(20);
+  public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(30);
 
   // Theoretical Turning Speed (r/s) at 12 V applied output;
   public static final AngularVelocity kAngularAt12Volts = RadiansPerSecond.of(4);
@@ -234,9 +233,10 @@ public class TunerConstants {
 
   /**
    * Creates a CommandSwerveDrivetrain instance. This should only be called once in your robot
-   * program,.
+   * program.
    */
-  public static SwerveDrivetrain createDrivetrain() {
+  @SuppressWarnings("rawtypes")
+public static SwerveDrivetrain createDrivetrain() {
     return new TunerSwerveDrivetrain(
         DrivetrainConstants, FrontLeft, FrontRight, BackLeft, BackRight);
   }
