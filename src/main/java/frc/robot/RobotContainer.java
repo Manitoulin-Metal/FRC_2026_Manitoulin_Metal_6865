@@ -158,10 +158,12 @@ public class RobotContainer {
         "ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
     NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.autoClimbUp(climb1));
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.autoClimbDown(climb1));
-
+    
+    // New (UNTESTED)
     NamedCommands.registerCommand(
         "timedShootCommand",
-        ShooterCommands.timedShoot(shooter, kicker, intakeDeploy, Constants.AUTO_SHOOT_RPS, 2.5));
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(5));
+    
     NamedCommands.registerCommand(
         "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
     // Load auto
