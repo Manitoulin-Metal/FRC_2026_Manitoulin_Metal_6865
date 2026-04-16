@@ -156,7 +156,11 @@ public class RobotContainer {
         "collectFuel", intakeRoller.intakeToggleCommand().withTimeout(3.0));
     NamedCommands.registerCommand(
         "ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, fieldLayout));
+
+    // Allows the Climber to go Up in an AutoCommand
     NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.autoClimbUp(climb1));
+
+    // Allows the Climber to go Down in an AutoCommand
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.autoClimbDown(climb1));
 
     // New (UNTESTED) - Should Fix The Shooter not Shooting Problem
@@ -164,6 +168,7 @@ public class RobotContainer {
         "timedShootCommand",
         ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(5));
     
+    // Allows the IntakeDeploy to be Deployed in an AutoCommand
     NamedCommands.registerCommand(
         "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
