@@ -59,6 +59,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
     intakeRoller.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
+    // Sets what the Variable velocityController means
     velocityController = intakeRoller.getClosedLoopController();
 
     detectionTimer.start();
@@ -81,6 +82,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
         });
   }
 
+ // This Command Does Not Work But New Case REVERSE Could Fix It
   public Command ReverseCommand() {
     return startEnd(
         () -> {
@@ -167,6 +169,10 @@ public class IntakeRollerSubsystem extends SubsystemBase {
         }
 
         if (!detected) pieceLatched = false;
+      }
+
+      case REVERSE -> {
+        setVelocity(REVERSE_RPM);
       }
     }
 
