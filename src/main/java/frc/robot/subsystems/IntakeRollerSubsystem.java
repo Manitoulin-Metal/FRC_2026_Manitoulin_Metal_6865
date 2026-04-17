@@ -53,7 +53,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   @SuppressWarnings("removal")
   public IntakeRollerSubsystem() {
-    SparkMaxConfig config = new SparkMaxConfig();
+    SparkMaxConfig config = new SparkMaxConfig(); // Configures SparkMax
 
     config.closedLoop.p(0.00025).i(0.0).d(0.0).velocityFF(0.00017).outputRange(-1, 1);
 
@@ -66,7 +66,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     intakeStartTimer.start();
   }
 
-  // ================= COMMAND =================
+  // ================= COMMANDS =================
 
   public Command intakeToggleCommand() {
     return startEnd(
@@ -74,30 +74,30 @@ public class IntakeRollerSubsystem extends SubsystemBase {
           manualIntake = true;
           intakeStartTimer.reset();
           intakeStartTimer.start();
-          setMode(Mode.INTAKE);
+          setMode(Mode.INTAKE); // When toggled, it sets the mode to Intake Mode
         },
         () -> {
           manualIntake = false;
-          setMode(Mode.IDLE);
+          setMode(Mode.IDLE); // When toggled off, it sets the mode to Idle Mode
         });
   }
 
-  // This Command Does Not Work But New Case REVERSE Could Fix It
+  // FIXED
   public Command ReverseCommand() {
     return startEnd(
         () -> {
           manualIntake = true;
           intakeStartTimer.reset();
           intakeStartTimer.start();
-          setMode(Mode.REVERSE);
+          setMode(Mode.REVERSE); // When toggled on, it sets the mode to Reverse Mode
         },
         () -> {
           manualIntake = false;
-          setMode(Mode.IDLE);
+          setMode(Mode.IDLE); // When toggled off, it sets the mode to Idle Mode
         });
   }
 
-  // ================= CONTROL =================
+  // ================= CONTROLS =================
 
   public void setMode(Mode mode) {
     currentMode = mode;
@@ -107,7 +107,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     velocityController.setSetpoint(rpm, ControlType.kVelocity);
   }
 
-  // ================= PID UPDATE =================
+  // ================= PID UPDATES =================
 
   @SuppressWarnings("removal")
   private void updatePIDIfChanged() {
@@ -160,6 +160,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
       case INTAKE -> {
         setVelocity(INTAKE_RPM);
+        System.out.println("Intake is Running");
 
         // Only track pieces, DO NOT change mode
         if (detected && !pieceLatched && detectionTimer.get() > 0.25) {
@@ -173,6 +174,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
       case REVERSE -> {
         setVelocity(REVERSE_RPM);
+        System.out.println("Intake is Reversing");
 
         if (detected && !pieceLatched && detectionTimer.get() > 0.25) {
           ballCount++;
