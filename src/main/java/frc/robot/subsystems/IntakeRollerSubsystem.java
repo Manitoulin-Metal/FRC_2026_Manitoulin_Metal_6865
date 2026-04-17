@@ -31,7 +31,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   public enum Mode {
     IDLE,
     INTAKE,
-    REVERSING
+    REVERSE
   }
 
   private Mode currentMode = Mode.IDLE;
@@ -79,7 +79,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   public Command intakeReverseCommand() {
     return startEnd(
-        () -> setMode(Mode.REVERSING),
+        () -> setMode(Mode.REVERSE),
         () -> setMode(Mode.IDLE));
   }
 
@@ -157,7 +157,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
           pieceLatched = false;
       }
 
-      case REVERSING -> setVelocity(INTAKE_RPM * -1);
+      case REVERSE -> setVelocity(INTAKE_RPM * -1);
     }
 
     // ===== Logging =====
