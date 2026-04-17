@@ -83,18 +83,17 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   public Command ReverseCommand() {
     return startEnd(
-      () -> {
-        manualIntake = true;
-        intakeStartTimer.reset();
-        intakeStartTimer.start();
-        setMode(Mode.REVERSE);
-      },
-      () -> {
-        manualIntake = false;
-        setMode(Mode.IDLE);
-      }
-    );
-}
+        () -> {
+          manualIntake = true;
+          intakeStartTimer.reset();
+          intakeStartTimer.start();
+          setMode(Mode.REVERSE);
+        },
+        () -> {
+          manualIntake = false;
+          setMode(Mode.IDLE);
+        });
+  }
 
   // ================= CONTROL =================
 
