@@ -15,15 +15,17 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class LEDMinimal extends SubsystemBase {
-  @SuppressWarnings({"deprecated", "removal"})
+  @SuppressWarnings("deprecated")
   private final CANdle candle = new CANdle(4, "DriveCanivore");
 
+  // Changes LEDs to a Solid Blue Colour
   private final SolidColor blueRequest =
       new SolidColor(0, 7)
           .withLEDStartIndex(0)
           .withLEDEndIndex(7)
-          .withColor(new RGBWColor(0, 0, 255));
-
+          .withColor(new RGBWColor(0, 0, 255)); // Pure Blue
+          
+  // These are Variables that state what status the robot is in
   private StatusCode lastConfigStatus = StatusCode.StatusCodeNotInitialized;
   private StatusCode lastSetControlStatus = StatusCode.StatusCodeNotInitialized;
 

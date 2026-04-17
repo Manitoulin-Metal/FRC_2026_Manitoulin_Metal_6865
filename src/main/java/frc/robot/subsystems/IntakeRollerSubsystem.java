@@ -82,7 +82,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
         });
   }
 
- // This Command Does Not Work But New Case REVERSE Could Fix It
+  // This Command Does Not Work But New Case REVERSE Could Fix It
   public Command ReverseCommand() {
     return startEnd(
         () -> {

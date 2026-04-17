@@ -40,9 +40,6 @@ public final class Constants {
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
   public static final double AUTO_SHOOT_RPS = 75.0;
   // public static final double KICKER_SPEED = 50;
-  // public static final double SHOOTER_WHIP_RPM_THRESHOLD = 4000.0; // superseded
-  // by new threshold
-  // above
 
   public static final double WHIP_SLOW_SPEED = -0.15;
   public static final double TEST_SLOWSHOOTER_RPS = 6.0; // Temporary test speed
@@ -123,7 +120,7 @@ public final class Constants {
     public static final double HOMING_SPEED = -0.35;
     public static final double BOTTOM_ENCODER_TOLERANCE_ROTATIONS = 0.5;
     public static final double HOMING_TIMEOUT_SECONDS = 20.0;
-    public static final double UP_TARGET_ROTATIONS = 350;
+    public static final double UP_TARGET_ROTATIONS = 325;
     public static final LoggedNetworkNumber upTargetEntry =
         new LoggedNetworkNumber("Tuning/Climb/UpTargetRotations", UP_TARGET_ROTATIONS);
   }

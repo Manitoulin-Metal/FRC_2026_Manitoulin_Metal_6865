@@ -58,7 +58,7 @@ public class ShooterSubsystem extends SubsystemBase {
   /** Run shooter at velocity RPS */
   public void runShooter(double speedRps) {
     targetRps = speedRps;
-    double rampRate = 25.0; // RPS/sec
+    double rampRate = 55.0; // RPS/sec
     currentRps =
         MathUtil.clamp(
             currentRps + Math.copySign(rampRate * (1.0 / 50.0), speedRps - currentRps),

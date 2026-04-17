@@ -5,6 +5,7 @@ import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -12,6 +13,8 @@ public class WhipSubsystem extends SubsystemBase {
   // Initialize the motor (Flex/MAX are setup the same way)
   SparkMax whip = new SparkMax(57, MotorType.kBrushless);
   private final ShooterSubsystem m_shooter;
+  private final CommandXboxController driver = new CommandXboxController(0);
+  private final CommandXboxController operator = new CommandXboxController(1);
 
   /** Creates a new Subsystem. */
   @SuppressWarnings("deprecation")

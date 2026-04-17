@@ -47,8 +47,8 @@ public class RobotContainer {
   private final LEDMinimal led = new LEDMinimal();
 
   // Vision (separate cameras)
-  private Vision vision;
-  private boolean visionEnabled = true;
+  private Vision vision; // The main Vision Class
+  private boolean visionEnabled = true; // This is false because Cameras are unplugged, but don't change
 
   // Toggle for robot-centric vs field-centric drive (default to field-centric)
   private boolean robotCentric = false;
@@ -57,8 +57,9 @@ public class RobotContainer {
   // -------------------- CONTROLLERS ----------------------------
   // ============================================================
 
-  private final CommandXboxController driver = new CommandXboxController(0);
-  private final CommandXboxController operator = new CommandXboxController(1);
+  private final CommandXboxController driver = new CommandXboxController(0); // Driver Controller
+
+  private final CommandXboxController operator = new CommandXboxController(1); // Operator Controller
 
   // ============================================================
   // -------------------- FIELD / AUTO ---------------------------
@@ -93,18 +94,12 @@ public class RobotContainer {
                 new ModuleIOTalonFX(TunerConstants.FrontRight),
                 new ModuleIOTalonFX(TunerConstants.BackLeft),
                 new ModuleIOTalonFX(TunerConstants.BackRight));
+
         vision =
             new Vision(
                 drive::addVisionMeasurement,
                 new VisionIOLimelight(camera0Name, drive::getRotation),
                 new VisionIOLimelight(camera1Name, drive::getRotation));
-
-        // vision =
-        // new Vision(
-        // drive::addVisionMeasurement,
-        // new VisionIOLimelight("limelight", drive::getRotation),
-        // new VisionIOLimelight("limelight_forward", drive::getRotation));
-
         break;
 
       case SIM:
@@ -246,27 +241,6 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
-    // Run vision-assisted drive-to-shoot while held.
-    // driver
-    // .rightTrigger(0.5)
-    // .whileTrue(
-    // DriveCommands.driveToShootVision(
-    // drive,
-    // visionShoot,
-    // shooter,
-    // fieldLayout,
-    // () -> visionEnabled,
-    // () -> -driver.getLeftY(),
-    // () -> -driver.getLeftX(),
-    // () -> -driver.getRightX(),
-    // 1.5,
-    // 3.0));
-
-    // Log climb tag offset for calibration/debug.
-    // driver
-    // .a()
-    // .onTrue(ClimbCommands.logClimbOffset(drive, fieldLayout, 32));
-
     // Toggle intake deploy shake mode on/off.
     driver
         .a()
@@ -286,10 +260,6 @@ public class RobotContainer {
 
     // Run Align-To-Tag Then Climb While Holding Y Button On Driver Controller.
     driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
-
-    // Vision climb assist test while held (disabled).
-    // driver.leftBumper().whileTrue(ClimbCommands.driveToClimbVision(drive,
-    // visionClimb));
 
     // ============================================================
     // -------------------- OPERATOR BINDINGS ----------------------
@@ -329,8 +299,8 @@ public class RobotContainer {
     // Toggle Whip Command On/Off (Solo Command).
     // operator.rightBumper().toggleOnTrue(whip.whipCommand());
 
-    // Clear shooter sticky faults.
-    operator.leftBumper().onTrue(intakeRoller.ReverseCommand());
+    // When LeftBumper Toggled, The intake reverses rotation direction
+    operator.leftBumper().toggleOnTrue(intakeRoller.ReverseCommand());
   }
 
   // Agitator
