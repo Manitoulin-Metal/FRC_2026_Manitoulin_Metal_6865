@@ -36,6 +36,7 @@ public class ClimbSubsystem extends SubsystemBase {
   private boolean upTargetReached = false;
   private double homingStartTimestamp = -1.0;
 
+  @SuppressWarnings("removal")
   public ClimbSubsystem() {
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);

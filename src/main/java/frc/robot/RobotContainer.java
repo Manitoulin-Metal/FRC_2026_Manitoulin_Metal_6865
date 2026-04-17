@@ -166,8 +166,8 @@ public class RobotContainer {
     // New (UNTESTED) - Should Fix The Shooter not Shooting Problem
     NamedCommands.registerCommand(
         "timedShootCommand",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(5));
-    
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(7.5));
+
     // Allows the IntakeDeploy to be Deployed in an AutoCommand
     NamedCommands.registerCommand(
         "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));

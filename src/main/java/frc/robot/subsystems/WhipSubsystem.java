@@ -14,6 +14,7 @@ public class WhipSubsystem extends SubsystemBase {
   private final ShooterSubsystem m_shooter;
 
   /** Creates a new Subsystem. */
+  @SuppressWarnings("deprecation")
   public WhipSubsystem(ShooterSubsystem shooterSubsystem) {
     m_shooter = shooterSubsystem;
 

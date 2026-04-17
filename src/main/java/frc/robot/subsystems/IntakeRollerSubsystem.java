@@ -39,7 +39,9 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   private static final double INTAKE_RPM = -4500;
 
   // ===== Driver control protection =====
+  @SuppressWarnings("unused")
   private boolean manualIntake = false;
+
   private final Timer intakeStartTimer = new Timer();
 
   // ===== Tracking =====
@@ -47,6 +49,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   private final Timer detectionTimer = new Timer();
   private boolean pieceLatched = false;
 
+  @SuppressWarnings("removal")
   public IntakeRollerSubsystem() {
     SparkMaxConfig config = new SparkMaxConfig();
 
@@ -88,6 +91,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   // ================= PID UPDATE =================
 
+  @SuppressWarnings("removal")
   private void updatePIDIfChanged() {
     double newKP = kP.get();
     double newKFF = kFF.get();
