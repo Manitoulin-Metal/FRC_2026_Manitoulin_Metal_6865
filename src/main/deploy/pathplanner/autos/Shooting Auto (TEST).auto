@@ -5,12 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "IntakeDeploy"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Under Trench"

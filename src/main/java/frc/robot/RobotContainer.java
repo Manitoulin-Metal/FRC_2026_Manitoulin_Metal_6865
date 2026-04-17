@@ -18,6 +18,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
+import frc.robot.subsystems.IntakeRollerSubsystem.Mode;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.LEDMinimal;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -161,11 +162,18 @@ public class RobotContainer {
     // New (UNTESTED) - Should Fix The Shooter not Shooting Problem
     NamedCommands.registerCommand(
         "timedShootCommand",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(7.5));
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(7.5).finallyDo(interrupted -> {shooter.stopShooter(); intakeDeploy.deploy();}));
 
     // Allows the IntakeDeploy to be Deployed in an AutoCommand
     NamedCommands.registerCommand(
         "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+
+    NamedCommands.registerCommand(
+      "intakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
+
+    NamedCommands.registerCommand(
+      "StopCollectingFuel", intakeRoller.StopIntakeCommand());
+    
 
     // This loads the autos for the technician to choose an auto on SmartDashboard/Shuffleboard
     for (String autoName : AutoBuilder.getAllAutoNames()) {
