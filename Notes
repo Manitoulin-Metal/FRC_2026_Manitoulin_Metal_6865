@@ -1,11 +1,14 @@
 Things to not do:
 1. DON'T PUT COMMENTS INSIDE A BLOCK OF IMPORTS, IT'LL PREVENT THE CODE FROM BUILDING WITH SPOTLESS JAVA
-2. 
+2. When you are setting speed to a condition, it needs to be in the periodic void or the code will get into a crash loop
+3. Make sure that your public voids don't have common names, otherwise it's hard to know which one to use
+4. If you're making a public static final variable, put it near the top of the subsystem/file so it is easy to find
 
 Things to Know:
 1. Comments will help others understand the code better
 2. If your code isn't working and your base code was a template of some sort, use that template and go through all the files to understand what the problem may be
 
 Things To Improve:
-1. MENTORS NEED TO COMMENT AND TELL THE LEAD CODER WHAT THEY'RE CHANGING BEFORE THEY CHANGE IT
-2. There was clear evidence that someone copied and pasted code from ChatGPT, due to the emoji comments (Which I Wouldn't Do)
+1. Better Commuinication from Mentors to Lead Coder
+2. More Comments to make it easier to understand
+3. 

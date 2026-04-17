@@ -173,6 +173,12 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
       case REVERSE -> {
         setVelocity(REVERSE_RPM);
+
+        if (detected && !pieceLatched && detectionTimer.get() > 0.25) {
+          ballCount++;
+          pieceLatched = true;
+          detectionTimer.reset();
+        }
       }
     }
 
