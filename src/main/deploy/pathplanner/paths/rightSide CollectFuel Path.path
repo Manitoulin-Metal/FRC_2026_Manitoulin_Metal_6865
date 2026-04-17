@@ -1,0 +1,160 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 6.860910714285714,
+        "y": 0.8281071428571432
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.32962251984127,
+        "y": 0.9703293650793645
+      },
+      "isLocked": false,
+      "linkedName": "right side after trench"
+    },
+    {
+      "anchor": {
+        "x": 7.7265763195435095,
+        "y": 6.085777460770328
+      },
+      "prevControl": {
+        "x": 7.569634707424415,
+        "y": 6.939273260421619
+      },
+      "nextControl": {
+        "x": 7.883517931662604,
+        "y": 5.232281661119036
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.913678571428571,
+        "y": 3.5167142857142855
+      },
+      "prevControl": {
+        "x": 7.897035308443063,
+        "y": 4.249017857076655
+      },
+      "nextControl": {
+        "x": 7.929874999999999,
+        "y": 2.8040714285714285
+      },
+      "isLocked": false,
+      "linkedName": "collectFuel path end"
+    },
+    {
+      "anchor": {
+        "x": 5.144089285714285,
+        "y": 0.6175535714285718
+      },
+      "prevControl": {
+        "x": 6.165382388746454,
+        "y": 0.6859907381266037
+      },
+      "nextControl": {
+        "x": 2.0019821428571425,
+        "y": 0.4069999999999999
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 1.808,
+        "y": 2.4477499999999996
+      },
+      "prevControl": {
+        "x": 1.5083660714285714,
+        "y": 2.585419642857143
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "RightSide Shoot"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.6870588235294115,
+      "rotationDegrees": 90.0
+    },
+    {
+      "waypointRelativePos": 1.2799999999999963,
+      "rotationDegrees": -89.41556684265821
+    },
+    {
+      "waypointRelativePos": 3.632941176470588,
+      "rotationDegrees": 45.14915642108386
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "IntakeDeploy",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeDeploy"
+        }
+      }
+    },
+    {
+      "name": "collectFuel",
+      "waypointRelativePos": 0.13872832369942195,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "collectFuel"
+        }
+      }
+    },
+    {
+      "name": "StopCollectingFuel",
+      "waypointRelativePos": 2.589595375722545,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "StopCollectingFuel"
+        }
+      }
+    },
+    {
+      "name": "timedShootCommand",
+      "waypointRelativePos": 3.99,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "timedShootCommand"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 2.5,
+    "maxAcceleration": 2.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.0,
+    "rotation": 35.31121343963329
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 2.5,
+    "rotation": 47.23117460803126
+  },
+  "useDefaultConstraints": true
+}

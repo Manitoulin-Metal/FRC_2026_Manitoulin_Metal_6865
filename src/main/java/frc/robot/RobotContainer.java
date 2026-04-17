@@ -18,7 +18,6 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
-import frc.robot.subsystems.IntakeRollerSubsystem.Mode;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.LEDMinimal;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -49,7 +48,8 @@ public class RobotContainer {
 
   // Vision (separate cameras)
   private Vision vision; // The main Vision Class
-  private boolean visionEnabled = true; // This is false because Cameras are unplugged, but don't change
+  private boolean visionEnabled =
+      true; // This is false because Cameras are unplugged, but don't change
 
   // Toggle for robot-centric vs field-centric drive (default to field-centric)
   private boolean robotCentric = false;
@@ -60,7 +60,8 @@ public class RobotContainer {
 
   private final CommandXboxController driver = new CommandXboxController(0); // Driver Controller
 
-  private final CommandXboxController operator = new CommandXboxController(1); // Operator Controller
+  private final CommandXboxController operator =
+      new CommandXboxController(1); // Operator Controller
 
   // ============================================================
   // -------------------- FIELD / AUTO ---------------------------
@@ -162,18 +163,21 @@ public class RobotContainer {
     // New (UNTESTED) - Should Fix The Shooter not Shooting Problem
     NamedCommands.registerCommand(
         "timedShootCommand",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(7.5).finallyDo(interrupted -> {shooter.stopShooter(); intakeDeploy.deploy();}));
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0)
+            .withTimeout(7.5)
+            .finallyDo(
+                interrupted -> {
+                  shooter.stopShooter();
+                  intakeDeploy.deploy();
+                }));
 
     // Allows the IntakeDeploy to be Deployed in an AutoCommand
     NamedCommands.registerCommand(
         "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
-    NamedCommands.registerCommand(
-      "intakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
+    NamedCommands.registerCommand("intakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
-    NamedCommands.registerCommand(
-      "StopCollectingFuel", intakeRoller.StopIntakeCommand());
-    
+    NamedCommands.registerCommand("StopCollectingFuel", intakeRoller.StopIntakeCommand());
 
     // This loads the autos for the technician to choose an auto on SmartDashboard/Shuffleboard
     for (String autoName : AutoBuilder.getAllAutoNames()) {

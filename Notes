@@ -8,7 +8,7 @@ Things to Know:
 1. Comments will help others understand the code better
 2. If your code isn't working and your base code was a template of some sort, use that template and go through all the files to understand what the problem may be
 3. If WPILib suddenly says that all files are not within the project folder, Uninstall and Reinstall
-4.
+4. For AdvantageScope, Put in Poses: Under Robot, Rotation Override
 
 Things To Improve:
 1. Better Commuinication from Mentors to Lead Coder
