@@ -30,13 +30,15 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   public enum Mode {
     IDLE,
-    INTAKE
+    INTAKE,
+    REVERSE
   }
 
   private Mode currentMode = Mode.IDLE;
 
   private static final double IDLE_RPM = 0;
   private static final double INTAKE_RPM = -4500;
+  private static final double REVERSE_RPM = 4500;
 
   // ===== Driver control protection =====
   @SuppressWarnings("unused")
@@ -78,6 +80,21 @@ public class IntakeRollerSubsystem extends SubsystemBase {
           setMode(Mode.IDLE);
         });
   }
+
+  public Command ReverseCommand() {
+    return startEnd(
+      () -> {
+        manualIntake = true;
+        intakeStartTimer.reset();
+        intakeStartTimer.start();
+        setMode(Mode.REVERSE);
+      },
+      () -> {
+        manualIntake = false;
+        setMode(Mode.IDLE);
+      }
+    );
+}
 
   // ================= CONTROL =================
 

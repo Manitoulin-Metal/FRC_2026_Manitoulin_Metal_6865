@@ -330,7 +330,7 @@ public class RobotContainer {
     // operator.rightBumper().toggleOnTrue(whip.whipCommand());
 
     // Clear shooter sticky faults.
-    operator.leftBumper().onTrue(shooter.clearFaultsCommand());
+    operator.leftBumper().onTrue(intakeRoller.ReverseCommand());
   }
 
   // Agitator
