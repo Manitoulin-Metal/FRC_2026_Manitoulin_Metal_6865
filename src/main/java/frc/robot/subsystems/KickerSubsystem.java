@@ -15,6 +15,8 @@ public class KickerSubsystem extends SubsystemBase {
   private final ShooterSubsystem m_shooter;
   private final Timer readyTimer = new Timer();
   private boolean wasReady = false;
+  boolean condition = kickerCondition();
+  double speed = condition ? 0.5 : 0.0;
 
   /** Creates a new Kicker subsystem. */
   @SuppressWarnings("deprecation")
@@ -81,7 +83,6 @@ public class KickerSubsystem extends SubsystemBase {
 
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/ShooterRPS", shooterRps);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean("Kicker/Condition", condition);
-    double speed = condition ? 0.5 : 0.0;
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Kicker/SetSpeed", speed);
     kicker.set(speed);
   }
