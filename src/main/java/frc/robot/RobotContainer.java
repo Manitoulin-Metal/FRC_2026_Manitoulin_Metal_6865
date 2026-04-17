@@ -175,8 +175,10 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
+    // Allows the IntakeDeploy to be Stowed in an AutoCommand
     NamedCommands.registerCommand("intakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
+    // Allows the IntakeRoller to stop running in an AutoCommand
     NamedCommands.registerCommand("StopCollectingFuel", intakeRoller.StopIntakeCommand());
 
     // This loads the autos for the technician to choose an auto on SmartDashboard/Shuffleboard
