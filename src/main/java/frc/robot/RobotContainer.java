@@ -19,7 +19,7 @@ import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
-//import frc.robot.subsystems.LEDMinimal;
+// import frc.robot.subsystems.LEDMinimal;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.WhipSubsystem;
 import frc.robot.subsystems.drive.*;
@@ -44,7 +44,7 @@ public class RobotContainer {
   private final KickerSubsystem kicker = new KickerSubsystem(shooter);
   private final WhipSubsystem whip = new WhipSubsystem(shooter);
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
-  //private final LEDMinimal led = new LEDMinimal();
+  // private final LEDMinimal led = new LEDMinimal();
 
   // Vision (separate cameras)
   private Vision vision; // The main Vision Class
@@ -361,32 +361,40 @@ public class RobotContainer {
     // troubleshooting.
 
     // Vision diagnostics inputs
-    double tx = vision.getTX();
-    double ty = vision.getTY();
-    double[] offsets = new double[] {0.0, 0.0, 0.0};
-    var climbTagPose = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID);
-    if (climbTagPose.isPresent()) {
-      Transform2d tagToRobot = new Transform2d(climbTagPose.get().toPose2d(), drive.getPose());
-      offsets[0] = tagToRobot.getX();
-      offsets[1] = tagToRobot.getY();
-      offsets[2] =
-          drive
-              .getPose()
-              .getTranslation()
-              .getDistance(climbTagPose.get().toPose2d().getTranslation());
-    }
+
+    // MOVE THIS VISION DIAGNOSTIC CODE TO VISION SUBSYSTEM PERIODIC
+
+    // double tx = vision.getTX();
+    // double ty = vision.getTY();
+    // double[] offsets = new double[] {0.0, 0.0, 0.0};
+    // var climbTagPose = fieldLayout.getTagPose(Constants.CLIMB_TAG_ID);
+    // if (climbTagPose.isPresent()) {
+    //   Transform2d tagToRobot = new Transform2d(climbTagPose.get().toPose2d(), drive.getPose());
+    //   offsets[0] = tagToRobot.getX();
+    //   offsets[1] = tagToRobot.getY();
+    //   offsets[2] =
+    //       drive
+    //           .getPose()
+    //           .getTranslation()
+    //           .getDistance(climbTagPose.get().toPose2d().getTranslation());
+    // }
+
+    
 
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
-    SmartDashboard.putBoolean("Endgame 20s", alert20);
-    SmartDashboard.putBoolean("Endgame 10s", alert10);
-    SmartDashboard.putNumber("CameraToTag/measuredTX", tx);
-    SmartDashboard.putNumber("CameraToTag/measuredTY", ty);
-    SmartDashboard.putNumber("CameraToTag/X", offsets[0]);
-    SmartDashboard.putNumber("CameraToTag/Y", offsets[1]);
-    SmartDashboard.putNumber("CameraToTag/Distance", offsets[2]);
-    SmartDashboard.putNumber("Driver/LeftY", driverLeftY);
-    SmartDashboard.putNumber("Operator/LeftY", operatorLeftY);
-    SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
+
+    // Uncomment for runing and debugging - commented to avoid loop overun
+
+    // SmartDashboard.putBoolean("Endgame 20s", alert20);
+    // SmartDashboard.putBoolean("Endgame 10s", alert10);
+    // SmartDashboard.putNumber("CameraToTag/measuredTX", tx);
+    // SmartDashboard.putNumber("CameraToTag/measuredTY", ty);
+    // SmartDashboard.putNumber("CameraToTag/X", offsets[0]);
+    // SmartDashboard.putNumber("CameraToTag/Y", offsets[1]);
+    // SmartDashboard.putNumber("CameraToTag/Distance", offsets[2]);
+    // SmartDashboard.putNumber("Driver/LeftY", driverLeftY);
+    // SmartDashboard.putNumber("Operator/LeftY", operatorLeftY);
+    // SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
 
     // -------------------- LOGGER OUTPUTS --------------------
     Logger.recordOutput("Controls/DriverLeftY", driverLeftY);

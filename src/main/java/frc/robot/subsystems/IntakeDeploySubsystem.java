@@ -300,14 +300,15 @@ public class IntakeDeploySubsystem extends SubsystemBase {
         break;
     }
 
-    // SmartDashboard logging
-    SmartDashboard.putNumber("IntakeDeploy/AngleDeg", angle);
-    SmartDashboard.putNumber("IntakeDeploy/RawRotations", encoder.getPosition());
-    SmartDashboard.putString("IntakeDeploy/State", state.name());
-    SmartDashboard.putBoolean("IntakeDeploy/HallTriggered", isStowedSensorTriggered());
-    SmartDashboard.putBoolean("IntakeDeploy/AtSetpoint", pid.atSetpoint());
-    SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
-    SmartDashboard.putNumber("IntakeDeploy/Error", pid.getPositionError());
+    // SmartDashboard logging - uncomment for debugging (commented to avoid loop overun)
+
+    // SmartDashboard.putNumber("IntakeDeploy/AngleDeg", angle);
+    // SmartDashboard.putNumber("IntakeDeploy/RawRotations", encoder.getPosition());
+    // SmartDashboard.putString("IntakeDeploy/State", state.name());
+    // SmartDashboard.putBoolean("IntakeDeploy/HallTriggered", isStowedSensorTriggered());
+    // SmartDashboard.putBoolean("IntakeDeploy/AtSetpoint", pid.atSetpoint());
+    // SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
+    // SmartDashboard.putNumber("IntakeDeploy/Error", pid.getPositionError());
 
     Logger.recordOutput("IntakeDeploy/AngleDeg", angle);
     Logger.recordOutput("IntakeDeploy/RawRotations", encoder.getPosition());

@@ -9,7 +9,6 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -246,16 +245,18 @@ public class ClimbSubsystem extends SubsystemBase {
       climbMotor.set(output);
     }
 
-    SmartDashboard.putString("Climb/State", state.name());
-    SmartDashboard.putBoolean("Climb/Homed", homed);
-    SmartDashboard.putBoolean("Climb/Disabled", isDisabled());
-    SmartDashboard.putBoolean("Climb/LimitSwtichPressed", pressed);
-    SmartDashboard.putNumber("Climb/SpeedCommand", output);
-    SmartDashboard.putNumber("Climb/EncoderPosition", climbPosition);
-    SmartDashboard.putNumber("Climb/UpTargetRotations", upTarget);
-    SmartDashboard.putBoolean("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >= upTarget);
-    SmartDashboard.putBoolean(
-        "Climb/BottomLimitReached",
-        pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
+    // Smart Dashboard updates for tuning and debugging - commented out to avoid loop overun
+    //   SmartDashboard.putString("Climb/State", state.name());
+    //   SmartDashboard.putBoolean("Climb/Homed", homed);
+    //   SmartDashboard.putBoolean("Climb/Disabled", isDisabled());
+    //   SmartDashboard.putBoolean("Climb/LimitSwtichPressed", pressed);
+    //   SmartDashboard.putNumber("Climb/SpeedCommand", output);
+    // SmartDashboard.putNumber("Climb/EncoderPosition", climbPosition);
+    // SmartDashboard.putNumber("Climb/UpTargetRotations", upTarget);
+    // SmartDashboard.putBoolean("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >=
+    // upTarget);
+    // SmartDashboard.putBoolean(
+    //     "Climb/BottomLimitReached",
+    //     pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
   }
 }

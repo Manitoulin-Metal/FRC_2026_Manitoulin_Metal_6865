@@ -159,7 +159,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    updatePIDIfChanged();
+    // updatePIDIfChanged();
 
     double velocity = getVelocity();
     double current = getCurrent();

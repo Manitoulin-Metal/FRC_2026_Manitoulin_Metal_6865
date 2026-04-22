@@ -105,7 +105,8 @@ public class ShooterSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // Live PID/FF tuning updates (like IntakeRoller)
-    updatePIDIfChanged();
+    // updatePIDIfChanged(); // Can't do this because the motors dont like constantly being
+    // reconfigged. When values changed in dashboard it forces a reenable.
 
     // Refresh faults signal
     faultsSignal.refresh();
@@ -117,16 +118,20 @@ public class ShooterSubsystem extends SubsystemBase {
     double supplyCurrent = shooter.getSupplyCurrent().getValueAsDouble();
     int faultsRaw = faultsSignal.getValue();
 
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
-        "Shooter/VelocityRPS", velocityRps);
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/TargetRPS", targetRps);
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/PIDError", error);
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
-        "Shooter/MotorVoltage", motorVoltage);
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
-        "Shooter/StatorCurrent", statorCurrent);
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
-        "Shooter/SupplyCurrent", supplyCurrent);
+    // Smart Dashboard outputs for tuning and debugging - commented out to avoid loop overrun
+
+    // edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+    //     "Shooter/VelocityRPS", velocityRps);
+    // edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/TargetRPS",
+    // targetRps);
+    // edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Shooter/PIDError", error);
+    // edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+    //     "Shooter/MotorVoltage", motorVoltage);
+    // edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+    //     "Shooter/StatorCurrent", statorCurrent);
+    // edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+    //     "Shooter/SupplyCurrent", supplyCurrent);
+
     String faultSummary = faultsRaw == 0 ? "OK" : "0x" + Integer.toHexString(faultsRaw);
     if ((faultsRaw & 1) != 0) faultSummary += " SupplyCurrLimit";
     if ((faultsRaw & 2) != 0) faultSummary += " HardwareCurrLimit";
