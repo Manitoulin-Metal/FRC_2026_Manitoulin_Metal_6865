@@ -19,7 +19,7 @@ import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
-import frc.robot.subsystems.LEDMinimal;
+//import frc.robot.subsystems.LEDMinimal;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.WhipSubsystem;
 import frc.robot.subsystems.drive.*;
@@ -44,7 +44,7 @@ public class RobotContainer {
   private final KickerSubsystem kicker = new KickerSubsystem(shooter);
   private final WhipSubsystem whip = new WhipSubsystem(shooter);
   private final ClimbSubsystem climb1 = new ClimbSubsystem();
-  private final LEDMinimal led = new LEDMinimal();
+  //private final LEDMinimal led = new LEDMinimal();
 
   // Vision (separate cameras)
   private Vision vision; // The main Vision Class
