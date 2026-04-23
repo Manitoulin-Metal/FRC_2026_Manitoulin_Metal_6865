@@ -79,7 +79,7 @@ public class Telemetry {
 
   /* A direction and length changing ligament for speed representation */
 
-  @SuppressWarnings("null")
+  // @SuppressWarnings("null")
   private final MechanismLigament2d[] m_moduleSpeeds =
       new MechanismLigament2d[] {
         m_moduleMechanisms[0]
@@ -98,7 +98,7 @@ public class Telemetry {
 
   /* A direction changing and length constant ligament for module direction */
 
-  @SuppressWarnings("null")
+  // @SuppressWarnings("null")
   private final MechanismLigament2d[] m_moduleDirections =
       new MechanismLigament2d[] {
         m_moduleMechanisms[0]

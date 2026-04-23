@@ -379,11 +379,9 @@ public class RobotContainer {
     //           .getDistance(climbTagPose.get().toPose2d().getTranslation());
     // }
 
-    
-
     // -------------------- SMARTDASHBOARD OUTPUTS --------------------
 
-    // Uncomment for runing and debugging - commented to avoid loop overun
+    // Uncomment for running and debugging - commented to avoid loop overun
 
     // SmartDashboard.putBoolean("Endgame 20s", alert20);
     // SmartDashboard.putBoolean("Endgame 10s", alert10);

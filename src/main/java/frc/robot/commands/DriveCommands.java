@@ -598,6 +598,7 @@ public final class DriveCommands {
   }
 
   /** Align to AprilTag using WPILib PIDControllers and direct LimelightHelpers reads. */
+  @SuppressWarnings("resource")
   public static Command alignToTag(int targetId, Drive drive, Vision vision) {
     PIDController strafeController =
         new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());
@@ -675,6 +676,7 @@ public final class DriveCommands {
   }
 
   /** Align to AprilTag using WPILib PIDControllers and VisionSubsystem. */
+  @SuppressWarnings("resource")
   public static Command alignToTagWithVision(int targetId, Drive drive, Vision vision) {
     PIDController strafeController =
         new PIDController(alignStrafeKP.get(), alignStrafeKI.get(), alignStrafeKD.get());

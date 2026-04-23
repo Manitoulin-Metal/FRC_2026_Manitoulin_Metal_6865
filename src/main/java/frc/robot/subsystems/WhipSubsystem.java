@@ -25,7 +25,7 @@ public class WhipSubsystem extends SubsystemBase {
   }
 
   /**
-   * Sets motor controllers to run-to-pos based off distance
+   * Sets motor controllers to run-to-pose based off distance
    *
    * @return a command
    */

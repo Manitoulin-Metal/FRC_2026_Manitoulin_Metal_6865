@@ -48,7 +48,9 @@ public class Robot extends LoggedRobot {
       case REAL:
 
         // Running on a real robot, log to a USB stick ("/U/logs")
-        Logger.addDataReceiver(new WPILOGWriter());
+        Logger.addDataReceiver(new WPILOGWriter("/U/logs"));
+
+        // Keep NT for live viewing
         Logger.addDataReceiver(new NT4Publisher());
         break;
 
@@ -72,7 +74,8 @@ public class Robot extends LoggedRobot {
     // Starts the AdvantageKit logger
     Logger.start();
 
-    // Instantiate our RobotContainer.java file. This will perform all our button bindings,
+    // Instantiate our RobotContainer.java file. This will perform all our button
+    // bindings,
     // and put our autonomous chooser on the dashboard.
     robotContainer = new RobotContainer();
   }
