@@ -1,10 +1,3 @@
-// Copyright (c) 2021-2026 Littleton Robotics
-// http://github.com/Mechanical-Advantage
-//
-// Use of this source code is governed by a BSD
-// license that can be found in the LICENSE file
-// at the root directory of this project.
-
 package frc.robot.subsystems.vision;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
@@ -12,47 +5,57 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 
-public class VisionConstants {
-  // AprilTag layout
-  public static AprilTagFieldLayout aprilTagLayout =
+public final class VisionConstants {
+
+  private VisionConstants() {}
+
+  /** 2026 field */
+  public static final AprilTagFieldLayout aprilTagLayout =
       AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
 
-  // Camera names, must match names configured on coprocessor
-  public static String camera0Name = "camera_0"; //rear-facing camera
-  public static String camera1Name = "camera_1"; //front-facing camera
+  // =============================
+  // Camera Names
+  // =============================
+  public static final String camera0Name = "camera_0"; // REAR
+  public static final String camera1Name = "camera_1"; // FRONT
 
-  // Robot to camera transforms
-  // (Not used by Limelight, configure in web UI instead)
-  public static Transform3d robotToCamera0 =
-      new Transform3d(0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, 0.0));
-  public static Transform3d robotToCamera1 =
-      new Transform3d(-0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, Math.PI));
+  // =============================
+  // Camera Mounting Positions
+  // Robot center -> camera
+  // Tune these carefully
+  // =============================
 
-  // Basic filtering thresholds
-  public static double maxAmbiguity = 0.3;
-  public static double maxZError = 0.75;
+  /** Rear camera */
+  public static final Transform3d robotToCamera0 =
+      new Transform3d(-0.20, 0.00, 0.44, new Rotation3d(0.0, -0.35, Math.PI));
 
-  // Standard deviation baselines, for 1 meter distance and 1 tag
-  // (Adjusted automatically based on distance and # of tags)
-  public static double linearStdDevBaseline = 0.02; // Meters
-  public static double angularStdDevBaseline = 0.06; // Radians
+  /** Front camera */
+  public static final Transform3d robotToCamera1 =
+      new Transform3d(0.20, 0.00, 0.44, new Rotation3d(0.0, -0.35, 0.0));
 
-  // Standard deviation multipliers for each camera
-  // (Adjust to trust some cameras more than others)
-  public static double[] cameraStdDevFactors =
-      new double[] {
-        1.0, // Camera 0
-        1.0 // Camera 1
-      };
+  // =============================
+  // Pose Rejection Thresholds
+  // =============================
+  public static final double maxAmbiguity = 0.30;
+  public static final double maxZError = 0.75;
 
-  // Multipliers to apply for MegaTag 2 observations
-  public static double linearStdDevMegatag2Factor = 0.5; // More stable than full 3D solve
-  public static double angularStdDevMegatag2Factor =
-      Double.POSITIVE_INFINITY; // No rotation data available
+  // =============================
+  // Vision Std Dev Baselines
+  // =============================
+  public static final double linearStdDevBaseline = 0.02;
+  public static final double angularStdDevBaseline = 0.06;
 
-  // Position of the climb camera relative to the robot center, in the robot's
-  // coordinate frame
-  public static final double CAMERA_FORWARD_OFFSET = 0.184; // x, forward
-  public static final double CAMERA_RIGHT_OFFSET = -0.1651; // y, lateral
-  public static final double CAMERA_UP = 0.441425; // z, vertical
+  public static final double[] cameraStdDevFactors = {
+    1.4, // rear less trusted for odometry
+    1.0 // front primary pose source
+  };
+
+  public static final double linearStdDevMegatag2Factor = 0.50;
+  public static final double angularStdDevMegatag2Factor = Double.POSITIVE_INFINITY;
+
+  // =============================
+  // Camera Indexes
+  // =============================
+  public static final int REAR_CAMERA = 0;
+  public static final int FRONT_CAMERA = 1;
 }

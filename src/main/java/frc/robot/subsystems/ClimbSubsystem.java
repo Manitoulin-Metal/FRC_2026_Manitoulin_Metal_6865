@@ -9,10 +9,12 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import org.littletonrobotics.junction.Logger;
 
 public class ClimbSubsystem extends SubsystemBase {
 
@@ -29,11 +31,16 @@ public class ClimbSubsystem extends SubsystemBase {
   private final SparkFlex climbMotor = new SparkFlex(60, MotorType.kBrushless);
   private final RelativeEncoder encoder;
   private final DigitalInput limitSwitch = new DigitalInput(Constants.Climb.LIMIT_SWITCH_CHANNEL);
+  private boolean manualOverride = false;
 
   private ClimbState state = ClimbState.IDLE;
   private boolean homed = false;
   private boolean upTargetReached = false;
   private double homingStartTimestamp = -1.0;
+
+  public void setManualOverride(boolean override) {
+    manualOverride = override;
+  }
 
   @SuppressWarnings("removal")
   public ClimbSubsystem() {
@@ -45,6 +52,10 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   // ========================= MOTOR CONTROL =========================
+
+  private boolean isMotionAllowed() {
+    return !manualOverride;
+  }
 
   public boolean isLimitSwitchPressed() {
     return !limitSwitch.get(); // active low
@@ -68,7 +79,7 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void moveUp() {
-    if (isDisabled()) {
+    if (isDisabled() || !isMotionAllowed()) {
       return;
     }
 
@@ -82,7 +93,7 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void moveDown() {
-    if (isDisabled()) {
+    if (isDisabled() || !isMotionAllowed()) {
       return;
     }
 
@@ -101,7 +112,7 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public void startHoming() {
-    if (isDisabled()) {
+    if (isDisabled() || !isMotionAllowed()) {
       return;
     }
 
@@ -123,7 +134,7 @@ public class ClimbSubsystem extends SubsystemBase {
   public Command climbCommand(double speed) {
     return Commands.runEnd(
         () -> {
-          if (isDisabled()) {
+          if (isDisabled() || !isMotionAllowed()) {
             return;
           }
 
@@ -174,6 +185,11 @@ public class ClimbSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    if (manualOverride) {
+      climbMotor.stopMotor();
+      state = ClimbState.IDLE; // prevents "ghost climbing"
+      return;
+    }
     boolean pressed = isLimitSwitchPressed();
     double output = 0.0;
     double climbPosition = encoder.getPosition();
@@ -245,18 +261,37 @@ public class ClimbSubsystem extends SubsystemBase {
       climbMotor.set(output);
     }
 
-    // Smart Dashboard updates for tuning and debugging - commented out to avoid loop overun
-    //   SmartDashboard.putString("Climb/State", state.name());
-    //   SmartDashboard.putBoolean("Climb/Homed", homed);
-    //   SmartDashboard.putBoolean("Climb/Disabled", isDisabled());
-    //   SmartDashboard.putBoolean("Climb/LimitSwtichPressed", pressed);
-    //   SmartDashboard.putNumber("Climb/SpeedCommand", output);
+    // Smart Dashboard updates for tuning and debugging - commented out some to avoid
+    // loop overun and additional logging for AdvantageKit Logger data analysis
+
+    SmartDashboard.putString("Climb/State", state.name());
+    SmartDashboard.putNumber("Climb/Position", climbPosition);
+    SmartDashboard.putBoolean("Climb/LimitSwitch", pressed);
+    SmartDashboard.putBoolean("Climb/Homed", homed);
+    SmartDashboard.putBoolean("Climb/ManualOverride", manualOverride);
+
+    Logger.recordOutput("Climb/State", state.name());
+    Logger.recordOutput("Climb/Homed", homed);
+    Logger.recordOutput("Climb/Disabled", isDisabled());
+    Logger.recordOutput("Climb/LimitSwitchPressed", pressed);
+    Logger.recordOutput("Climb/SpeedCommand", output);
+    Logger.recordOutput("Climb/EncoderPosition", climbPosition);
+    Logger.recordOutput("Climb/UpTargetRotations", upTarget);
+    Logger.recordOutput("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >= upTarget);
+    Logger.recordOutput(
+        "Climb/BottomLimitReached",
+        pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
+
+    // SmartDashboard.putBoolean("Climb/Disabled", isDisabled());
+    // SmartDashboard.putNumber("Climb/SpeedCommand", output);
     // SmartDashboard.putNumber("Climb/EncoderPosition", climbPosition);
     // SmartDashboard.putNumber("Climb/UpTargetRotations", upTarget);
-    // SmartDashboard.putBoolean("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >=
+    // SmartDashboard.putBoolean("Climb/TopLimitReached", upTarget > 1.0 &&
+    // climbPosition >=
     // upTarget);
     // SmartDashboard.putBoolean(
-    //     "Climb/BottomLimitReached",
-    //     pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
+    // "Climb/BottomLimitReached",
+    // pressed || climbPosition <=
+    // Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
   }
 }

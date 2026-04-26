@@ -113,6 +113,21 @@ public final class Constants {
     public static final double MAX_OUTPUT_VOLTS = 12.0;
   }
 
+  public static final class Intake {
+    public static final double IDLE_RPM = 0;
+    public static final double INTAKE_RPM = -6500;
+    public static final double REVERSE_RPM = 4500;
+
+    // ===== Anti-jam detection =====
+    public static final double STALL_CURRENT_AMPS = 35.0;
+    public static final double STALL_VELOCITY_THRESHOLD = 300.0;
+
+    // ===== Anti-jam timing =====
+    public static final double SPINUP_TIME_SEC = 0.35;
+    public static final double RECOVERY_TIME_SEC = 0.25;
+    public static final double COOLDOWN_TIME_SEC = 0.4;
+  }
+
   public static class Climb {
     public static final int LIMIT_SWITCH_CHANNEL = 8;
     public static final double UP_SPEED = 0.75;

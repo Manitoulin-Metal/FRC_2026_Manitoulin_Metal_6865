@@ -6,28 +6,30 @@ import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-@SuppressWarnings("deprecated")
+/**
+ * IntakeRollerSubsystem
+ *
+ * <p>Responsibilities: - Runs intake roller in IDLE / INTAKE / REVERSE - Detects stalls using
+ * current + velocity logic - Recovers automatically using short reverse burst - Prevents
+ * oscillation with cooldown + spin-up delay
+ *
+ * <p>Does NOT: - Count game pieces - Make scoring decisions
+ */
 public class IntakeRollerSubsystem extends SubsystemBase {
 
   private final SparkFlex intakeRoller = new SparkFlex(58, MotorType.kBrushless);
   private final SparkClosedLoopController velocityController;
 
-  // ===== Live tuning =====
-  private final LoggedNetworkNumber kP = new LoggedNetworkNumber("/Intake/kP", 0.00025);
-  private final LoggedNetworkNumber kFF = new LoggedNetworkNumber("/Intake/kFF", 0.00017);
-  private final LoggedNetworkNumber targetRPM = new LoggedNetworkNumber("/Intake/TargetRPM", -3500);
-
-  private double lastKP = -1;
-  private double lastKFF = -1;
-
+  // ============================================================
+  // MODES
+  // ============================================================
   public enum Mode {
     IDLE,
     INTAKE,
@@ -36,112 +38,179 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   private Mode currentMode = Mode.IDLE;
 
-  private static final double IDLE_RPM = 0;
-  private static final double INTAKE_RPM = -4500;
-  private static final double REVERSE_RPM = 4500;
+  // ============================================================
+  // ANTI-JAM STATE MACHINE
+  // ============================================================
+  private boolean inRecovery = false;
+  private Mode previousMode = Mode.IDLE;
 
-  // ===== Driver control protection =====
-  @SuppressWarnings("unused")
-  private boolean manualIntake = false;
+  private final Timer recoveryTimer = new Timer();
+  private final Timer spinUpTimer = new Timer();
+  private final Timer cooldownTimer = new Timer();
 
-  private final Timer intakeStartTimer = new Timer();
-
-  // ===== Tracking =====
-  private int ballCount = 0;
-  private final Timer detectionTimer = new Timer();
-  private boolean pieceLatched = false;
-
+  // ============================================================
+  // CONSTRUCTOR
+  // ============================================================
   @SuppressWarnings("removal")
   public IntakeRollerSubsystem() {
-    SparkMaxConfig config = new SparkMaxConfig(); // Configures SparkMax
+
+    SparkMaxConfig config = new SparkMaxConfig();
 
     config.closedLoop.p(0.00025).i(0.0).d(0.0).velocityFF(0.00017).outputRange(-1, 1);
 
     intakeRoller.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    // Sets what the Variable velocityController means
     velocityController = intakeRoller.getClosedLoopController();
 
-    detectionTimer.start();
-    intakeStartTimer.start();
+    spinUpTimer.start();
   }
 
-  // ================= COMMANDS =================
+  // ============================================================
+  // COMMANDS
+  // ============================================================
 
   public Command intakeToggleCommand() {
     return startEnd(
         () -> {
-          manualIntake = true;
-          intakeStartTimer.reset();
-          intakeStartTimer.start();
-          setMode(Mode.INTAKE); // When toggled, it sets the mode to Intake Mode
+          setMode(Mode.INTAKE);
+          spinUpTimer.reset();
+          spinUpTimer.start();
         },
-        () -> {
-          manualIntake = false;
-          setMode(Mode.IDLE); // When toggled off, it sets the mode to Idle Mode
-        });
+        () -> setMode(Mode.IDLE));
   }
 
-  // FIXED
-  public Command ReverseCommand() {
-    return startEnd(
-        () -> {
-          manualIntake = true;
-          intakeStartTimer.reset();
-          intakeStartTimer.start();
-          setMode(Mode.REVERSE); // When toggled on, it sets the mode to Reverse Mode
-        },
-        () -> {
-          manualIntake = false;
-          setMode(Mode.IDLE); // When toggled off, it sets the mode to Idle Mode
-        });
+  public Command reverseCommand() {
+    return startEnd(() -> setMode(Mode.REVERSE), () -> setMode(Mode.IDLE));
   }
 
-  public Command StopIntakeCommand() {
-    return startEnd(
-        () -> {
-          manualIntake = true;
-          intakeStartTimer.reset();
-          intakeStartTimer.start();
-          setMode(Mode.IDLE);
-        },
-        () -> {
-          manualIntake = false;
-          setMode(Mode.IDLE);
-        });
+  public Command stopIntakeCommand() {
+    return runOnce(() -> setMode(Mode.IDLE));
   }
 
-  // ================= CONTROLS =================
+  // ============================================================
+  // MODE CONTROL
+  // ============================================================
 
   public void setMode(Mode mode) {
     currentMode = mode;
   }
 
-  public void setVelocity(double rpm) {
+  private void setVelocity(double rpm) {
     velocityController.setSetpoint(rpm, ControlType.kVelocity);
   }
 
-  // ================= PID UPDATES =================
+  // ============================================================
+  // JAM DETECTION
+  // ============================================================
 
-  @SuppressWarnings("removal")
-  private void updatePIDIfChanged() {
-    double newKP = kP.get();
-    double newKFF = kFF.get();
+  /**
+   * A jam is detected when: - motor is drawing high current - but velocity is abnormally low - and
+   * intake has finished spin-up
+   */
+  private boolean isJammed(double current, double velocity) {
 
-    if (newKP != lastKP || newKFF != lastKFF) {
-      SparkFlexConfig config = new SparkFlexConfig();
+    boolean spunUp = spinUpTimer.get() > Constants.Intake.SPINUP_TIME_SEC;
+    if (!spunUp) return false;
 
-      config.closedLoop.p(newKP).i(0.0).d(0.0).velocityFF(newKFF).outputRange(-1, 1);
+    boolean highCurrent = current > Constants.Intake.STALL_CURRENT_AMPS;
+    boolean lowVelocity = Math.abs(velocity) < Constants.Intake.STALL_VELOCITY_THRESHOLD;
 
-      intakeRoller.configure(
-          config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-
-      lastKP = newKP;
-      lastKFF = newKFF;
-    }
+    return highCurrent && lowVelocity;
   }
 
-  // ================= SENSOR HELPERS =================
+  // ============================================================
+  // RECOVERY FLOW
+  // ============================================================
+
+  private void startRecovery() {
+    previousMode = currentMode;
+    inRecovery = true;
+
+    recoveryTimer.reset();
+    recoveryTimer.start();
+  }
+
+  private void endRecovery() {
+    inRecovery = false;
+
+    recoveryTimer.stop();
+    cooldownTimer.reset();
+    cooldownTimer.start();
+
+    currentMode = previousMode;
+  }
+
+  // ============================================================
+  // PERIODIC LOOP
+  // ============================================================
+
+  @Override
+  public void periodic() {
+
+    double velocity = getVelocity();
+    double current = getCurrent();
+
+    // ============================================================
+    // 1. RECOVERY MODE (HIGHEST PRIORITY)
+    // ============================================================
+    if (inRecovery) {
+
+      setVelocity(Constants.Intake.REVERSE_RPM);
+
+      if (recoveryTimer.get() > Constants.Intake.RECOVERY_TIME_SEC) {
+        endRecovery();
+      }
+
+      Logger.recordOutput("Intake/Mode", "RECOVERY");
+      Logger.recordOutput("Intake/InRecovery", true);
+      Logger.recordOutput("Intake/Current", current);
+      return;
+    }
+
+    // ============================================================
+    // 2. COOLDOWN (PREVENT JAM OSCILLATION)
+    // ============================================================
+    if (cooldownTimer.get() < Constants.Intake.COOLDOWN_TIME_SEC) {
+      setVelocity(Constants.Intake.IDLE_RPM);
+
+      Logger.recordOutput("Intake/Mode", "COOLDOWN");
+      return;
+    }
+
+    // ============================================================
+    // 3. NORMAL OPERATION
+    // ============================================================
+    switch (currentMode) {
+      case IDLE -> setVelocity(Constants.Intake.IDLE_RPM);
+
+      case INTAKE -> setVelocity(Constants.Intake.INTAKE_RPM);
+
+      case REVERSE -> setVelocity(Constants.Intake.REVERSE_RPM);
+    }
+
+    // ============================================================
+    // 4. JAM DETECTION (ONLY DURING INTAKE)
+    // ============================================================
+    if (currentMode == Mode.INTAKE && isJammed(current, velocity)) {
+      startRecovery();
+    }
+
+    // ============================================================
+    // 5. LOGGING
+    // ============================================================
+    Logger.recordOutput("Intake/Mode", currentMode.toString());
+    Logger.recordOutput("Intake/RPM", velocity);
+    Logger.recordOutput("Intake/Current", current);
+    Logger.recordOutput("Intake/InRecovery", inRecovery);
+  }
+
+  // ============================================================
+  // GETTERS
+  // ============================================================
+
+  public Mode getMode() {
+    return currentMode;
+  }
 
   public double getVelocity() {
     return intakeRoller.getEncoder().getVelocity();
@@ -149,61 +218,5 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   public double getCurrent() {
     return intakeRoller.getOutputCurrent();
-  }
-
-  public boolean gamePieceDetected(double target) {
-    return getCurrent() > 35 && getVelocity() < target * 0.6;
-  }
-
-  // ================= PERIODIC =================
-
-  @Override
-  public void periodic() {
-    // updatePIDIfChanged();
-
-    double velocity = getVelocity();
-    double current = getCurrent();
-    double target = targetRPM.get();
-
-    // Prevent false detection during spin-up
-    boolean allowDetection = intakeStartTimer.get() > 0.5;
-    boolean detected = allowDetection && gamePieceDetected(target);
-
-    switch (currentMode) {
-      case IDLE -> setVelocity(IDLE_RPM);
-
-      case INTAKE -> {
-        setVelocity(INTAKE_RPM);
-        System.out.println("Intake is Running");
-
-        // Only track pieces, DO NOT change mode
-        if (detected && !pieceLatched && detectionTimer.get() > 0.25) {
-          ballCount++;
-          pieceLatched = true;
-          detectionTimer.reset();
-        }
-
-        if (!detected) pieceLatched = false;
-      }
-
-      case REVERSE -> {
-        setVelocity(REVERSE_RPM);
-        System.out.println("Intake is Reversing");
-
-        if (detected && !pieceLatched && detectionTimer.get() > 0.25) {
-          ballCount++;
-          pieceLatched = true;
-          detectionTimer.reset();
-        }
-      }
-    }
-
-    // ===== Logging =====
-    Logger.recordOutput("Intake/Mode", currentMode.toString());
-    Logger.recordOutput("Intake/RPM", velocity);
-    Logger.recordOutput("Intake/TargetRPM", target);
-    Logger.recordOutput("Intake/Current", current);
-    Logger.recordOutput("Intake/BallCount", ballCount);
-    Logger.recordOutput("Intake/Detected", detected);
   }
 }

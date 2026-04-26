@@ -1,176 +1,135 @@
 package frc.robot.commands;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.Constants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
 
+/**
+ * ClimbCommands (Alliance-aware + Phase 2 clean architecture)
+ *
+ * <p>Responsibility: - NO direct motor control - Climb logic stays in subsystem - Drive alignment
+ * uses vision - Alliance-aware target selection
+ */
 public final class ClimbCommands {
 
   private ClimbCommands() {}
 
-  // -----------------------------
-  // Teleop: align to cage tag then climb
-  // -----------------------------
+  // ============================================================
+  // ALLIANCE-AWARE CLIMB TAG RESOLUTION
+  // ============================================================
 
-  /**
-   * Aligns to the alliance-appropriate cage AprilTag (with a 5-second timeout), then runs the
-   * climber upward until interrupted.
-   */
-  public static Command alignAndClimb(Drive drive, Vision vision, ClimbSubsystem climb) {
-    return DriveCommands.alignToTag(DriveCommands.getClimbTagId(), drive, vision)
-        .withTimeout(5.0)
-        .andThen(climb.climbCommand(0.75));
+  private static int getClimbTagId() {
+    Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+
+    // Red vs Blue climb targets (adjust if field changes)
+    return (alliance == Alliance.Red) ? 16 : 32;
   }
 
-  // -----------------------------
-  // Auto: drive to climb position (field-relative)
-  // -----------------------------
+  // ============================================================
+  // AUTO ALIGN TO CLIMB TAG (DRIVE ONLY)
+  // ============================================================
 
-  /**
-   * Drives to the cage AprilTag using field-relative odometry (used in PathPlanner named commands).
-   */
-  public static Command autoClimbDrive(Drive drive, AprilTagFieldLayout fieldLayout) {
-    return DriveCommands.driveToClimb(
-        drive,
-        fieldLayout,
-        new Transform2d(new Translation2d(0.0, 0.0), Rotation2d.fromDegrees(0.0)),
-        1.5,
-        3.0);
-  }
+  public static Command autoClimbDrive(Drive drive, Vision vision) {
 
-  /** Runs the climber upward for autonomous sequences. */
-  public static Command autoClimbUp(ClimbSubsystem climb) {
-    return climb.climbCommand(0.5).withTimeout(4);
-  }
-
-  /** Runs the climber downward for autonomous sequences. */
-  public static Command autoClimbDown(ClimbSubsystem climb) {
-    return climb.climbCommand(-0.5).withTimeout(6);
-  }
-
-  /** Field-relative climb alignment using camera-reported robot-relative error. */
-  public static Command driveToClimbVision(Drive drive, Vision vision) {
     return Commands.run(
-        () -> {
-          double forward = 0;
-          double strafe = 0;
-          double turn = 0;
+            () -> {
+              int tagId = getClimbTagId();
 
-          if (!vision.shouldUseVisionForClimb()) {
-            // Search mode
-            turn = 0.5;
-          } else {
-            var errorOpt = vision.getRobotRelativeError();
+              // If robot cannot see climb tag → do not move blindly
+              if (!vision.hasTag(tagId)) {
+                drive.runVelocity(new ChassisSpeeds(0, 0, 0));
+                return;
+              }
 
-            if (errorOpt.isEmpty()) {
-              drive.stop();
-              return;
-            }
+              // ================================
+              // VISION ERROR INPUT (REAR CAMERA)
+              // ================================
+              double tx = vision.getTX(); // left/right error (deg)
+              double ty = vision.getTY(); // forward/back proxy
 
-            Transform2d error = errorOpt.get();
+              // ================================
+              // TUNING GAINS (START HERE)
+              // ================================
+              final double kP_X = 0.05;
+              final double kP_Y = 0.05;
+              final double kP_ROT = 0.03;
 
-            forward = error.getX() * Constants.CLIMB_kP_FORWARD;
-            strafe = error.getY() * Constants.CLIMB_kP_STRAFE;
-            turn = error.getRotation().getRadians() * Constants.CLIMB_kP_TURN;
+              // ================================
+              // CONTROL OUTPUT
+              // ================================
+              double strafe = tx * kP_X;
+              double forward = ty * kP_Y;
+              double omega = tx * kP_ROT;
 
-            if (Math.abs(error.getX()) < 0.5) {
-              forward = 0;
-            }
-            if (Math.abs(error.getY()) < 0.5) {
-              strafe = 0;
-            }
-            if (Math.abs(error.getRotation().getDegrees()) < 1.0) {
-              turn = 0;
-            }
-          }
-
-          forward = MathUtil.clamp(forward, -1.0, 1.0);
-          strafe = MathUtil.clamp(strafe, -1.0, 1.0);
-          turn = MathUtil.clamp(turn, -1.0, 1.0);
-
-          drive.runVelocity(new ChassisSpeeds(forward, strafe, turn));
-        },
-        drive);
+              // ================================
+              // DRIVE OUTPUT
+              // ================================
+              drive.runVelocity(new ChassisSpeeds(forward, strafe, omega));
+            },
+            drive)
+        .withName("ClimbAutoAlignDrive");
   }
 
-  /** Limelight-only climb alignment fallback command. */
-  public static Command limelightClimbFull(Drive drive, Vision vision) {
-    return Commands.run(
-        () -> {
-          boolean seesTag = vision.hasTag(Constants.CLIMB_TAG_ID);
+  // ============================================================
+  // MANUAL CLIMB COMMANDS (STATE MACHINE WRAPPERS)
+  // ============================================================
 
-          double forward = 0;
-          double strafe = 0;
-          double turn = 0;
-
-          if (!seesTag) {
-            turn = 0.5;
-          } else {
-            double tx = vision.getTX();
-            double ty = vision.getTY();
-
-            double targetTX = 0.0;
-            double targetTY = 9.15;
-
-            double kTurn = 0.035;
-            double kForward = 0.08;
-            double kStrafe = 0.025;
-
-            double errorX = targetTX - tx;
-            double errorY = targetTY - ty;
-
-            turn = errorX * kTurn;
-            forward = errorY * kForward;
-            strafe = errorX * kStrafe;
-
-            if (Math.abs(errorX) < 1.0) {
-              turn = 0;
-              strafe = 0;
-            }
-
-            if (Math.abs(errorY) < 0.5) {
-              forward = 0;
-            }
-          }
-
-          turn = MathUtil.clamp(turn, -1.0, 1.0);
-          forward = MathUtil.clamp(forward, -1.0, 1.0);
-          strafe = MathUtil.clamp(strafe, -1.0, 1.0);
-
-          drive.runVelocity(new ChassisSpeeds(forward, strafe, turn));
-        },
-        drive);
+  public static Command climbUp(ClimbSubsystem climb) {
+    return Commands.run(climb::moveUp, climb).withName("ClimbUp");
   }
 
-  /** Logs current offset from a requested tag pose to SmartDashboard. */
-  public static Command logClimbOffset(Drive drive, AprilTagFieldLayout fieldLayout, int tagId) {
-    return Commands.runOnce(
-        () -> {
-          var tagPoseOpt = fieldLayout.getTagPose(tagId);
-          if (tagPoseOpt.isEmpty()) {
-            SmartDashboard.putString("ClimbOffset/Status", "Tag not found: " + tagId);
-            return;
-          }
+  public static Command climbDown(ClimbSubsystem climb) {
+    return Commands.run(climb::moveDown, climb).withName("ClimbDown");
+  }
 
-          Pose2d tagPose = tagPoseOpt.get().toPose2d();
-          Pose2d robotPose = drive.getPose();
-          Transform2d offset = new Transform2d(tagPose, robotPose);
+  public static Command stop(ClimbSubsystem climb) {
+    return Commands.runOnce(climb::stop, climb).withName("ClimbStop");
+  }
 
-          SmartDashboard.putNumber("ClimbOffset/X", offset.getX());
-          SmartDashboard.putNumber("ClimbOffset/Y", offset.getY());
-          SmartDashboard.putNumber("ClimbOffset/RotDeg", offset.getRotation().getDegrees());
-          SmartDashboard.putString("ClimbOffset/Status", "OK");
-        });
+  // ============================================================
+  // OVERRIDE CONTROL (SAFETY LAYER)
+  // ============================================================
+
+  public static Command enableManualOverride(ClimbSubsystem climb) {
+    return Commands.runOnce(() -> climb.setManualOverride(true), climb)
+        .withName("ClimbManualOverrideON");
+  }
+
+  public static Command disableManualOverride(ClimbSubsystem climb) {
+    return Commands.runOnce(() -> climb.setManualOverride(false), climb)
+        .withName("ClimbManualOverrideOFF");
+  }
+
+  // ============================================================
+  // FULL CLIMB SEQUENCE (READY)
+  // ============================================================
+
+  public static Command climbSequence(Drive drive, Vision vision, ClimbSubsystem climb) {
+
+    return Commands.sequence(
+
+        // Lock climb subsystem first (prevents interference)
+        enableManualOverride(climb),
+
+        // Align under bar using rear camera
+        autoClimbDrive(drive, vision).withTimeout(2.5),
+
+        // Engage climb motion
+        climbUp(climb).withTimeout(1.8),
+        Commands.waitSeconds(0.5),
+
+        // Controlled descent / hook adjustment
+        climbDown(climb).withTimeout(1.0),
+
+        // Stop everything
+        stop(climb),
+
+        // Restore normal robot behavior
+        disableManualOverride(climb));
   }
 }
