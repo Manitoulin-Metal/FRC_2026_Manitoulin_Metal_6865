@@ -208,8 +208,6 @@ public class RobotContainer {
     operator
         .y()
         .whileTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 60.0));
-
-    operator.leftBumper().toggleOnTrue(intakeRoller.reverseCommand());
   }
 
   // ============================================================

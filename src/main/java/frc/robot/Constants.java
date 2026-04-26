@@ -20,6 +20,12 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
  * \"replay\" (log replay from a file).
  */
 public final class Constants {
+
+  public static final class Field {
+    public static final double LENGTH_METERS = 16.54;
+    public static final double WIDTH_METERS = 8.23;
+  }
+
   public static final Mode simMode = Mode.SIM;
   public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
   public static final double Y_ALIGN_P = 0;

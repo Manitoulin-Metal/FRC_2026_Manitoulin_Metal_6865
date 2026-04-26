@@ -41,6 +41,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.util.LocalADStarAK;
@@ -88,6 +89,12 @@ public class Drive extends SubsystemBase {
   private final Alert gyroDisconnectedAlert =
       new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
 
+  private Vision vision;
+
+  // ==========================================================
+  // State
+  // ==========================================================
+
   private SwerveDriveKinematics kinematics = new SwerveDriveKinematics(getModuleTranslations());
   private Rotation2d rawGyroRotation = Rotation2d.kZero;
   private SwerveModulePosition[] lastModulePositions = // For delta tracking
@@ -100,7 +107,9 @@ public class Drive extends SubsystemBase {
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
 
-  private Vision m_vision;
+  // ===========================================================
+  // Constructor
+  // ==========================================================
 
   public Drive(
       GyroIO gyroIO,
@@ -155,6 +164,10 @@ public class Drive extends SubsystemBase {
                 (voltage) -> runCharacterization(voltage.in(Volts)), null, this));
   }
 
+  // ==========================================================
+  // Periodic
+  // ==========================================================
+
   @Override
   public void periodic() {
     odometryLock.lock();
@@ -164,13 +177,16 @@ public class Drive extends SubsystemBase {
     for (var module : modules) {
       module.periodic();
     }
-    odometryLock.unlock();
+    odometryLock.lock();
+    try {
+      gyroIO.updateInputs(gyroInputs);
+      Logger.processInputs("Drive/Gyro", gyroInputs);
 
-    // Stop moving when disabled
-    if (DriverStation.isDisabled()) {
       for (var module : modules) {
-        module.stop();
+        module.periodic();
       }
+    } finally {
+      odometryLock.unlock();
     }
 
     // Log empty setpoint states when disabled
@@ -220,17 +236,22 @@ public class Drive extends SubsystemBase {
 
     SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
 
-    // 2024 Crescendo field size (meters)
-    double fieldLength = 16.54;
-    double fieldWidth = 8.21;
+    // 2026 Rebuilt field size (meters)
+    double fieldLength = Constants.Field.LENGTH_METERS;
+    double fieldWidth = Constants.Field.WIDTH_METERS;
 
     double clampedX = MathUtil.clamp(x, 0.0, fieldLength);
     double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
 
-    // Bump detection and vision reset during autonomous
-    if (DriverStation.isAutonomous() && m_vision != null) {
+    if (x != pose.getX() || y != pose.getY()) {
+      poseEstimator.resetPosition(
+          rawGyroRotation, getModulePositions(), new Pose2d(x, y, pose.getRotation()));
+    }
 
-      Pose2d visionPose = m_vision.getEstimatedPose();
+    // Bump detection and vision reset during autonomous
+    if (DriverStation.isAutonomous() && vision != null) {
+
+      Pose2d visionPose = vision.getEstimatedPose();
 
       // Only proceed if vision actually has a valid pose
       if (visionPose != null) {
@@ -256,6 +277,14 @@ public class Drive extends SubsystemBase {
           getModulePositions(),
           new Pose2d(clampedX, clampedY, pose.getRotation()));
     }
+
+    Pose2d estimatedPose = poseEstimator.getEstimatedPosition();
+
+    Logger.recordOutput("Odometry/Robot", estimatedPose);
+    Logger.recordOutput("Field/Robot", estimatedPose);
+    Logger.recordOutput("Odometry/RobotRotationDeg", estimatedPose.getRotation().getDegrees());
+    Logger.recordOutput("Drive/GyroYawDeg", rawGyroRotation.getDegrees());
+    Logger.recordOutput("Odometry/RobotRotationRad", estimatedPose.getRotation().getRadians());
   }
 
   /**
@@ -274,7 +303,6 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
 
     // Log for Advantage Scope
-    Logger.recordOutput("Field/Robot", getPose());
     Logger.recordOutput("Drive/ChassisSpeeds", getChassisSpeeds());
 
     // Send setpoints to modules
@@ -367,7 +395,6 @@ public class Drive extends SubsystemBase {
   }
 
   /** Returns the current odometry pose. */
-  @AutoLogOutput(key = "Odometry/Robot")
   public Pose2d getPose() {
     return poseEstimator.getEstimatedPosition();
   }
@@ -380,7 +407,7 @@ public class Drive extends SubsystemBase {
   /** Resets the current odometry pose. */
   /** Set vision subsystem reference for bump correction. */
   public void setVision(Vision vision) {
-    m_vision = vision;
+    this.vision = vision;
   }
 
   public void setPose(Pose2d pose) {
