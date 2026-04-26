@@ -229,6 +229,13 @@ public class Drive extends SubsystemBase {
       poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
     }
 
+    // Simulate gyro in case of disconnection (SIM only)
+    if (gyroIO instanceof GyroIOSim simGyro) {
+      double dt = 0.02; // 20ms loop
+      double omega = getChassisSpeeds().omegaRadiansPerSecond;
+      simGyro.addYawRadians(omega * dt);
+    }
+
     Pose2d pose = poseEstimator.getEstimatedPosition();
 
     double x = pose.getX();

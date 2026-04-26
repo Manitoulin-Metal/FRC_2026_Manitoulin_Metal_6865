@@ -18,6 +18,10 @@ public class GyroIOSim implements GyroIO {
     yaw = new Rotation2d();
   }
 
+  public void addYawRadians(double deltaRadians) {
+    yaw = yaw.plus(new Rotation2d(deltaRadians));
+  }
+
   public void setYaw(Rotation2d newYaw) {
     yaw = newYaw;
   }

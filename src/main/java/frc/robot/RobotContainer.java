@@ -242,5 +242,8 @@ public class RobotContainer {
     // ---------------- LOGGER ----------------
     Logger.recordOutput("Match/Alert20", alert20);
     Logger.recordOutput("Match/Alert10", alert10);
+    SmartDashboard.putNumber(
+        "GyroDeg",
+        drive.getRotation().getDegrees()); // temporary for checking gyro angle on dashboard
   }
 }
