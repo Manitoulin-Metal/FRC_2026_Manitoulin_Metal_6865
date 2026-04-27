@@ -140,15 +140,15 @@ public class ShooterSubsystem extends SubsystemBase {
         "Shooter/FaultSummary", faultSummary);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
         "Shooter/Faults", Integer.toHexString(faultsRaw));
-    Logger.recordOutput("Shooter/VelocityRPS", velocityRps);
-    Logger.recordOutput("Shooter/TargetRPS", targetRps);
+    // Logger.recordOutput("Shooter/VelocityRPS", velocityRps);
+    // Logger.recordOutput("Shooter/TargetRPS", targetRps);
 
-    Logger.recordOutput("Shooter/PIDError", error);
-    Logger.recordOutput("Shooter/MotorVoltage", motorVoltage);
-    Logger.recordOutput("Shooter/StatorCurrent", statorCurrent);
-    Logger.recordOutput("Shooter/SupplyCurrent", supplyCurrent);
-    Logger.recordOutput("Shooter/Faults", Integer.toHexString(faultsRaw));
-    Logger.recordOutput("Shooter/FaultSummary", faultSummary);
+    // Logger.recordOutput("Shooter/PIDError", error);
+    // Logger.recordOutput("Shooter/MotorVoltage", motorVoltage);
+    // Logger.recordOutput("Shooter/StatorCurrent", statorCurrent);
+    // Logger.recordOutput("Shooter/SupplyCurrent", supplyCurrent);
+    // Logger.recordOutput("Shooter/Faults", Integer.toHexString(faultsRaw));
+    // Logger.recordOutput("Shooter/FaultSummary", faultSummary);
   }
 
   private void updatePIDIfChanged() {

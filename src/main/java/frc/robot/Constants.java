@@ -119,20 +119,26 @@ public final class Constants {
     public static final double MAX_OUTPUT_VOLTS = 12.0;
   }
 
-  public static final class Intake {
-    public static final double IDLE_RPM = 0;
-    public static final double INTAKE_RPM = -6500;
-    public static final double REVERSE_RPM = 4500;
+public static final class Intake {
+  public static final int MOTOR_ID = 58;
 
-    // ===== Anti-jam detection =====
-    public static final double STALL_CURRENT_AMPS = 35.0;
-    public static final double STALL_VELOCITY_THRESHOLD = 300.0;
+  public static final double KP = 0.00025;
+  public static final double KFF = 0.00017;
 
-    // ===== Anti-jam timing =====
-    public static final double SPINUP_TIME_SEC = 0.35;
-    public static final double RECOVERY_TIME_SEC = 0.25;
-    public static final double COOLDOWN_TIME_SEC = 0.4;
-  }
+  public static final double IDLE_RPM = 0.0;
+  public static final double INTAKE_RPM = -5000.0;
+  public static final double REVERSE_RPM = 3500.0;
+
+  public static final double JAM_CURRENT_AMPS = 32.0;
+  public static final double JAM_VELOCITY_RATIO = 0.55;
+
+  public static final double STARTUP_IGNORE_TIME = 0.40;
+  public static final double JAM_DETECT_TIME = 0.10;
+  public static final double UNJAM_REVERSE_TIME = 0.14;
+  public static final double UNJAM_FORWARD_TIME = 0.08;
+
+  public static final double COUNT_DELAY = 0.25;
+}
 
   public static class Climb {
     public static final int LIMIT_SWITCH_CHANNEL = 8;

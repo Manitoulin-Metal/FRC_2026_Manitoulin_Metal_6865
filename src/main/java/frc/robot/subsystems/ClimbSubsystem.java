@@ -9,12 +9,10 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import org.littletonrobotics.junction.Logger;
 
 public class ClimbSubsystem extends SubsystemBase {
 
@@ -264,23 +262,17 @@ public class ClimbSubsystem extends SubsystemBase {
     // Smart Dashboard updates for tuning and debugging - commented out some to avoid
     // loop overun and additional logging for AdvantageKit Logger data analysis
 
-    SmartDashboard.putString("Climb/State", state.name());
-    SmartDashboard.putNumber("Climb/Position", climbPosition);
-    SmartDashboard.putBoolean("Climb/LimitSwitch", pressed);
-    SmartDashboard.putBoolean("Climb/Homed", homed);
-    SmartDashboard.putBoolean("Climb/ManualOverride", manualOverride);
-
-    Logger.recordOutput("Climb/State", state.name());
-    Logger.recordOutput("Climb/Homed", homed);
-    Logger.recordOutput("Climb/Disabled", isDisabled());
-    Logger.recordOutput("Climb/LimitSwitchPressed", pressed);
-    Logger.recordOutput("Climb/SpeedCommand", output);
-    Logger.recordOutput("Climb/EncoderPosition", climbPosition);
-    Logger.recordOutput("Climb/UpTargetRotations", upTarget);
-    Logger.recordOutput("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >= upTarget);
-    Logger.recordOutput(
-        "Climb/BottomLimitReached",
-        pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
+    // Logger.recordOutput("Climb/State", state.name());
+    // Logger.recordOutput("Climb/Homed", homed);
+    // Logger.recordOutput("Climb/Disabled", isDisabled());
+    // Logger.recordOutput("Climb/LimitSwitchPressed", pressed);
+    // Logger.recordOutput("Climb/SpeedCommand", output);
+    // Logger.recordOutput("Climb/EncoderPosition", climbPosition);
+    // Logger.recordOutput("Climb/UpTargetRotations", upTarget);
+    // Logger.recordOutput("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >= upTarget);
+    // Logger.recordOutput(
+    //     "Climb/BottomLimitReached",
+    //     pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
 
     // SmartDashboard.putBoolean("Climb/Disabled", isDisabled());
     // SmartDashboard.putNumber("Climb/SpeedCommand", output);
