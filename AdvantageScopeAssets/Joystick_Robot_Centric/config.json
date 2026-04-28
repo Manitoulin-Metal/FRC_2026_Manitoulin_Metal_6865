@@ -1,0 +1,46 @@
+{
+  "name": "Robot-Centric Joystick",
+  "components": [
+    {
+      "type": "joystick",
+      "isYellow": false,
+      "centerPx": [
+        100,
+        100
+      ],
+      "radiusPx": 50,
+      "xSourceIndex": 0,
+      "xSourceInverted": false,
+      "ySourceIndex": 0,
+      "ySourceInverted": true
+    },
+    {
+      "type": "button",
+      "isYellow": true,
+      "isEllipse": true,
+      "centerPx": [
+        150,
+        50
+      ],
+      "sizePx": [
+        20,
+        20
+      ],
+      "sourceIndex": 0
+    },
+    {
+      "type": "button",
+      "isYellow": true,
+      "isEllipse": true,
+      "centerPx": [
+        180,
+        50
+      ],
+      "sizePx": [
+        20,
+        20
+      ],
+      "sourceIndex": 1
+    }
+  ]
+}

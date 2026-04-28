@@ -28,7 +28,12 @@
       "linkedName": "tbend"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.7206823027718476,
+      "rotationDegrees": -88.22750937051264
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -42,7 +47,7 @@
   },
   "goalEndState": {
     "velocity": 1.5,
-    "rotation": -88.02506598911803
+    "rotation": 91.36392753084198
   },
   "reversed": false,
   "folder": null,
