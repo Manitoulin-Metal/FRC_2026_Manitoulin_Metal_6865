@@ -78,7 +78,9 @@ public class TunerConstants {
 
   // Theoretical free speed (m/s) at 12 V applied output;
   // This needs to be tuned to your individual robot
-  public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(5.0); // Theoretical free speed (r/s) at 12 V applied output for our hardware is 5.2 m/s;
+  public static final LinearVelocity kSpeedAt12Volts =
+      MetersPerSecond.of(
+          5.0); // Theoretical free speed (r/s) at 12 V applied output for our hardware is 5.2 m/s;
 
   // Theoretical Turning Speed (r/s) at 12 V applied output;
   public static final AngularVelocity kAngularAt12Volts = RadiansPerSecond.of(4);
