@@ -16,8 +16,8 @@ public final class VisionConstants {
   // =============================
   // Camera Names
   // =============================
-  public static final String camera0Name = "camera_0"; // REAR
-  public static final String camera1Name = "camera_1"; // FRONT
+  public static final String camera0Name = "limelight0"; // REAR
+  public static final String camera1Name = "limelight1"; // FRONT
 
   // =============================
   // Camera Mounting Positions

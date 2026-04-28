@@ -7,11 +7,9 @@ import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkFlexConfig;
-
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
 import frc.robot.Constants;
 
 public class IntakeRollerSubsystem extends SubsystemBase {
@@ -42,17 +40,15 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
     SparkFlexConfig config = new SparkFlexConfig();
 
-    config.closedLoop
+    config
+        .closedLoop
         .p(Constants.Intake.KP)
         .i(0.0)
         .d(0.0)
         .velocityFF(Constants.Intake.KFF)
         .outputRange(-1, 1);
 
-    intakeRoller.configure(
-        config,
-        ResetMode.kResetSafeParameters,
-        PersistMode.kPersistParameters);
+    intakeRoller.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     velocityController = intakeRoller.getClosedLoopController();
 
@@ -74,9 +70,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   }
 
   public Command reverseCommand() {
-    return startEnd(
-        () -> setMode(Mode.REVERSE),
-        () -> setMode(Mode.IDLE));
+    return startEnd(() -> setMode(Mode.REVERSE), () -> setMode(Mode.IDLE));
   }
 
   public Command stopCommand() {
@@ -109,8 +103,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   public boolean jamDetected() {
     return getCurrent() > Constants.Intake.JAM_CURRENT_AMPS
         && Math.abs(getVelocity())
-            < Math.abs(Constants.Intake.INTAKE_RPM)
-                * Constants.Intake.JAM_VELOCITY_RATIO;
+            < Math.abs(Constants.Intake.INTAKE_RPM) * Constants.Intake.JAM_VELOCITY_RATIO;
   }
 
   // ================= PERIODIC =================
@@ -118,17 +111,14 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
 
-    boolean startupDone =
-        intakeStartTimer.get() > Constants.Intake.STARTUP_IGNORE_TIME;
+    boolean startupDone = intakeStartTimer.get() > Constants.Intake.STARTUP_IGNORE_TIME;
 
     switch (currentMode) {
-
       case IDLE -> setVelocity(Constants.Intake.IDLE_RPM);
 
       case REVERSE -> setVelocity(Constants.Intake.REVERSE_RPM);
 
       case INTAKE -> {
-
         setVelocity(Constants.Intake.INTAKE_RPM);
 
         if (startupDone && jamDetected()) {
@@ -140,9 +130,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
           jamTimer.reset();
         }
 
-        if (jamDetected()
-            && !pieceLatched
-            && countTimer.get() > Constants.Intake.COUNT_DELAY) {
+        if (jamDetected() && !pieceLatched && countTimer.get() > Constants.Intake.COUNT_DELAY) {
 
           fuelCount++;
           pieceLatched = true;
@@ -155,7 +143,6 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       }
 
       case UNJAM_REVERSE -> {
-
         setVelocity(Constants.Intake.REVERSE_RPM);
 
         if (jamTimer.get() > Constants.Intake.UNJAM_REVERSE_TIME) {
@@ -165,7 +152,6 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       }
 
       case UNJAM_FORWARD -> {
-
         setVelocity(Constants.Intake.INTAKE_RPM);
 
         if (jamTimer.get() > Constants.Intake.UNJAM_FORWARD_TIME) {
