@@ -1,10 +1,20 @@
 {
-  "name": "6865 InBEEana Jones", 
-  "isFTC": false, 
+  "name": "6865 InBEEana Jones",
+  "isFTC": false,
   "rotations": [
-    {"axis": "y", "degrees": 180},
-    {"axis": "z", "degrees": 90}
+    {
+      "axis": "y",
+      "degrees": 180
+    },
+    {
+      "axis": "z",
+      "degrees": 90
+    }
   ],
-  "position":[0,0,0.522],
+  "position": [
+    0,
+    0,
+    0.522
+  ],
   "cameras": []
 }
