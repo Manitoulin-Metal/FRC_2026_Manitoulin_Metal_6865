@@ -113,12 +113,10 @@ public class Robot extends LoggedRobot {
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
-    autonomousCommand = robotContainer.getAutonomousCommand();
+    autonomousCommand =
+        robotContainer.enableHomingCommand().andThen(robotContainer.getAutonomousCommand());
 
-    if (autonomousCommand != null) {
-      autonomousCommand.schedule();
-    }
-    robotContainer.enableHoming(); // Start homing the intake at the beginning of autonomous
+    autonomousCommand.schedule();
   }
 
   /** This function is called periodically during autonomous. */

@@ -13,277 +13,226 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import org.littletonrobotics.junction.Logger;
 
 public class ClimbSubsystem extends SubsystemBase {
 
-  public enum ClimbState {
-    DISABLED,
+  // =========================================================
+  // STATE MACHINE (SIMPLE + EXPLICIT)
+  // =========================================================
+  public enum State {
     IDLE,
     UP,
     DOWN,
     HOMING,
     AT_TOP,
-    AT_BOTTOM
+    AT_BOTTOM,
+    DISABLED
   }
 
-  private final SparkFlex climbMotor = new SparkFlex(60, MotorType.kBrushless);
+  private State state = State.IDLE;
+
+  // =========================================================
+  // HARDWARE
+  // =========================================================
+  private final SparkFlex motor = new SparkFlex(60, MotorType.kBrushless);
   private final RelativeEncoder encoder;
   private final DigitalInput limitSwitch = new DigitalInput(Constants.Climb.LIMIT_SWITCH_CHANNEL);
-  private boolean manualOverride = false;
 
-  private ClimbState state = ClimbState.IDLE;
+  // =========================================================
+  // TRACKING
+  // =========================================================
   private boolean homed = false;
-  private boolean upTargetReached = false;
-  private double homingStartTimestamp = -1.0;
+  private double homingStartTime = -1;
 
-  public void setManualOverride(boolean override) {
-    manualOverride = override;
-  }
-
+  // =========================================================
+  // CONSTRUCTOR
+  // =========================================================
   @SuppressWarnings("removal")
   public ClimbSubsystem() {
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
 
-    climbMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    encoder = climbMotor.getEncoder();
+    motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+    encoder = motor.getEncoder();
+
+    Logger.recordOutput("Climb/AmTrying?", "I am idle-boi.");
   }
 
-  // ========================= MOTOR CONTROL =========================
+  // =========================================================
+  // SENSOR HELPERS
+  // =========================================================
 
-  private boolean isMotionAllowed() {
-    return !manualOverride;
-  }
-
-  public boolean isLimitSwitchPressed() {
+  public boolean limitPressed() {
     return !limitSwitch.get(); // active low
-  }
-
-  public ClimbState getState() {
-    return state;
   }
 
   public boolean isHomed() {
     return homed;
   }
 
-  public boolean isDisabled() {
-    return state == ClimbState.DISABLED;
+  public State getState() {
+    return state;
   }
 
-  public void disable() {
-    state = ClimbState.DISABLED;
-    homingStartTimestamp = -1.0;
+  public double getPosition() {
+    return encoder.getPosition();
   }
+
+  // =========================================================
+  // LIMIT LOGIC
+  // =========================================================
+
+  private boolean atBottom() {
+    return limitPressed() || getPosition() <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS;
+  }
+
+  private boolean atTop() {
+    double top = Constants.Climb.upTargetEntry.get();
+    return top > 1.0 && getPosition() >= top;
+  }
+
+  // =========================================================
+  // COMMAND API (CLEAN & DIRECT)
+  // =========================================================
 
   public void moveUp() {
-    if (isDisabled() || !isMotionAllowed()) {
-      return;
-    }
-
-    if (isTopLimitReached()) {
-      upTargetReached = true;
-      state = ClimbState.AT_TOP;
-      return;
-    }
-
-    state = ClimbState.UP;
+    System.out.println(state);
+    if (state == State.DISABLED) return;
+    System.out.println("moveUp called in ClimbSubsystem.");
+    state = State.UP;
+    System.out.println("State set to UP in ClimbSubsystem.");
   }
 
   public void moveDown() {
-    if (isDisabled() || !isMotionAllowed()) {
-      return;
-    }
+    if (state == State.DISABLED) return;
 
-    if (isBottomLimitReached()) {
-      state = ClimbState.AT_BOTTOM;
-      return;
-    }
-
-    state = ClimbState.DOWN;
+    state = State.DOWN;
   }
 
   public void stop() {
-    if (!isDisabled()) {
-      state = ClimbState.IDLE;
+    if (state != State.DISABLED) {
+      state = State.IDLE;
     }
   }
 
-  public void startHoming() {
-    if (isDisabled() || !isMotionAllowed()) {
-      return;
-    }
+  public void disable() {
+    state = State.DISABLED;
+    motor.stopMotor();
+  }
 
-    if (isLimitSwitchPressed()) {
-      encoder.setPosition(0.0);
+  public void startHoming() {
+    if (state == State.DISABLED) return;
+
+    if (limitPressed()) {
+      encoder.setPosition(0);
       homed = true;
-      state = ClimbState.AT_BOTTOM;
-      homingStartTimestamp = -1.0;
+      state = State.AT_BOTTOM;
       return;
     }
 
     homed = false;
-    state = ClimbState.HOMING;
-    homingStartTimestamp = Timer.getFPGATimestamp();
+    homingStartTime = Timer.getFPGATimestamp();
+    state = State.HOMING;
   }
 
-  // ========================= COMMANDS =========================
+  // =========================================================
+  // COMMAND FACTORY
+  // =========================================================
 
-  public Command climbCommand(double speed) {
-    return Commands.runEnd(
-        () -> {
-          if (isDisabled() || !isMotionAllowed()) {
-            return;
-          }
+  public Command upCommand() {
+    System.out.println("upCommand in ClimbSystem running.");
+    System.out.println("Before state:" + state);
+    this.state = State.UP;
+    System.out.println("After state:" + state);
+    return Commands.none();
+    // return Commands.runOnce(this::moveUp, this).withName("ClimbUpCommand");
+  }
 
-          if (speed > 0.0) {
-            moveUp();
-          } else if (speed < 0.0) {
-            moveDown();
-          } else {
-            state = ClimbState.IDLE;
-          }
-        },
-        this::stop,
-        this);
+  public Command downCommand() {
+    return Commands.startEnd(this::moveDown, this::stop, this);
   }
 
   public Command homeCommand() {
     return Commands.sequence(
-            Commands.runOnce(this::startHoming, this),
-            Commands.waitUntil(() -> isHomed() || isDisabled())
-                .withTimeout(Constants.Climb.HOMING_TIMEOUT_SECONDS))
-        .andThen(
-            Commands.runOnce(
-                () -> {
-                  if (!isHomed()) {
-                    disable();
-                  }
-                },
-                this));
+        Commands.runOnce(this::startHoming, this),
+        Commands.waitUntil(() -> isHomed()).withTimeout(Constants.Climb.HOMING_TIMEOUT_SECONDS),
+        Commands.runOnce(this::stop, this));
   }
 
-  public double getEncoderPosition() {
-    return encoder.getPosition();
-  }
-
-  public boolean isAtUpTarget() {
-    return upTargetReached;
-  }
-
-  private boolean isTopLimitReached() {
-    double upTarget = Constants.Climb.upTargetEntry.get();
-    return upTarget > 1.0 && encoder.getPosition() >= upTarget;
-  }
-
-  private boolean isBottomLimitReached() {
-    return isLimitSwitchPressed()
-        || encoder.getPosition() <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS;
-  }
-
+  // =========================================================
+  // PERIODIC (PURE STATE MACHINE - NO EXTRA LOGIC)
+  // =========================================================
   @Override
   public void periodic() {
-    if (manualOverride) {
-      climbMotor.stopMotor();
-      state = ClimbState.IDLE; // prevents "ghost climbing"
-      return;
-    }
-    boolean pressed = isLimitSwitchPressed();
+
     double output = 0.0;
-    double climbPosition = encoder.getPosition();
-    double upTarget = Constants.Climb.upTargetEntry.get();
 
     switch (state) {
       case UP:
-        if (upTarget > 1.0 && climbPosition >= upTarget) {
+        if (atTop()) {
+          state = State.AT_TOP;
           output = 0.0;
-          upTargetReached = true;
-          state = ClimbState.AT_TOP;
         } else {
           output = Constants.Climb.UP_SPEED;
         }
         break;
 
       case DOWN:
-        if (pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS) {
+        if (atBottom()) {
+          encoder.setPosition(0);
+          homed = true;
+          state = State.AT_BOTTOM;
           output = 0.0;
-          encoder.setPosition(0.0);
-          state = ClimbState.AT_BOTTOM;
-          if (pressed) {
-            homed = true;
-          }
         } else {
           output = Constants.Climb.DOWN_SPEED;
         }
         break;
 
       case HOMING:
-        if (pressed) {
-          output = 0.0;
-          encoder.setPosition(0.0);
-          state = ClimbState.AT_BOTTOM;
+        if (limitPressed()) {
+          encoder.setPosition(0);
           homed = true;
-          homingStartTimestamp = -1.0;
-        } else if (homingStartTimestamp > 0.0
-            && (Timer.getFPGATimestamp() - homingStartTimestamp)
-                >= Constants.Climb.HOMING_TIMEOUT_SECONDS) {
+          state = State.AT_BOTTOM;
           output = 0.0;
-          state = ClimbState.DISABLED;
-          homingStartTimestamp = -1.0;
+
+        } else if (Timer.getFPGATimestamp() - homingStartTime
+            > Constants.Climb.HOMING_TIMEOUT_SECONDS) {
+
+          state = State.DISABLED;
+          output = 0.0;
+
         } else {
           output = Constants.Climb.HOMING_SPEED;
         }
         break;
 
-      case DISABLED:
-        output = 0.0;
-        break;
-
       case AT_TOP:
-        output = 0.0;
-        break;
-
       case AT_BOTTOM:
-        output = 0.0;
-        break;
-
+      case DISABLED:
       case IDLE:
       default:
         output = 0.0;
         break;
     }
 
-    if (output == 0.0) {
-      climbMotor.stopMotor();
+    if (Math.abs(output) < 0.001) {
+      motor.stopMotor();
     } else {
-      climbMotor.set(output);
+      motor.set(output);
     }
 
-    // Smart Dashboard updates for tuning and debugging - commented out some to avoid
-    // loop overun and additional logging for AdvantageKit Logger data analysis
+    Logger.recordOutput("Climb/State", state.toString());
+    Logger.recordOutput("Climb/Homed", homed);
+    Logger.recordOutput("Climb/Disabled", state == State.DISABLED);
 
-    // Logger.recordOutput("Climb/State", state.name());
-    // Logger.recordOutput("Climb/Homed", homed);
-    // Logger.recordOutput("Climb/Disabled", isDisabled());
-    // Logger.recordOutput("Climb/LimitSwitchPressed", pressed);
-    // Logger.recordOutput("Climb/SpeedCommand", output);
-    // Logger.recordOutput("Climb/EncoderPosition", climbPosition);
-    // Logger.recordOutput("Climb/UpTargetRotations", upTarget);
-    // Logger.recordOutput("Climb/TopLimitReached", upTarget > 1.0 && climbPosition >= upTarget);
-    // Logger.recordOutput(
-    //     "Climb/BottomLimitReached",
-    //     pressed || climbPosition <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
+    Logger.recordOutput("Climb/EncoderPosition", encoder.getPosition());
+    Logger.recordOutput("Climb/LimitSwitchPressed", limitPressed());
 
-    // SmartDashboard.putBoolean("Climb/Disabled", isDisabled());
-    // SmartDashboard.putNumber("Climb/SpeedCommand", output);
-    // SmartDashboard.putNumber("Climb/EncoderPosition", climbPosition);
-    // SmartDashboard.putNumber("Climb/UpTargetRotations", upTarget);
-    // SmartDashboard.putBoolean("Climb/TopLimitReached", upTarget > 1.0 &&
-    // climbPosition >=
-    // upTarget);
-    // SmartDashboard.putBoolean(
-    // "Climb/BottomLimitReached",
-    // pressed || climbPosition <=
-    // Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS);
+    Logger.recordOutput("Climb/MotorOutput", output);
+
+    Logger.recordOutput("Climb/AtTop", atTop());
+    Logger.recordOutput("Climb/AtBottom", atBottom());
   }
 }

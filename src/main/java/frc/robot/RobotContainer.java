@@ -97,9 +97,10 @@ public class RobotContainer {
             () -> robotCentric));
 
     // ---------------- AUTO ----------------
-    autoChooser = new LoggedDashboardChooser<>("Auto", AutoBuilder.buildAutoChooser());
 
-    registerNamedCommands();
+    registerNamedCommands(); // Register named commands for auto builder before Chooser construction
+
+    autoChooser = new LoggedDashboardChooser<>("Auto", AutoBuilder.buildAutoChooser());
 
     configureBindings();
   }
@@ -140,14 +141,15 @@ public class RobotContainer {
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
 
     NamedCommands.registerCommand(
-        "intakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+        "IntakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
     NamedCommands.registerCommand("intakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
     NamedCommands.registerCommand("ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, vision));
 
-    NamedCommands.registerCommand("ClimbUp", ClimbCommands.climbUp(climb));
-    NamedCommands.registerCommand("ClimbDown", ClimbCommands.climbDown(climb));
+    NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.climbUp(climb).withTimeout(2.0));
+
+    NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(1.0));
 
     NamedCommands.registerCommand(
         "Shoot",
@@ -196,8 +198,9 @@ public class RobotContainer {
     operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
     operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
-    operator.pov(0).whileTrue(climb.climbCommand(0.75)).onFalse(climb.climbCommand(0));
-    operator.pov(180).whileTrue(climb.climbCommand(-0.75)).onFalse(climb.climbCommand(0));
+    operator.pov(0).whileTrue(ClimbCommands.climbUp(climb)).onFalse(ClimbCommands.stop(climb));
+
+    operator.pov(180).whileTrue(ClimbCommands.climbDown(climb)).onFalse(ClimbCommands.stop(climb));
 
     operator.leftTrigger(0.1).toggleOnTrue(intakeRoller.intakeToggleCommand());
 
@@ -218,8 +221,36 @@ public class RobotContainer {
     CommandScheduler.getInstance().schedule(climb.homeCommand());
   }
 
+  public Command enableHomingCommand() {
+    return Commands.sequence(
+            climb.homeCommand(), Commands.waitUntil(climb::isHomed).withTimeout(3.0))
+        .withName("EnableHoming");
+  }
+
   public Command getAutonomousCommand() {
-    return autoChooser.get();
+    // return autoChooser.get();
+    return Commands.sequence(
+
+            // Raise climber for 2 sec
+            // ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0)
+            //     .withTimeout(7.5))
+            ClimbCommands.climbUp(climb).withTimeout(2.0))
+
+        // System.out.println("About to call climbUp"),
+        // ClimbCommands.autoClimberUp(climb).withTimeout(2.0))
+
+        // Commands.runOnce(climb::moveUp, climb),
+        // Commands.waitSeconds(2.0),
+        // Commands.runOnce(climb::stop, climb),
+
+        // // Wait 2 sec
+        // Commands.waitSeconds(2.0),
+
+        // // Lower climber for 2 sec
+        // Commands.runOnce(climb::moveDown, climb),
+        // Commands.waitSeconds(2.0),
+        // Commands.runOnce(climb::stop, climb))
+        .withName("ClimbOnlyAuto");
   }
 
   // ============================================================

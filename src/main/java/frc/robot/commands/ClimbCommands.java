@@ -10,28 +10,27 @@ import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
 
 /**
- * ClimbCommands (Alliance-aware + Phase 2 clean architecture)
+ * Clean ClimbCommands
  *
- * <p>Responsibility: - NO direct motor control - Climb logic stays in subsystem - Drive alignment
- * uses vision - Alliance-aware target selection
+ * <p>Responsibility: - Only REQUEST actions - No state logic - No override systems - Subsystem owns
+ * all safety + limits
  */
 public final class ClimbCommands {
 
   private ClimbCommands() {}
 
   // ============================================================
-  // ALLIANCE-AWARE CLIMB TAG RESOLUTION
+  // ALLIANCE TAG SELECTION
   // ============================================================
 
   private static int getClimbTagId() {
     Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
-    // Red vs Blue climb targets (adjust if field changes)
     return (alliance == Alliance.Red) ? 16 : 32;
   }
 
   // ============================================================
-  // AUTO ALIGN TO CLIMB TAG (DRIVE ONLY)
+  // DRIVE ALIGNMENT (VISION ONLY)
   // ============================================================
 
   public static Command autoClimbDrive(Drive drive, Vision vision) {
@@ -40,96 +39,77 @@ public final class ClimbCommands {
             () -> {
               int tagId = getClimbTagId();
 
-              // If robot cannot see climb tag → do not move blindly
               if (!vision.hasTag(tagId)) {
                 drive.runVelocity(new ChassisSpeeds(0, 0, 0));
                 return;
               }
 
-              // ================================
-              // VISION ERROR INPUT (REAR CAMERA)
-              // ================================
-              double tx = vision.getTX(); // left/right error (deg)
-              double ty = vision.getTY(); // forward/back proxy
+              double tx = vision.getTX();
+              double ty = vision.getTY();
 
-              // ================================
-              // TUNING GAINS (START HERE)
-              // ================================
               final double kP_X = 0.05;
               final double kP_Y = 0.05;
               final double kP_ROT = 0.03;
 
-              // ================================
-              // CONTROL OUTPUT
-              // ================================
               double strafe = tx * kP_X;
               double forward = ty * kP_Y;
               double omega = tx * kP_ROT;
 
-              // ================================
-              // DRIVE OUTPUT
-              // ================================
               drive.runVelocity(new ChassisSpeeds(forward, strafe, omega));
             },
             drive)
+        .finallyDo(drive::stop)
         .withName("ClimbAutoAlignDrive");
   }
 
   // ============================================================
-  // MANUAL CLIMB COMMANDS (STATE MACHINE WRAPPERS)
+  // CLIMB ACTIONS (DIRECT STATE REQUESTS ONLY)
   // ============================================================
 
+  public static Command autoClimberUp(ClimbSubsystem climb) {
+    return climb.upCommand().withName("ClimbAutoUp");
+    // return Commands.runOnce(climb::moveUp, climb).withName("ClimbAutoUp");
+  }
+
   public static Command climbUp(ClimbSubsystem climb) {
-    return Commands.run(climb::moveUp, climb).withName("ClimbUp");
+    System.out.println("Climb Up Command Created");
+    return Commands.startEnd(climb::moveUp, climb::stop, climb).withName("ClimbUp");
   }
 
   public static Command climbDown(ClimbSubsystem climb) {
-    return Commands.run(climb::moveDown, climb).withName("ClimbDown");
+    return Commands.startEnd(climb::moveDown, climb::stop, climb).withName("ClimbDown");
   }
 
   public static Command stop(ClimbSubsystem climb) {
     return Commands.runOnce(climb::stop, climb).withName("ClimbStop");
   }
 
-  // ============================================================
-  // OVERRIDE CONTROL (SAFETY LAYER)
-  // ============================================================
-
-  public static Command enableManualOverride(ClimbSubsystem climb) {
-    return Commands.runOnce(() -> climb.setManualOverride(true), climb)
-        .withName("ClimbManualOverrideON");
-  }
-
-  public static Command disableManualOverride(ClimbSubsystem climb) {
-    return Commands.runOnce(() -> climb.setManualOverride(false), climb)
-        .withName("ClimbManualOverrideOFF");
+  public static Command home(ClimbSubsystem climb) {
+    return climb.homeCommand().withName("ClimbHome");
   }
 
   // ============================================================
-  // FULL CLIMB SEQUENCE (READY)
+  // FULL AUTO CLIMB SEQUENCE
   // ============================================================
 
   public static Command climbSequence(Drive drive, Vision vision, ClimbSubsystem climb) {
 
     return Commands.sequence(
 
-        // Lock climb subsystem first (prevents interference)
-        enableManualOverride(climb),
+            // Align under bar
+            autoClimbDrive(drive, vision).withTimeout(2.5),
 
-        // Align under bar using rear camera
-        autoClimbDrive(drive, vision).withTimeout(2.5),
+            // Raise hook
+            climbUp(climb).withTimeout(1.8),
 
-        // Engage climb motion
-        climbUp(climb).withTimeout(1.8),
-        Commands.waitSeconds(0.5),
+            // settle time
+            Commands.waitSeconds(0.4),
 
-        // Controlled descent / hook adjustment
-        climbDown(climb).withTimeout(1.0),
+            // adjust / descend
+            climbDown(climb).withTimeout(1.0),
 
-        // Stop everything
-        stop(climb),
-
-        // Restore normal robot behavior
-        disableManualOverride(climb));
+            // ensure stop
+            stop(climb))
+        .withName("FullClimbSequence");
   }
 }

@@ -159,8 +159,8 @@ public final class Constants {
     // Target pose in vision-space (your measured values)
     // based on limelight readings (tx, ty, distance) when
     // the robot is in the correct position to start climbing)
-    public static final double TARGET_TX = -0.10;
-    public static final double TARGET_TY = 0.54;
+    public static final double TARGET_TX = -6.84;
+    public static final double TARGET_TY = 7.28;
 
     // Distance target (meters, tune this!)
     public static final double TARGET_DISTANCE = 0.68;
