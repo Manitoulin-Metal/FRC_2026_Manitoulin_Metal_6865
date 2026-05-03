@@ -66,6 +66,10 @@ public final class ClimbCommands {
   // CLIMB ACTIONS (DIRECT STATE REQUESTS ONLY)
   // ============================================================
 
+  public static Command waitForHome(ClimbSubsystem climb) {
+    return Commands.waitUntil(climb::isHomed).withTimeout(2.0);
+  }
+
   public static Command autoClimberUp(ClimbSubsystem climb) {
     return climb.upCommand().withName("ClimbAutoUp");
     // return Commands.runOnce(climb::moveUp, climb).withName("ClimbAutoUp");

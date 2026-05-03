@@ -1,0 +1,64 @@
+{
+  "name": "6865 InBEEana Components",
+  "isFTC": false,
+  "rotations": [
+    {
+      "axis": "x",
+      "degrees": 180
+    },
+    {
+      "axis": "z",
+      "degrees": -90
+    }
+  ],
+  "position": [
+    0,
+    0,
+    0.522
+  ],
+  "cameras": [],
+  "components": [
+    {
+      "name": "intake",
+      "source": "model_0.glb",
+      "zeroedRotations": [
+        {
+          "axis": "x",
+          "degrees": 0
+        },
+        {
+          "axis": "y",
+          "degrees": 0
+        },
+        {
+          "axis": "z",
+          "degrees": -180
+        }
+      ],
+      "zeroedPosition": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "climber",
+      "source": "model_1.glb",
+      "zeroedRotations": [
+        {
+          "axis": "x",
+          "degrees": 90
+        },
+        {
+          "axis": "z",
+          "degrees": 90
+        }
+      ],
+      "zeroedPosition": [
+        0.07,
+        -0.12,
+        0.09
+      ]
+    }
+  ]
+}

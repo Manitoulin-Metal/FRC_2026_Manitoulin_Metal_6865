@@ -147,7 +147,14 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, vision));
 
-    NamedCommands.registerCommand("ClimbAutoUp", ClimbCommands.climbUp(climb).withTimeout(2.0));
+    // NamedCommands.registerCommand("ClimbAutoUp",
+    // ClimbCommands.climbUp(climb).withTimeout(2.0));
+
+    // wraps command with a check to see if
+    // climber is homed before raising hook
+    NamedCommands.registerCommand(
+        "ClimbAutoUp",
+        ClimbCommands.waitForHome(climb).andThen(ClimbCommands.climbUp(climb).withTimeout(3.0)));
 
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(1.0));
 
@@ -228,29 +235,12 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    // return autoChooser.get();
-    return Commands.sequence(
+    return autoChooser.get();
 
-            // Raise climber for 2 sec
-            // ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0)
-            //     .withTimeout(7.5))
-            ClimbCommands.climbUp(climb).withTimeout(2.0))
+    // return Commands.sequence(
 
-        // System.out.println("About to call climbUp"),
-        // ClimbCommands.autoClimberUp(climb).withTimeout(2.0))
-
-        // Commands.runOnce(climb::moveUp, climb),
-        // Commands.waitSeconds(2.0),
-        // Commands.runOnce(climb::stop, climb),
-
-        // // Wait 2 sec
-        // Commands.waitSeconds(2.0),
-
-        // // Lower climber for 2 sec
-        // Commands.runOnce(climb::moveDown, climb),
-        // Commands.waitSeconds(2.0),
-        // Commands.runOnce(climb::stop, climb))
-        .withName("ClimbOnlyAuto");
+    // ClimbCommands.climbUp(climb).withTimeout(2.0))
+    // .withName("ClimbOnlyAuto");
   }
 
   // ============================================================

@@ -56,8 +56,6 @@ public class ClimbSubsystem extends SubsystemBase {
     motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     encoder = motor.getEncoder();
-
-    Logger.recordOutput("Climb/AmTrying?", "I am idle-boi.");
   }
 
   // =========================================================
@@ -142,10 +140,10 @@ public class ClimbSubsystem extends SubsystemBase {
   // =========================================================
 
   public Command upCommand() {
-    System.out.println("upCommand in ClimbSystem running.");
-    System.out.println("Before state:" + state);
+    // System.out.println("upCommand in ClimbSystem running.");
+    // System.out.println("Before state:" + state);
     this.state = State.UP;
-    System.out.println("After state:" + state);
+    // System.out.println("After state:" + state);
     return Commands.none();
     // return Commands.runOnce(this::moveUp, this).withName("ClimbUpCommand");
   }
@@ -223,14 +221,14 @@ public class ClimbSubsystem extends SubsystemBase {
       motor.set(output);
     }
 
-    Logger.recordOutput("Climb/State", state.toString());
-    Logger.recordOutput("Climb/Homed", homed);
-    Logger.recordOutput("Climb/Disabled", state == State.DISABLED);
+    // Logger.recordOutput("Climb/State", state.toString());
+    // Logger.recordOutput("Climb/Homed", homed);
+    // Logger.recordOutput("Climb/Disabled", state == State.DISABLED);
 
-    Logger.recordOutput("Climb/EncoderPosition", encoder.getPosition());
+    // Logger.recordOutput("Climb/EncoderPosition", encoder.getPosition());
     Logger.recordOutput("Climb/LimitSwitchPressed", limitPressed());
 
-    Logger.recordOutput("Climb/MotorOutput", output);
+    // Logger.recordOutput("Climb/MotorOutput", output);
 
     Logger.recordOutput("Climb/AtTop", atTop());
     Logger.recordOutput("Climb/AtBottom", atBottom());
