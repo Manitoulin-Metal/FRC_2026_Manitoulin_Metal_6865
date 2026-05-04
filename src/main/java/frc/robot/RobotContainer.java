@@ -223,15 +223,14 @@ public class RobotContainer {
   // ============================================================
   // ENABLE HOMING
   // ============================================================
-  public void enableHoming() {
-    intakeDeploy.startHoming();
-    CommandScheduler.getInstance().schedule(climb.homeCommand());
-  }
+  // public void enableHoming() {
+  //   intakeDeploy.startHoming();
+  //   CommandScheduler.getInstance().schedule(climb.homeCommand());
+  // }
 
   public Command enableHomingCommand() {
     return Commands.sequence(
-            climb.homeCommand(), Commands.waitUntil(climb::isHomed).withTimeout(3.0))
-        .withName("EnableHoming");
+        Commands.runOnce(() -> intakeDeploy.startHoming()), climb.homeCommand());
   }
 
   public Command getAutonomousCommand() {

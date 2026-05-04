@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -134,7 +135,8 @@ public class Robot extends LoggedRobot {
   @Override
   public void autonomousInit() {
     autonomousCommand =
-        robotContainer.enableHomingCommand().andThen(robotContainer.getAutonomousCommand());
+        Commands.sequence(
+            robotContainer.enableHomingCommand(), robotContainer.getAutonomousCommand());
 
     autonomousCommand.schedule();
   }
@@ -155,7 +157,9 @@ public class Robot extends LoggedRobot {
       autonomousCommand.cancel();
     }
 
-    robotContainer.enableHoming(); // Start homing the intake at the beginning of teleop
+    robotContainer.enableHomingCommand().schedule();
+    // Start homing the intake at the beginning of teleop
+    // Disable for real matches for safety, but useful for testing and simulation
   }
 
   /** This function is called periodically during operator control. */
