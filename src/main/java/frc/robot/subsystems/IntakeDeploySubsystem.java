@@ -38,6 +38,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final PIDController pid;
   private double shakeTargetAngleDeg = Constants.IntakeDeploy.SHAKE_MAX_ANGLE;
 
+  // ---------- State tracking ----------
   private IntakeState state = IntakeState.HOMING;
 
   // ---------- Tunable NT entries ----------
@@ -59,6 +60,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   // ---------- Logging publishers ----------
   private final BooleanPublisher hallTriggeredPub;
   private final BooleanPublisher atSetpointPub;
+  private IntakeState lastLoggedState = null;
 
   public IntakeDeploySubsystem() {
 
@@ -68,6 +70,13 @@ public class IntakeDeploySubsystem extends SubsystemBase {
     // This soft limit will prevent the motor controller from attempting to drive
     // mechanism to deploy angle past hard stop
     // Tune direction and value. Starting at 33.75
+    config.softLimit.forwardSoftLimit(90).forwardSoftLimitEnabled(true);
+    config.signals.primaryEncoderPositionPeriodMs(100);
+    config.signals.primaryEncoderVelocityPeriodMs(100);
+    config.signals.appliedOutputPeriodMs(100);
+    config.signals.busVoltagePeriodMs(100);
+    config.signals.outputCurrentPeriodMs(100);
+
     config.softLimit.forwardSoftLimit(90).forwardSoftLimitEnabled(true);
 
     // Apply configuration to motor.
@@ -148,7 +157,7 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   // calls with this)
   private void setClampedVoltage(double volts) {
     double clamped = clampVoltage(volts);
-    SmartDashboard.putNumber("IntakeDeploy/ClampedVoltage", clamped);
+    // SmartDashboard.putNumber("IntakeDeploy/ClampedVoltage", clamped);
     Logger.recordOutput("IntakeDeploy/ClampedVoltage", clamped);
     motor.setVoltage(clamped);
   }
@@ -300,23 +309,31 @@ public class IntakeDeploySubsystem extends SubsystemBase {
         break;
     }
 
-    // SmartDashboard logging - uncomment for debugging (commented to avoid loop overun)
+    // SmartDashboard logging - uncomment for debugging (commented to avoid loop
+    // overun)
 
     // SmartDashboard.putNumber("IntakeDeploy/AngleDeg", angle);
     // SmartDashboard.putNumber("IntakeDeploy/RawRotations", encoder.getPosition());
     // SmartDashboard.putString("IntakeDeploy/State", state.name());
-    // SmartDashboard.putBoolean("IntakeDeploy/HallTriggered", isStowedSensorTriggered());
+    // SmartDashboard.putBoolean("IntakeDeploy/HallTriggered",
+    // isStowedSensorTriggered());
     // SmartDashboard.putBoolean("IntakeDeploy/AtSetpoint", pid.atSetpoint());
     // SmartDashboard.putNumber("IntakeDeploy/PIDOutput", output);
     // SmartDashboard.putNumber("IntakeDeploy/Error", pid.getPositionError());
 
+    // Logger.recordOutput("IntakeDeploy/AngleDeg", angle);
+    // Logger.recordOutput("IntakeDeploy/RawRotations", encoder.getPosition());
+    // Logger.recordOutput("IntakeDeploy/State", state.name());
+    // Logger.recordOutput("IntakeDeploy/HallTriggered", isStowedSensorTriggered());
+    if (state != lastLoggedState) {
+      Logger.recordOutput("IntakeDeploy/State", state);
+      lastLoggedState = state;
+    }
     Logger.recordOutput("IntakeDeploy/AngleDeg", angle);
-    Logger.recordOutput("IntakeDeploy/RawRotations", encoder.getPosition());
-    Logger.recordOutput("IntakeDeploy/State", state.name());
-    Logger.recordOutput("IntakeDeploy/HallTriggered", isStowedSensorTriggered());
+    // Logger.recordOutput("IntakeDeploy/State", state);
     Logger.recordOutput("IntakeDeploy/AtSetpoint", pid.atSetpoint());
-    Logger.recordOutput("IntakeDeploy/PIDOutput", output);
-    Logger.recordOutput("IntakeDeploy/Error", pid.getPositionError());
+    // Logger.recordOutput("IntakeDeploy/PIDOutput", output);
+    // Logger.recordOutput("IntakeDeploy/Error", pid.getPositionError());
 
     // NetworkTables live logging
     hallTriggeredPub.set(isStowedSensorTriggered());

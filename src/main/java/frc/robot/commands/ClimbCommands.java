@@ -75,9 +75,12 @@ public final class ClimbCommands {
     // return Commands.runOnce(climb::moveUp, climb).withName("ClimbAutoUp");
   }
 
-  public static Command climbUp(ClimbSubsystem climb) {
-    System.out.println("Climb Up Command Created");
-    return Commands.startEnd(climb::moveUp, climb::stop, climb).withName("ClimbUp");
+  // public static Command climbUp(ClimbSubsystem climb) {
+  //   System.out.println("Climb Up Command Created");
+  //   return Commands.startEnd(climb::moveUp, climb::stop, climb).withName("ClimbUp");
+  // }
+  public static Command hookUp(ClimbSubsystem climb) {
+    return Commands.startEnd(() -> climb.moveUp(), climb::stop, climb).withName("HookUp");
   }
 
   public static Command climbDown(ClimbSubsystem climb) {
@@ -104,7 +107,7 @@ public final class ClimbCommands {
             autoClimbDrive(drive, vision).withTimeout(2.5),
 
             // Raise hook
-            climbUp(climb).withTimeout(1.8),
+            hookUp(climb).withTimeout(1.8),
 
             // settle time
             Commands.waitSeconds(0.4),

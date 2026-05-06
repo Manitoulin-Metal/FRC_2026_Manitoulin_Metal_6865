@@ -163,9 +163,11 @@ public class Drive extends SubsystemBase {
             new SysIdRoutine.Mechanism(
                 (voltage) -> runCharacterization(voltage.in(Volts)), null, this));
 
-    // Set initial pose in SIM to correct starting position on field for better odometry in the
+    // Set initial pose in SIM to correct starting position on field for better
+    // odometry in the
     // early part of auto paths.
-    // This is not needed on the real robot since the gyro will provide an accurate heading from the
+    // This is not needed on the real robot since the gyro will provide an accurate
+    // heading from the
     // start.
 
     if (Constants.currentMode == Constants.Mode.SIM) {
@@ -190,13 +192,14 @@ public class Drive extends SubsystemBase {
 
   @Override
   public void periodic() {
-    odometryLock.lock();
-    // Prevents odometry updates while reading data
-    gyroIO.updateInputs(gyroInputs);
-    Logger.processInputs("Drive/Gyro", gyroInputs);
-    for (var module : modules) {
-      module.periodic();
+
+    // test
+    for (int i = 0; i < 4; i++) {
+      var pos = modules[i].getPosition();
+      Logger.recordOutput("TEST/Module" + i + "/Distance", pos.distanceMeters);
+      Logger.recordOutput("TEST/Module" + i + "/Angle", pos.angle.getDegrees());
     }
+
     odometryLock.lock();
     try {
       gyroIO.updateInputs(gyroInputs);
@@ -208,7 +211,6 @@ public class Drive extends SubsystemBase {
     } finally {
       odometryLock.unlock();
     }
-
     // Log empty setpoint states when disabled
     if (DriverStation.isDisabled()) {
       Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
@@ -217,6 +219,11 @@ public class Drive extends SubsystemBase {
 
     // Update odometry
     double[] sampleTimestamps = modules[0].getOdometryTimestamps();
+
+    Logger.recordOutput("DEBUG/OdoTimestampCount", (double) sampleTimestamps.length);
+    if (sampleTimestamps.length > 0) {
+      Logger.recordOutput("DEBUG/FirstTimestamp", sampleTimestamps[0]);
+    }
     int sampleCount = sampleTimestamps.length;
 
     for (int i = 0; i < sampleCount; i++) {

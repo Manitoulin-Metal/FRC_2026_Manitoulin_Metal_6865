@@ -139,13 +139,17 @@ public class ClimbSubsystem extends SubsystemBase {
   // COMMAND FACTORY
   // =========================================================
 
+  // public Command upCommand() {
+  //   // System.out.println("upCommand in ClimbSystem running.");
+  //   // System.out.println("Before state:" + state);
+  //   this.state = State.UP;
+  //   // System.out.println("After state:" + state);
+  //   return Commands.none();
+  //   // return Commands.runOnce(this::moveUp, this).withName("ClimbUpCommand");
+  // }
+
   public Command upCommand() {
-    // System.out.println("upCommand in ClimbSystem running.");
-    // System.out.println("Before state:" + state);
-    this.state = State.UP;
-    // System.out.println("After state:" + state);
-    return Commands.none();
-    // return Commands.runOnce(this::moveUp, this).withName("ClimbUpCommand");
+    return Commands.runOnce(() -> this.state = State.UP, this).withName("ClimbUpCommand");
   }
 
   public Command downCommand() {

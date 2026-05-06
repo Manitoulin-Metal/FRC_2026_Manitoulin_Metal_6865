@@ -154,7 +154,7 @@ public class RobotContainer {
     // climber is homed before raising hook
     NamedCommands.registerCommand(
         "ClimbAutoUp",
-        ClimbCommands.waitForHome(climb).andThen(ClimbCommands.climbUp(climb).withTimeout(3.0)));
+        ClimbCommands.waitForHome(climb).andThen(ClimbCommands.hookUp(climb).withTimeout(3.0)));
 
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(1.0));
 
@@ -205,7 +205,7 @@ public class RobotContainer {
     operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
     operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
-    operator.pov(0).whileTrue(ClimbCommands.climbUp(climb)).onFalse(ClimbCommands.stop(climb));
+    operator.pov(0).whileTrue(ClimbCommands.hookUp(climb)).onFalse(ClimbCommands.stop(climb));
 
     operator.pov(180).whileTrue(ClimbCommands.climbDown(climb)).onFalse(ClimbCommands.stop(climb));
 
