@@ -200,6 +200,10 @@ public class Drive extends SubsystemBase {
       Logger.recordOutput("TEST/Module" + i + "/Angle", pos.angle.getDegrees());
     }
 
+    Logger.recordOutput("DEBUG/DrivePosition0", modules[0].getPosition().distanceMeters);
+
+    Logger.recordOutput("DEBUG/DriveVelocity0", modules[0].getState().speedMetersPerSecond);
+
     odometryLock.lock();
     try {
       gyroIO.updateInputs(gyroInputs);
@@ -244,10 +248,16 @@ public class Drive extends SubsystemBase {
       }
 
       // Use single gyro value (SIM safe)
-      if (gyroInputs.connected) {
-        rawGyroRotation = gyroInputs.yawPosition;
+      // if (gyroInputs.connected) {
+      // rawGyroRotation = gyroInputs.yawPosition;
+
+      if (gyroInputs.connected && gyroInputs.odometryYawPositions.length > i) {
+
+        rawGyroRotation = gyroInputs.odometryYawPositions[i];
         gyroDisconnectedAlert.set(false);
+
       } else {
+
         Twist2d twist = kinematics.toTwist2d(moduleDeltas);
         rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
         gyroDisconnectedAlert.set(true);
@@ -277,10 +287,11 @@ public class Drive extends SubsystemBase {
     double clampedX = MathUtil.clamp(x, 0.0, fieldLength);
     double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
 
-    if (x != pose.getX() || y != pose.getY()) {
-      poseEstimator.resetPosition(
-          rawGyroRotation, getModulePositions(), new Pose2d(x, y, pose.getRotation()));
-    }
+    // already being updated elsewhere
+    // if (x != pose.getX() || y != pose.getY()) {
+    // poseEstimator.resetPosition(
+    // rawGyroRotation, getModulePositions(), new Pose2d(x, y, pose.getRotation()));
+    // }
 
     // Bump detection and vision reset during autonomous
     if (DriverStation.isAutonomous() && vision != null) {
@@ -304,13 +315,13 @@ public class Drive extends SubsystemBase {
         }
       }
     }
-
-    if (x != clampedX || y != clampedY) {
-      poseEstimator.resetPosition(
-          rawGyroRotation,
-          getModulePositions(),
-          new Pose2d(clampedX, clampedY, pose.getRotation()));
-    }
+    // being updated elsewhere, no need to reset here
+    // if (x != clampedX || y != clampedY) {
+    // poseEstimator.resetPosition(
+    // rawGyroRotation,
+    // getModulePositions(),
+    // new Pose2d(clampedX, clampedY, pose.getRotation()));
+    // }
 
     Pose2d estimatedPose = poseEstimator.getEstimatedPosition();
 
