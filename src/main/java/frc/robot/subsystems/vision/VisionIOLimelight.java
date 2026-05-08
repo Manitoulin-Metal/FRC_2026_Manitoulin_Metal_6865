@@ -26,7 +26,7 @@ public class VisionIOLimelight implements VisionIO {
   private final DoubleSubscriber tySubscriber;
   private final DoubleSubscriber tvSubscriber;
 
-  private final DoubleArraySubscriber megatag1Subscriber;
+  // private final DoubleArraySubscriber megatag1Subscriber;
   private final DoubleArraySubscriber megatag2Subscriber;
 
   private int flushCounter = 0;
@@ -44,28 +44,25 @@ public class VisionIOLimelight implements VisionIO {
     tySubscriber = table.getDoubleTopic("ty").subscribe(0.0);
     tvSubscriber = table.getDoubleTopic("tv").subscribe(0.0);
 
-    megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
+    // megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
 
-    megatag2Subscriber =
-        table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
+    megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
   }
 
   @Override
   public void updateInputs(VisionIOInputs inputs) {
 
-    inputs.connected =
-        ((RobotController.getFPGATime() - latencySubscriber.getLastChange()) / 1000.0) < 250.0;
+    inputs.connected = ((RobotController.getFPGATime() - latencySubscriber.getLastChange()) / 1000.0) < 250.0;
 
     boolean hasTarget = tvSubscriber.get() == 1.0;
 
-    inputs.latestTargetObservation =
-        hasTarget
-            ? new TargetObservation(
-                Rotation2d.fromDegrees(txSubscriber.get()),
-                Rotation2d.fromDegrees(tySubscriber.get()))
-            : new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
+    inputs.latestTargetObservation = hasTarget
+        ? new TargetObservation(
+            Rotation2d.fromDegrees(txSubscriber.get()),
+            Rotation2d.fromDegrees(tySubscriber.get()))
+        : new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
 
-    orientationPublisher.accept(new double[] {rotationSupplier.get().getDegrees(), 0, 0, 0, 0, 0});
+    orientationPublisher.accept(new double[] { rotationSupplier.get().getDegrees(), 0, 0, 0, 0, 0 });
 
     if (++flushCounter >= 5) {
       NetworkTableInstance.getDefault().flush();
@@ -75,7 +72,8 @@ public class VisionIOLimelight implements VisionIO {
     List<PoseObservation> observations = new ArrayList<>();
     Set<Integer> tagIds = new HashSet<>();
 
-    readQueue(megatag1Subscriber, observations, tagIds, PoseObservationType.MEGATAG_1);
+    // readQueue(megatag1Subscriber, observations, tagIds,
+    // PoseObservationType.MEGATAG_1);
     readQueue(megatag2Subscriber, observations, tagIds, PoseObservationType.MEGATAG_2);
 
     inputs.poseObservations = observations.toArray(new PoseObservation[0]);
@@ -95,10 +93,26 @@ public class VisionIOLimelight implements VisionIO {
 
     for (var sample : sub.readQueue()) {
 
-      if (sample.value.length == 0) continue;
+      if (sample.value.length == 0)
+        continue;
+      if (sample.value.length < 11)
+        continue;
+
+      int tagCount = (int) sample.value[7];
+      if (tagCount <= 0)
+        continue;
+
+      double avgTagDistance = sample.value[9];
+      if (avgTagDistance > 6.0)
+        continue;
 
       for (int i = 11; i < sample.value.length; i += 7) {
         tagIds.add((int) sample.value[i]);
+      
+        // for temp debugging - record the pose of each individual tag observation, even if we reject it for pose estimation
+        org.littletonrobotics.junction.Logger.recordOutput(
+    "Vision/DebugPose",
+    parsePose(sample.value).toPose2d());
       }
 
       observations.add(
@@ -112,6 +126,8 @@ public class VisionIOLimelight implements VisionIO {
               sample.value[9],
               type));
     }
+
+    
   }
 
   private static Pose3d parsePose(double[] raw) {

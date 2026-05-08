@@ -35,8 +35,7 @@ public class Vision extends SubsystemBase {
 
     for (int i = 0; i < io.length; i++) {
       inputs[i] = new VisionIOInputsAutoLogged();
-      disconnectedAlerts[i] =
-          new Alert("Vision camera " + i + " disconnected.", AlertType.kWarning);
+      disconnectedAlerts[i] = new Alert("Vision camera " + i + " disconnected.", AlertType.kWarning);
     }
   }
   // ==================================================
@@ -66,7 +65,8 @@ public class Vision extends SubsystemBase {
 
   public boolean hasRearTag(int id) {
     for (int tag : inputs[REAR_CAMERA].tagIds) {
-      if (tag == id) return true;
+      if (tag == id)
+        return true;
     }
     return false;
   }
@@ -116,7 +116,8 @@ public class Vision extends SubsystemBase {
   public boolean hasTag(int id) {
     for (int c = 0; c < inputs.length; c++) {
       for (int tag : inputs[c].tagIds) {
-        if (tag == id) return true;
+        if (tag == id)
+          return true;
       }
     }
     return false;
@@ -125,7 +126,8 @@ public class Vision extends SubsystemBase {
   @Override
   public void periodic() {
 
-    if (!enabled) return;
+    if (!enabled)
+      return;
 
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
@@ -141,14 +143,14 @@ public class Vision extends SubsystemBase {
 
     for (var observation : inputs[cameraIndex].poseObservations) {
 
-      boolean reject =
-          observation.tagCount() == 0
-              || (observation.tagCount() == 1 && observation.ambiguity() > maxAmbiguity)
-              || Math.abs(observation.pose().getZ()) > maxZError
-              || observation.pose().getX() < 0
-              || observation.pose().getX() > aprilTagLayout.getFieldLength()
-              || observation.pose().getY() < 0
-              || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+      boolean reject = observation.tagCount() == 0
+          || (observation.tagCount() == 1 && observation.ambiguity() > maxAmbiguity)
+          || (observation.tagCount() == 1 && observation.averageTagDistance() > 3.5)
+          || Math.abs(observation.pose().getZ()) > maxZError
+          || observation.pose().getX() < 0
+          || observation.pose().getX() > aprilTagLayout.getFieldLength()
+          || observation.pose().getY() < 0
+          || observation.pose().getY() > aprilTagLayout.getFieldWidth();
 
       if (reject) {
         rejected.add(observation.pose());
@@ -157,13 +159,33 @@ public class Vision extends SubsystemBase {
 
       accepted.add(observation.pose());
 
+      Logger.recordOutput(
+          "Vision/Camera" + cameraIndex + "/Pose",
+          observation.pose().toPose2d());
+      Logger.recordOutput("Vision/LatestPose", observation.pose().toPose2d());
+
       double factor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
+      // replacing with...
+      // double linear = linearStdDevBaseline * factor;
+      // double angular = angularStdDevBaseline * factor;
+
+      // if (observation.type() == PoseObservationType.MEGATAG_2) {
+      // linear *= linearStdDevMegatag2Factor;
+      // angular *= angularStdDevMegatag2Factor;
+      // }
 
       double linear = linearStdDevBaseline * factor;
       double angular = angularStdDevBaseline * factor;
 
       if (observation.type() == PoseObservationType.MEGATAG_2) {
+
         linear *= linearStdDevMegatag2Factor;
+
+        // Let gyro dominate heading
+        angular = 9999999.0;
+
+      } else {
+
         angular *= angularStdDevMegatag2Factor;
       }
 

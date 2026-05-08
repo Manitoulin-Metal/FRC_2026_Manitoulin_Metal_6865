@@ -37,7 +37,7 @@ public class ShooterSubsystem extends SubsystemBase {
   private final LoggedNetworkNumber kDEntry = Constants.Shooter.kDEntry;
   private final LoggedNetworkNumber kVEntry = Constants.Shooter.kVEntry;
   private final LoggedNetworkNumber kSEntry = Constants.Shooter.kSEntry;
-  private double targetRps = 95.0;
+  private double targetRps = Constants.SHOOTER_RPS;
   private double currentRps = 0.0;
 
   private final StatusSignal<Integer> faultsSignal = shooter.getFaultField();
@@ -58,7 +58,8 @@ public class ShooterSubsystem extends SubsystemBase {
   /** Run shooter at velocity RPS */
   public void runShooter(double speedRps) {
     targetRps = speedRps;
-    double rampRate = 65.0; // RPS/sec
+    // double rampRate = 65.0; // RPS/sec
+    double rampRate = 15.0; // RPS/sec
     currentRps =
         MathUtil.clamp(
             currentRps + Math.copySign(rampRate * (1.0 / 50.0), speedRps - currentRps),

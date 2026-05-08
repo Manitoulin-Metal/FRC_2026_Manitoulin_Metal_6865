@@ -31,28 +31,36 @@ public final class Constants {
   public static final double Y_ALIGN_P = 0;
   public static final double X_ALIGN_P = 0;
   public static final double ROT_ALIGN_P = 4.0;
-  public static final double TEST_SHOOTER_RPS = 10.0; // Temporary test speed
-  public static final double SHOOTER_VELOCITY_RPS =
-      TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
-  public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4200.0; // Lowered to 60 RPS for testing
-  public static final double SHOOTER_WHIP_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for testing
+  public static final double SHOOTER_RPS = 28.0;
+  public static final double KICKER_TRIGGER_RPS = 22.0;
+  public static final double WHIP_TRIGGER_RPS = 20.0;
+  // public static final double TEST_SHOOTER_RPS = 10.0; // Temporary test speed
+  // public static final double SHOOTER_VELOCITY_RPS =
+  //     TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
+  // public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4200.0; // Lowered to 60 RPS for
+  // testing
+  // public static final double SHOOTER_WHIP_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for
+  // testing
   public static final double SHOOTER_AT_TARGET_TOLERANCE_RPS = 3.0;
-  public static final double SHOOTER_MIN_RPS = 50.0;
+  public static final double SHOOTER_MIN_RPS = 28.0;
   public static final String DONT_SEE_TAG_TIMEOUT_SECS = null;
 
   // public static final int[] SHOOTING_TAG_IDS = {};
   public static final int[] SHOOTING_TAG_IDS = {25, 26};
   public static final double MIN_SHOOT_DISTANCE_METERS = 1.5;
   public static final double MAX_SHOOT_DISTANCE_METERS = 5.5;
-  public static final double AUTO_SHOOT_RPS = 75.0;
+  public static final double AUTO_SHOOT_RPS = 28.0;
+  // public static final double AUTO_SHOOT_RPS = 75.0;
   // public static final double KICKER_SPEED = 50;
 
   public static final double WHIP_SLOW_SPEED = -0.15;
   public static final double TEST_SLOWSHOOTER_RPS = 6.0; // Temporary test speed
   public static final double SLOWSHOOTER_VELOCITY_RPS =
       TEST_SLOWSHOOTER_RPS; // Tune this RPS (~60 RPM for test)
+  // public static final double SLOWSHOOTER_KICKER_RPM_THRESHOLD =
+  // 3200.0; // Triggers kicker at shooter 60.0 RPS (1)
   public static final double SLOWSHOOTER_KICKER_RPM_THRESHOLD =
-      3200.0; // Triggers kicker at shooter 60.0 RPS (1)
+      1600.0; // Triggers kicker at shooter 60.0 RPS (1)
 
   public static double getRPMForDistance(double distance) {
     if (distance < 2.40) return 3550;

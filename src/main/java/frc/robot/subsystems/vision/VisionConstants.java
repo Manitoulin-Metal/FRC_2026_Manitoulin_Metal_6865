@@ -11,13 +11,13 @@ public final class VisionConstants {
 
   /** 2026 field */
   public static final AprilTagFieldLayout aprilTagLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   // =============================
   // Camera Names
   // =============================
-  public static final String camera0Name = "limelight0"; // REAR
-  public static final String camera1Name = "limelight1"; // FRONT
+  public static final String camera0Name = "limelight-back"; // REAR
+  public static final String camera1Name = "limelight-forward"; // FRONT
 
   // =============================
   // Camera Mounting Positions

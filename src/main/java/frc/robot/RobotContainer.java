@@ -2,6 +2,8 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.path.PathConstraints;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.*;
@@ -163,6 +165,42 @@ public class RobotContainer {
         ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(7.5));
   }
 
+  private Command visionTestCommand() {
+  return Commands.runOnce(() -> {
+        Pose2d tagPose = vision.getEstimatedPose();
+
+        if (tagPose == null) {
+          System.out.println("No vision pose detected");
+          return;
+        }
+
+        // Tag 32 assumed already filtered by Vision system OR you verify externally
+        Translation2d offset =
+            new Translation2d(1.0, 0.25); // 1m forward, 0.25m left (field frame)
+
+        Pose2d targetPose =
+            new Pose2d(
+                tagPose.getX() + offset.getX(),
+                tagPose.getY() + offset.getY(),
+                tagPose.getRotation().plus(Rotation2d.fromDegrees(180)));
+
+        System.out.println("Vision test target: " + targetPose);
+
+        // Use PathPlanner built-in pathfind (cleanest way in your stack)
+        AutoBuilder.pathfindToPose(
+                targetPose,
+                new PathConstraints(
+                    2.0, // max speed m/s
+                    2.0, // accel
+                    Math.PI, // max angular speed
+                    Math.PI // angular accel
+                ),
+                0.0)
+            .schedule();
+      },
+      drive);
+}
+
   // ============================================================
   // BINDINGS
   // ============================================================
@@ -198,8 +236,8 @@ public class RobotContainer {
                 drive));
 
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
-
-    driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
+    driver.y().onTrue(visionTestCommand());
+    //driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
 
     // ---------------- OPERATOR ----------------
     operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
@@ -213,11 +251,11 @@ public class RobotContainer {
 
     operator
         .rightTrigger(0.5)
-        .toggleOnTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0));
+        .toggleOnTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0));
 
     operator
         .y()
-        .whileTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 60.0));
+        .whileTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0));
   }
 
   // ============================================================

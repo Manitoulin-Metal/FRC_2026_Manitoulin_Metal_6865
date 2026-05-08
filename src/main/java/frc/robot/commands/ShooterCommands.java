@@ -22,7 +22,10 @@ public final class ShooterCommands {
     return Commands.runOnce(intakeDeploy::shake, intakeDeploy)
         .andThen(
             Commands.parallel(
-                    Commands.run(() -> shooter.runShooter(shooterRps), shooter)
+                    // Commands.run(() -> shooter.runShooter(shooterRps), shooter)
+
+                    Commands.startEnd(
+                            () -> shooter.runShooter(shooterRps), shooter::stopShooter, shooter)
                         .andThen(new WaitCommand(1)),
                     kicker.kickerCommand())
                 .withTimeout(timeoutSeconds))
