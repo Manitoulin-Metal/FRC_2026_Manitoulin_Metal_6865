@@ -159,10 +159,11 @@ public class RobotContainer {
         ClimbCommands.waitForHome(climb).andThen(ClimbCommands.hookUp(climb).withTimeout(3.0)));
 
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(1.0));
-
+    NamedCommands.registerCommand("wave",
+        Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(2.0));
     NamedCommands.registerCommand(
         "Shoot",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 75.0).withTimeout(7.5));
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0).withTimeout(5.0));
   }
 
   private Command visionTestCommand() {

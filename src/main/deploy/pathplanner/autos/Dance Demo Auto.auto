@@ -1,0 +1,99 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "wave"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "DancePath-side"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "DancePath-side"
+          }
+        },
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "DancePath-mid"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "sequential",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "wave"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "DancePath-side"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "DancePath-side"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ClimbAutoUp"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ClimbAutoDown"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ClimbAutoUp"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ClimbAutoDown"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

@@ -9,6 +9,7 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -132,15 +133,25 @@ public class Robot extends LoggedRobot {
   public void disabledPeriodic() {}
 
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
-  @Override
-  public void autonomousInit() {
-    autonomousCommand =
-        Commands.sequence(
-            robotContainer.enableHomingCommand(), robotContainer.getAutonomousCommand());
+ @Override
+public void autonomousInit() {
 
-    autonomousCommand.schedule();
+  Command autoSequence;
+
+  if (RobotBase.isSimulation()) {
+    // Skip homing entirely in sim
+    autoSequence = robotContainer.getAutonomousCommand();
+  } else {
+    // Real robot: home first, then auto
+    autoSequence =
+        Commands.sequence(
+            robotContainer.enableHomingCommand(),
+            robotContainer.getAutonomousCommand());
   }
 
+  autonomousCommand = autoSequence;
+  autonomousCommand.schedule();
+}
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {}
