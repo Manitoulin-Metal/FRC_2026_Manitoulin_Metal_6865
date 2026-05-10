@@ -3,7 +3,6 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.path.PathConstraints;
-
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.*;
@@ -83,9 +82,8 @@ public class RobotContainer {
     vision =
         new Vision(
             drive::addVisionMeasurement,
-            new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
-            new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
-
+            new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
+            new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
     drive.setVision(vision);
     vision.setEnabled(visionEnabled);
 
@@ -159,48 +157,50 @@ public class RobotContainer {
         ClimbCommands.waitForHome(climb).andThen(ClimbCommands.hookUp(climb).withTimeout(3.0)));
 
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(1.0));
-    NamedCommands.registerCommand("wave",
-        Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(2.0));
+    NamedCommands.registerCommand(
+        "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(2.0));
     NamedCommands.registerCommand(
         "Shoot",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0).withTimeout(5.0));
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0).withTimeout(8.0));
   }
 
   private Command visionTestCommand() {
-  return Commands.runOnce(() -> {
-        Pose2d tagPose = vision.getEstimatedPose();
+    return Commands.runOnce(
+        () -> {
+          Pose2d tagPose = vision.getEstimatedPose();
 
-        if (tagPose == null) {
-          System.out.println("No vision pose detected");
-          return;
-        }
+          if (tagPose == null) {
+            System.out.println("No vision pose detected");
+            return;
+          }
 
-        // Tag 32 assumed already filtered by Vision system OR you verify externally
-        Translation2d offset =
-            new Translation2d(1.0, 0.25); // 1m forward, 0.25m left (field frame)
+          // Tag 32 assumed already filtered by Vision system OR you verify externally
+          Translation2d offset =
+              new Translation2d(1.0, 0.25); // 1m forward, 0.25m left (field frame)
 
-        Pose2d targetPose =
-            new Pose2d(
-                tagPose.getX() + offset.getX(),
-                tagPose.getY() + offset.getY(),
-                tagPose.getRotation().plus(Rotation2d.fromDegrees(180)));
+          Pose2d targetPose =
+              new Pose2d(
+                  tagPose.getX() + offset.getX(),
+                  tagPose.getY() + offset.getY(),
+                  tagPose.getRotation().plus(Rotation2d.fromDegrees(180)));
 
-        System.out.println("Vision test target: " + targetPose);
+          System.out.println("Vision test target: " + targetPose);
 
-        // Use PathPlanner built-in pathfind (cleanest way in your stack)
-        AutoBuilder.pathfindToPose(
-                targetPose,
-                new PathConstraints(
-                    2.0, // max speed m/s
-                    2.0, // accel
-                    Math.PI, // max angular speed
-                    Math.PI // angular accel
-                ),
-                0.0)
-            .schedule();
-      },
-      drive);
-}
+          // Use PathPlanner built-in pathfind (cleanest way in your stack)
+          CommandScheduler.getInstance()
+              .schedule(
+                  AutoBuilder.pathfindToPose(
+                      targetPose,
+                      new PathConstraints(
+                          2.0, // max speed m/s
+                          2.0, // accel
+                          Math.PI, // max angular speed
+                          Math.PI // angular accel
+                          ),
+                      0.0));
+        },
+        drive);
+  }
 
   // ============================================================
   // BINDINGS
@@ -217,15 +217,16 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
                 }));
 
-    driver
-        .y()
-        .onTrue(
-            Commands.runOnce(
-                () -> {
-                  visionEnabled = !visionEnabled;
-                  vision.setEnabled(visionEnabled);
-                  SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
-                }));
+    driver.y().whileTrue(DriveCommands.dockToClimb(drive, vision));
+    // driver
+    //     .y()
+    //     .onTrue(
+    //         Commands.runOnce(
+    //             () -> {
+    //               visionEnabled = !visionEnabled;
+    //               vision.setEnabled(visionEnabled);
+    //               SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
+    //             }));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
@@ -238,7 +239,7 @@ public class RobotContainer {
 
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
     driver.y().onTrue(visionTestCommand());
-    //driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
+    // driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
 
     // ---------------- OPERATOR ----------------
     operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
@@ -263,8 +264,8 @@ public class RobotContainer {
   // ENABLE HOMING
   // ============================================================
   // public void enableHoming() {
-  //   intakeDeploy.startHoming();
-  //   CommandScheduler.getInstance().schedule(climb.homeCommand());
+  // intakeDeploy.startHoming();
+  // CommandScheduler.getInstance().schedule(climb.homeCommand());
   // }
 
   public Command enableHomingCommand() {

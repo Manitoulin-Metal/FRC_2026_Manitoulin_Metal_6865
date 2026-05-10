@@ -35,7 +35,8 @@ public class Vision extends SubsystemBase {
 
     for (int i = 0; i < io.length; i++) {
       inputs[i] = new VisionIOInputsAutoLogged();
-      disconnectedAlerts[i] = new Alert("Vision camera " + i + " disconnected.", AlertType.kWarning);
+      disconnectedAlerts[i] =
+          new Alert("Vision camera " + i + " disconnected.", AlertType.kWarning);
     }
   }
   // ==================================================
@@ -63,16 +64,17 @@ public class Vision extends SubsystemBase {
     return inputs[REAR_CAMERA].latestTargetObservation.ty().getDegrees();
   }
 
-  public boolean hasRearTag(int id) {
+  public boolean hasRearTag(int[] climbTagIds) {
     for (int tag : inputs[REAR_CAMERA].tagIds) {
-      if (tag == id)
-        return true;
+      for (int climbTag : climbTagIds) {
+        if (tag == climbTag) return true;
+      }
     }
     return false;
   }
 
   public boolean shouldUseVisionForClimb() {
-    return hasRearTag(Constants.CLIMB_TAG_ID);
+    return hasRearTag(Constants.Climb.Hardware.CLIMB_TAG_IDS);
   }
 
   public Optional<Transform2d> getRobotRelativeError() {
@@ -87,6 +89,18 @@ public class Vision extends SubsystemBase {
         new Transform2d(-ty, tx, edu.wpi.first.math.geometry.Rotation2d.fromDegrees(tx)));
   }
 
+  public Optional<Pose3d> getRearTargetSpacePose() {
+
+    if (!inputs[VisionConstants.REAR_CAMERA].connected) {
+      return Optional.empty();
+    }
+
+    if (!inputs[VisionConstants.REAR_CAMERA].hasTargets) {
+      return Optional.empty();
+    }
+
+    return Optional.of(inputs[VisionConstants.REAR_CAMERA].targetSpacePose);
+  }
   // ==================================================
   // Front Pose Helpers
   // ==================================================
@@ -116,18 +130,42 @@ public class Vision extends SubsystemBase {
   public boolean hasTag(int id) {
     for (int c = 0; c < inputs.length; c++) {
       for (int tag : inputs[c].tagIds) {
-        if (tag == id)
-          return true;
+        if (tag == id) return true;
       }
     }
     return false;
   }
 
+  public Optional<Pose3d> getRearTargetSpacePoseForClimb() {
+
+    if (!inputs[REAR_CAMERA].connected) {
+      return Optional.empty();
+    }
+
+    if (!inputs[REAR_CAMERA].hasTargets) {
+      return Optional.empty();
+    }
+
+    boolean validTag = false;
+
+    for (int tag : inputs[REAR_CAMERA].tagIds) {
+      if (tag == 32 || tag == 16) {
+        validTag = true;
+        break;
+      }
+    }
+
+    if (!validTag) {
+      return Optional.empty();
+    }
+
+    return Optional.of(inputs[REAR_CAMERA].targetSpacePose);
+  }
+
   @Override
   public void periodic() {
 
-    if (!enabled)
-      return;
+    if (!enabled) return;
 
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
@@ -143,14 +181,15 @@ public class Vision extends SubsystemBase {
 
     for (var observation : inputs[cameraIndex].poseObservations) {
 
-      boolean reject = observation.tagCount() == 0
-          || (observation.tagCount() == 1 && observation.ambiguity() > maxAmbiguity)
-          || (observation.tagCount() == 1 && observation.averageTagDistance() > 3.5)
-          || Math.abs(observation.pose().getZ()) > maxZError
-          || observation.pose().getX() < 0
-          || observation.pose().getX() > aprilTagLayout.getFieldLength()
-          || observation.pose().getY() < 0
-          || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+      boolean reject =
+          observation.tagCount() == 0
+              || (observation.tagCount() == 1 && observation.ambiguity() > maxAmbiguity)
+              || (observation.tagCount() == 1 && observation.averageTagDistance() > 3.5)
+              || Math.abs(observation.pose().getZ()) > maxZError
+              || observation.pose().getX() < 0
+              || observation.pose().getX() > aprilTagLayout.getFieldLength()
+              || observation.pose().getY() < 0
+              || observation.pose().getY() > aprilTagLayout.getFieldWidth();
 
       if (reject) {
         rejected.add(observation.pose());
@@ -159,9 +198,7 @@ public class Vision extends SubsystemBase {
 
       accepted.add(observation.pose());
 
-      Logger.recordOutput(
-          "Vision/Camera" + cameraIndex + "/Pose",
-          observation.pose().toPose2d());
+      Logger.recordOutput("Vision/Camera" + cameraIndex + "/Pose", observation.pose().toPose2d());
       Logger.recordOutput("Vision/LatestPose", observation.pose().toPose2d());
 
       double factor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();

@@ -19,7 +19,6 @@ import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -280,12 +279,9 @@ public class Drive extends SubsystemBase {
 
     SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
 
-    // 2026 Rebuilt field size (meters)
     double fieldLength = Constants.Field.LENGTH_METERS;
-    double fieldWidth = Constants.Field.WIDTH_METERS;
 
-    double clampedX = MathUtil.clamp(x, 0.0, fieldLength);
-    double clampedY = MathUtil.clamp(y, 0.0, fieldWidth);
+    double fieldWidth = Constants.Field.WIDTH_METERS;
 
     // already being updated elsewhere
     // if (x != pose.getX() || y != pose.getY()) {

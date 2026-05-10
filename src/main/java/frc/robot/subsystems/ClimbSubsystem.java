@@ -37,7 +37,8 @@ public class ClimbSubsystem extends SubsystemBase {
   // =========================================================
   private final SparkFlex motor = new SparkFlex(60, MotorType.kBrushless);
   private final RelativeEncoder encoder;
-  private final DigitalInput limitSwitch = new DigitalInput(Constants.Climb.LIMIT_SWITCH_CHANNEL);
+  private final DigitalInput limitSwitch =
+      new DigitalInput(Constants.Climb.Hardware.LIMIT_SWITCH_CHANNEL);
 
   // =========================================================
   // TRACKING
@@ -83,11 +84,12 @@ public class ClimbSubsystem extends SubsystemBase {
   // =========================================================
 
   private boolean atBottom() {
-    return limitPressed() || getPosition() <= Constants.Climb.BOTTOM_ENCODER_TOLERANCE_ROTATIONS;
+    return limitPressed()
+        || getPosition() <= Constants.Climb.Motion.BOTTOM_ENCODER_TOLERANCE_ROTATIONS;
   }
 
   private boolean atTop() {
-    double top = Constants.Climb.upTargetEntry.get();
+    double top = Constants.Climb.Motion.UP_TARGET_ROTATIONS;
     return top > 1.0 && getPosition() >= top;
   }
 
@@ -159,7 +161,8 @@ public class ClimbSubsystem extends SubsystemBase {
   public Command homeCommand() {
     return Commands.sequence(
         Commands.runOnce(this::startHoming, this),
-        Commands.waitUntil(() -> isHomed()).withTimeout(Constants.Climb.HOMING_TIMEOUT_SECONDS),
+        Commands.waitUntil(() -> isHomed())
+            .withTimeout(Constants.Climb.Homing.HOMING_TIMEOUT_SECONDS),
         Commands.runOnce(this::stop, this));
   }
 
@@ -177,7 +180,7 @@ public class ClimbSubsystem extends SubsystemBase {
           state = State.AT_TOP;
           output = 0.0;
         } else {
-          output = Constants.Climb.UP_SPEED;
+          output = Constants.Climb.Motion.UP_SPEED;
         }
         break;
 
@@ -188,7 +191,7 @@ public class ClimbSubsystem extends SubsystemBase {
           state = State.AT_BOTTOM;
           output = 0.0;
         } else {
-          output = Constants.Climb.DOWN_SPEED;
+          output = Constants.Climb.Motion.DOWN_SPEED;
         }
         break;
 
@@ -200,13 +203,13 @@ public class ClimbSubsystem extends SubsystemBase {
           output = 0.0;
 
         } else if (Timer.getFPGATimestamp() - homingStartTime
-            > Constants.Climb.HOMING_TIMEOUT_SECONDS) {
+            > Constants.Climb.Homing.HOMING_TIMEOUT_SECONDS) {
 
           state = State.DISABLED;
           output = 0.0;
 
         } else {
-          output = Constants.Climb.HOMING_SPEED;
+          output = Constants.Climb.Motion.HOMING_SPEED;
         }
         break;
 

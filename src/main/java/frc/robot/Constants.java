@@ -9,9 +9,9 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.RobotBase;
+import frc.robot.subsystems.vision.VisionConstants;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
@@ -36,10 +36,12 @@ public final class Constants {
   public static final double WHIP_TRIGGER_RPS = 20.0;
   // public static final double TEST_SHOOTER_RPS = 10.0; // Temporary test speed
   // public static final double SHOOTER_VELOCITY_RPS =
-  //     TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
-  // public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4200.0; // Lowered to 60 RPS for
+  // TEST_SHOOTER_RPS; // Tune this RPS (~3000 RPM for test)
+  // public static final double SHOOTER_KICKER_RPM_THRESHOLD = 4200.0; // Lowered
+  // to 60 RPS for
   // testing
-  // public static final double SHOOTER_WHIP_RPM_THRESHOLD = 3600.0; // Lowered to 60 RPS for
+  // public static final double SHOOTER_WHIP_RPM_THRESHOLD = 3600.0; // Lowered to
+  // 60 RPS for
   // testing
   public static final double SHOOTER_AT_TARGET_TOLERANCE_RPS = 3.0;
   public static final double SHOOTER_MIN_RPS = 28.0;
@@ -148,62 +150,84 @@ public final class Constants {
     public static final double COUNT_DELAY = 0.25;
   }
 
-  public static class Climb {
-    public static final int LIMIT_SWITCH_CHANNEL = 8;
-    public static final double UP_SPEED = 0.75;
-    public static final double DOWN_SPEED = -0.75;
-    public static final double HOMING_SPEED = -0.35;
-    public static final double BOTTOM_ENCODER_TOLERANCE_ROTATIONS = 0.5;
-    public static final double HOMING_TIMEOUT_SECONDS = 20.0;
-    public static final double UP_TARGET_ROTATIONS = 325;
-    public static final LoggedNetworkNumber upTargetEntry =
-        new LoggedNetworkNumber("Tuning/Climb/UpTargetRotations", UP_TARGET_ROTATIONS);
+  public static final class Climb {
+
+    // =========================================================
+    // HARDWARE
+    // =========================================================
+    public static final class Hardware {
+      public static final int LIMIT_SWITCH_CHANNEL = 8;
+
+      public static final int PRIMARY_CLIMB_TAG_ID = 32;
+      public static final int[] CLIMB_TAG_IDS = {32, 16};
+    }
+
+    // =========================================================
+    // MOTION / MECHANICAL TARGETS
+    // =========================================================
+    public static final class Motion {
+
+      public static final double UP_SPEED = 0.75;
+      public static final double DOWN_SPEED = -0.75;
+      public static final double HOMING_SPEED = -0.35;
+
+      public static final double BOTTOM_ENCODER_TOLERANCE_ROTATIONS = 0.5;
+
+      public static final double UP_TARGET_ROTATIONS = 325;
+    }
+
+    // =========================================================
+    // VISION (GEOMETRY + ALIGNMENT GOALS)
+    // =========================================================
+    public static final class Vision {
+
+      public static final String REAR_LIMELIGHT = VisionConstants.rearCameraName;
+
+      // Desired robot offset relative to tag
+      public static final double TARGET_FORWARD_METERS = 0.68;
+      public static final double TARGET_LATERAL_METERS = 0.00;
+
+      public static final Rotation2d TARGET_YAW = Rotation2d.kZero;
+
+      // Single source-of-truth alias (fixes your earlier error)
+      public static Translation2d targetOffset() {
+        return new Translation2d(TARGET_FORWARD_METERS, TARGET_LATERAL_METERS);
+      }
+
+      // Tolerances
+      public static final double FORWARD_TOLERANCE = 0.03;
+      public static final double LATERAL_TOLERANCE = 0.03;
+      public static final double YAW_TOLERANCE_RAD = Math.toRadians(2.0);
+
+      public static final double PRECISION_MODE_DISTANCE = 0.15;
+
+      // Speed caps
+      public static final double MAX_LINEAR_SPEED = 1.0;
+      public static final double MAX_ANGULAR_SPEED = 2.0;
+      public static final double PRECISION_LINEAR_SPEED = 0.25;
+    }
+
+    // =========================================================
+    // PID (ONLY GAINS HERE)
+    // =========================================================
+    public static final class PID {
+
+      public static final double kP_FORWARD = 1.2;
+      public static final double kP_STRAFE = 1.2;
+      public static final double kP_TURN = 2.0;
+    }
+
+    // =========================================================
+    // ⏱ HOMING / STATE MACHINE
+    // =========================================================
+    public static final class Homing {
+
+      public static final double HOMING_TIMEOUT_SECONDS = 20.0;
+
+      public static final LoggedNetworkNumber upTargetEntry =
+          new LoggedNetworkNumber("Tuning/Climb/UpTargetRotations", Motion.UP_TARGET_ROTATIONS);
+    }
   }
-
-  public static class ClimbVision {
-    // Rear Limelight name
-    public static final String REAR_LIMELIGHT = "limelight0";
-
-    // Target pose in vision-space (your measured values)
-    // based on limelight readings (tx, ty, distance) when
-    // the robot is in the correct position to start climbing)
-    public static final double TARGET_TX = -6.84;
-    public static final double TARGET_TY = 7.28;
-
-    // Distance target (meters, tune this!)
-    public static final double TARGET_DISTANCE = 0.68;
-
-    // Gains
-    public static final double kP_TURN = 0.025;
-    public static final double kP_FORWARD = 0.6;
-    public static final double kP_STRAFE = 0.03;
-
-    // Tolerances
-    public static final double TX_TOL = 1.5;
-    public static final double TY_TOL = 1.5;
-    public static final double DIST_TOL = 0.15;
-  }
-
-  // ================= CLIMB =================
-  public static final int CLIMB_TAG_ID = 32;
-  public static final int[] CLIMB_TAG_IDS = {
-    32, 16
-  }; // Add any additional tags you want to use for climbing
-
-  public static final Transform2d CLIMB_OFFSET =
-      new Transform2d(
-          new Translation2d(-0.65, 0.10), // REPLACE WITH YOUR MEASURED VALUES
-          Rotation2d.fromDegrees(180));
-
-  public static final double CLIMB_POS_TOLERANCE = 0.05;
-  public static final double CLIMB_ROT_TOLERANCE = Math.toRadians(3);
-
-  public static final double CLIMB_TARGET_TY = 9.15; // YOUR measured value
-  public static final double CLIMB_STRAFE_FACTOR = 0.02;
-
-  public static final double CLIMB_kP_FORWARD = 0.08;
-  public static final double CLIMB_kP_STRAFE = 0.03;
-  public static final double CLIMB_kP_TURN = 0.035;
 
   public static enum Mode {
     /** Running on a real robot. */

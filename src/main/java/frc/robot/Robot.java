@@ -133,25 +133,24 @@ public class Robot extends LoggedRobot {
   public void disabledPeriodic() {}
 
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
- @Override
-public void autonomousInit() {
+  @Override
+  public void autonomousInit() {
 
-  Command autoSequence;
+    Command autoSequence;
 
-  if (RobotBase.isSimulation()) {
-    // Skip homing entirely in sim
-    autoSequence = robotContainer.getAutonomousCommand();
-  } else {
-    // Real robot: home first, then auto
-    autoSequence =
-        Commands.sequence(
-            robotContainer.enableHomingCommand(),
-            robotContainer.getAutonomousCommand());
+    if (RobotBase.isSimulation()) {
+      // Skip homing entirely in sim
+      autoSequence = robotContainer.getAutonomousCommand();
+    } else {
+      // Real robot: home first, then auto
+      autoSequence =
+          Commands.sequence(
+              robotContainer.enableHomingCommand(), robotContainer.getAutonomousCommand());
+    }
+
+    autonomousCommand = autoSequence;
+    CommandScheduler.getInstance().schedule(autonomousCommand);
   }
-
-  autonomousCommand = autoSequence;
-  autonomousCommand.schedule();
-}
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {}
@@ -168,7 +167,7 @@ public void autonomousInit() {
       autonomousCommand.cancel();
     }
 
-    robotContainer.enableHomingCommand().schedule();
+    CommandScheduler.getInstance().schedule(robotContainer.enableHomingCommand());
     // Start homing the intake at the beginning of teleop
     // Disable for real matches for safety, but useful for testing and simulation
   }

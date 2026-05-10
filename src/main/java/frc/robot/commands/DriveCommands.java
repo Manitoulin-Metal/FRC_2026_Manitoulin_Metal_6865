@@ -6,10 +6,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
@@ -20,6 +16,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
+import frc.robot.Constants.Climb.PID;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.LimelightHelpers;
 import frc.robot.subsystems.vision.Vision;
@@ -129,6 +126,85 @@ public final class DriveCommands {
                       : drive.getRotation()));
         },
         drive);
+  }
+
+  @SuppressWarnings("resource")
+  public static Command dockToClimb(Drive drive, Vision vision) {
+
+    PIDController forwardController = new PIDController(PID.kP_FORWARD, 0.0, 0.0);
+
+    PIDController strafeController = new PIDController(PID.kP_STRAFE, 0.0, 0.0);
+
+    PIDController turnController = new PIDController(PID.kP_TURN, 0.0, 0.0);
+
+    turnController.enableContinuousInput(-Math.PI, Math.PI);
+
+    return Commands.run(
+            () -> {
+              Optional<Pose3d> poseOpt = vision.getRearTargetSpacePose();
+
+              if (poseOpt.isEmpty()) {
+                drive.stop();
+                return;
+              }
+
+              Pose3d targetSpace = poseOpt.get();
+
+              /*
+               * LIMELIGHT TARGET SPACE
+               *
+               * X = left/right
+               * Z = forward/back
+               * Rotation Z = yaw
+               */
+
+              double strafeError = targetSpace.getX();
+
+              double forwardError =
+                  targetSpace.getZ() - Constants.Climb.Vision.TARGET_FORWARD_METERS;
+
+              double yawError = targetSpace.getRotation().getZ();
+
+              double forward = -forwardController.calculate(forwardError, 0.0);
+
+              double strafe = -strafeController.calculate(strafeError, 0.0);
+
+              double turn = -turnController.calculate(yawError, 0.0);
+
+              // Clamp outputs
+              forward = MathUtil.clamp(forward, -1.0, 1.0);
+              strafe = MathUtil.clamp(strafe, -1.0, 1.0);
+              turn = MathUtil.clamp(turn, -1.5, 1.5);
+
+              // Scale to drivetrain max speeds
+              forward *= drive.getMaxLinearSpeedMetersPerSec();
+              strafe *= drive.getMaxLinearSpeedMetersPerSec();
+              turn *= drive.getMaxAngularSpeedRadPerSec();
+
+              // Robot-relative because target-space is robot-relative
+              drive.runVelocity(new ChassisSpeeds(forward, strafe, turn));
+            },
+            drive)
+        .until(
+            () -> {
+              Optional<Pose3d> poseOpt = vision.getRearTargetSpacePose();
+
+              if (poseOpt.isEmpty()) {
+                return false;
+              }
+
+              Pose3d targetSpace = poseOpt.get();
+
+              double strafeError = Math.abs(targetSpace.getX());
+
+              double forwardError =
+                  Math.abs(targetSpace.getZ() - Constants.Climb.Vision.TARGET_FORWARD_METERS);
+
+              double yawError = Math.abs(targetSpace.getRotation().getZ());
+
+              return strafeError < 0.03 && forwardError < 0.04 && yawError < Math.toRadians(3);
+            })
+        .andThen(drive::stop);
   }
 
   public static Command joystickDriveAtAngle(

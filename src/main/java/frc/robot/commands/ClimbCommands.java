@@ -1,10 +1,14 @@
 package frc.robot.commands;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.Constants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
@@ -27,6 +31,19 @@ public final class ClimbCommands {
     Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
     return (alliance == Alliance.Red) ? 16 : 32;
+  }
+
+  private static final PIDController forwardController =
+      new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
+
+  private static final PIDController strafeController =
+      new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
+
+  private static final PIDController turnController =
+      new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
+
+  static {
+    turnController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
   // ============================================================
@@ -75,6 +92,92 @@ public final class ClimbCommands {
     // return Commands.runOnce(climb::moveUp, climb).withName("ClimbAutoUp");
   }
 
+  public static Command dockToClimb(Drive drive, Vision vision) {
+
+    turnController.enableContinuousInput(-Math.PI, Math.PI);
+
+    return Commands.run(
+            () -> {
+              var poseOpt = vision.getRearTargetSpacePose();
+
+              if (poseOpt.isEmpty()) {
+                drive.stop();
+                return;
+              }
+
+              Pose3d pose = poseOpt.get();
+
+              double forwardError = pose.getZ() - Constants.Climb.Vision.TARGET_FORWARD_METERS;
+
+              double lateralError = pose.getX() - Constants.Climb.Vision.TARGET_LATERAL_METERS;
+
+              double yawError =
+                  pose.getRotation()
+                      .toRotation2d()
+                      .minus(Constants.Climb.Vision.TARGET_YAW)
+                      .getRadians();
+
+              double vx = -forwardController.calculate(forwardError, 0.0);
+
+              double vy = -strafeController.calculate(lateralError, 0.0);
+
+              double omega = -turnController.calculate(yawError, 0.0);
+
+              // Precision mode
+              double distance = Math.hypot(forwardError, lateralError);
+
+              double maxLinear =
+                  distance < Constants.Climb.Vision.PRECISION_MODE_DISTANCE
+                      ? Constants.Climb.Vision.PRECISION_LINEAR_SPEED
+                      : Constants.Climb.Vision.MAX_LINEAR_SPEED;
+
+              vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
+
+              vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
+
+              omega =
+                  MathUtil.clamp(
+                      omega,
+                      -Constants.Climb.Vision.MAX_ANGULAR_SPEED,
+                      Constants.Climb.Vision.MAX_ANGULAR_SPEED);
+
+              // Deadbands
+              if (Math.abs(vx) < 0.03) vx = 0.0;
+              if (Math.abs(vy) < 0.03) vy = 0.0;
+              if (Math.abs(omega) < 0.03) omega = 0.0;
+
+              drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+            },
+            drive)
+        .until(
+            () -> {
+              var poseOpt = vision.getRearTargetSpacePose();
+
+              if (poseOpt.isEmpty()) {
+                return false;
+              }
+
+              Pose3d pose = poseOpt.get();
+
+              double forwardError =
+                  Math.abs(pose.getZ() - Constants.Climb.Vision.TARGET_FORWARD_METERS);
+
+              double lateralError =
+                  Math.abs(pose.getX() - Constants.Climb.Vision.TARGET_LATERAL_METERS);
+
+              double yawError =
+                  Math.abs(
+                      pose.getRotation()
+                          .toRotation2d()
+                          .minus(Constants.Climb.Vision.TARGET_YAW)
+                          .getRadians());
+
+              return forwardError < Constants.Climb.Vision.FORWARD_TOLERANCE
+                  && lateralError < Constants.Climb.Vision.LATERAL_TOLERANCE
+                  && yawError < Constants.Climb.Vision.YAW_TOLERANCE_RAD;
+            })
+        .finallyDo(interrupted -> drive.stop());
+  }
   // public static Command climbUp(ClimbSubsystem climb) {
   //   System.out.println("Climb Up Command Created");
   //   return Commands.startEnd(climb::moveUp, climb::stop, climb).withName("ClimbUp");

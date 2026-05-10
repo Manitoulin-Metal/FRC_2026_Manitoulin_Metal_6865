@@ -15,6 +15,9 @@ public interface VisionIO {
     /** True if camera is actively publishing data. */
     public boolean connected = false;
 
+    public Pose3d targetSpacePose = new Pose3d();
+    public boolean hasTargets = false;
+
     /** Latest simple target observation (tx/ty). */
     public TargetObservation latestTargetObservation =
         new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);

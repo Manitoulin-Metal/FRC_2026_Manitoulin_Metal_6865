@@ -33,9 +33,9 @@ public class IntakeRollerSubsystem extends SubsystemBase {
   private final Timer jamTimer = new Timer();
   private final Timer countTimer = new Timer();
 
-  private int fuelCount = 0;
   private boolean pieceLatched = false;
 
+  @SuppressWarnings("removal")
   public IntakeRollerSubsystem() {
 
     SparkFlexConfig config = new SparkFlexConfig();
@@ -132,7 +132,6 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
         if (jamDetected() && !pieceLatched && countTimer.get() > Constants.Intake.COUNT_DELAY) {
 
-          fuelCount++;
           pieceLatched = true;
           countTimer.restart();
         }
