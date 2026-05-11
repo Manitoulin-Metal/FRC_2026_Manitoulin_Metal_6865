@@ -6,6 +6,8 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -13,10 +15,12 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
@@ -25,9 +29,14 @@ public class Vision extends SubsystemBase {
   private final VisionIO[] io;
   private final VisionIOInputsAutoLogged[] inputs;
   private final Alert[] disconnectedAlerts;
+  private final Drive drive;
+  private final Supplier<Pose2d> robotPoseSupplier;
 
-  public Vision(VisionConsumer consumer, VisionIO... io) {
+  public Vision(
+      VisionConsumer consumer, Supplier<Pose2d> robotPoseSupplier, Drive drive, VisionIO... io) {
     this.consumer = consumer;
+    this.robotPoseSupplier = robotPoseSupplier;
+    this.drive = drive;
     this.io = io;
 
     inputs = new VisionIOInputsAutoLogged[io.length];
@@ -85,11 +94,32 @@ public class Vision extends SubsystemBase {
     double tx = getTX();
     double ty = getTY();
 
-    return Optional.of(
-        new Transform2d(-ty, tx, edu.wpi.first.math.geometry.Rotation2d.fromDegrees(tx)));
+    return Optional.of(new Transform2d(-ty, tx, Rotation2d.fromDegrees(tx)));
   }
 
-  public Optional<Pose3d> getRearTargetSpacePose() {
+  public Optional<Pose3d> getRearTagRelativePose() {
+
+    // =====================================================
+    // SIMULATED VISION
+    // =====================================================
+    if (Constants.currentMode == Constants.Mode.SIM) {
+
+      Pose2d robotPose = robotPoseSupplier.get();
+
+      Pose2d tagPose = new Pose2d(1.0, 5.0, Rotation2d.kZero);
+
+      Transform2d robotToTag = new Transform2d(robotPose, tagPose);
+
+      return Optional.of(
+          new Pose3d(
+              robotToTag.getX(),
+              robotToTag.getY(),
+              0.0,
+              new Rotation3d(0, 0, robotToTag.getRotation().getRadians())));
+    }
+    // =====================================================
+    // REAL VISION
+    // =====================================================
 
     if (!inputs[VisionConstants.REAR_CAMERA].connected) {
       return Optional.empty();

@@ -141,7 +141,7 @@ public final class DriveCommands {
 
     return Commands.run(
             () -> {
-              Optional<Pose3d> poseOpt = vision.getRearTargetSpacePose();
+              Optional<Pose3d> poseOpt = vision.getRearTagRelativePose();
 
               if (poseOpt.isEmpty()) {
                 drive.stop();
@@ -187,7 +187,7 @@ public final class DriveCommands {
             drive)
         .until(
             () -> {
-              Optional<Pose3d> poseOpt = vision.getRearTargetSpacePose();
+              Optional<Pose3d> poseOpt = vision.getRearTagRelativePose();
 
               if (poseOpt.isEmpty()) {
                 return false;

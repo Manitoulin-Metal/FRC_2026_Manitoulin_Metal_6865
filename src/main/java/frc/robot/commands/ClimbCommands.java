@@ -12,6 +12,7 @@ import frc.robot.Constants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Clean ClimbCommands
@@ -98,7 +99,7 @@ public final class ClimbCommands {
 
     return Commands.run(
             () -> {
-              var poseOpt = vision.getRearTargetSpacePose();
+              var poseOpt = vision.getRearTagRelativePose();
 
               if (poseOpt.isEmpty()) {
                 drive.stop();
@@ -107,9 +108,14 @@ public final class ClimbCommands {
 
               Pose3d pose = poseOpt.get();
 
-              double forwardError = pose.getZ() - Constants.Climb.Vision.TARGET_FORWARD_METERS;
+              // checking position values for debugging
+              drive.runVelocity(new ChassisSpeeds(0.0, 0.5, 0.0));
+              Logger.recordOutput("ClimbDock/X", pose.getX());
+              Logger.recordOutput("ClimbDock/Y", pose.getY());
+              Logger.recordOutput("ClimbDock/Z", pose.getZ());
 
-              double lateralError = pose.getX() - Constants.Climb.Vision.TARGET_LATERAL_METERS;
+              double forwardError = pose.getX() - Constants.Climb.Vision.TARGET_FORWARD_METERS;
+              double lateralError = pose.getY() - Constants.Climb.Vision.TARGET_LATERAL_METERS;
 
               double yawError =
                   pose.getRotation()
@@ -151,7 +157,7 @@ public final class ClimbCommands {
             drive)
         .until(
             () -> {
-              var poseOpt = vision.getRearTargetSpacePose();
+              var poseOpt = vision.getRearTagRelativePose();
 
               if (poseOpt.isEmpty()) {
                 return false;
@@ -178,9 +184,11 @@ public final class ClimbCommands {
             })
         .finallyDo(interrupted -> drive.stop());
   }
+
   // public static Command climbUp(ClimbSubsystem climb) {
-  //   System.out.println("Climb Up Command Created");
-  //   return Commands.startEnd(climb::moveUp, climb::stop, climb).withName("ClimbUp");
+  // System.out.println("Climb Up Command Created");
+  // return Commands.startEnd(climb::moveUp, climb::stop,
+  // climb).withName("ClimbUp");
   // }
   public static Command hookUp(ClimbSubsystem climb) {
     return Commands.startEnd(() -> climb.moveUp(), climb::stop, climb).withName("HookUp");

@@ -185,7 +185,7 @@ public final class Constants {
 
       // Desired robot offset relative to tag
       public static final double TARGET_FORWARD_METERS = 0.68;
-      public static final double TARGET_LATERAL_METERS = 0.00;
+      public static final double TARGET_LATERAL_METERS = 0.02;
 
       public static final Rotation2d TARGET_YAW = Rotation2d.kZero;
 

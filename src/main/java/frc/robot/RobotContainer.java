@@ -79,9 +79,12 @@ public class RobotContainer {
     drive = createDrive();
 
     // ---------------- VISION INIT (CLEAN) ----------------
+
     vision =
         new Vision(
             drive::addVisionMeasurement,
+            drive::getPose,
+            drive,
             new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
             new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
     drive.setVision(vision);
@@ -217,7 +220,7 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
                 }));
 
-    driver.y().whileTrue(DriveCommands.dockToClimb(drive, vision));
+    driver.y().whileTrue(ClimbCommands.dockToClimb(drive, vision));
     // driver
     //     .y()
     //     .onTrue(
@@ -238,7 +241,7 @@ public class RobotContainer {
                 drive));
 
     driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
-    driver.y().onTrue(visionTestCommand());
+
     // driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
 
     // ---------------- OPERATOR ----------------

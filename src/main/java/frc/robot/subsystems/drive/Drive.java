@@ -334,6 +334,16 @@ public class Drive extends SubsystemBase {
    * @param speeds Speeds in meters/sec
    */
   public void runVelocity(ChassisSpeeds speeds) {
+
+    // temporary logging for debugging
+    System.out.println(
+        "VX="
+            + speeds.vxMetersPerSecond
+            + " VY="
+            + speeds.vyMetersPerSecond
+            + " Omega="
+            + speeds.omegaRadiansPerSecond);
+
     // Calculate module setpoints
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
