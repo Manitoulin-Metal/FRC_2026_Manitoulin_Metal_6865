@@ -2,7 +2,7 @@ package frc.robot.commands;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -11,28 +11,17 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.vision.LimelightHelpers;
 import frc.robot.subsystems.vision.Vision;
 import org.littletonrobotics.junction.Logger;
 
-/**
- * Clean ClimbCommands
- *
- * <p>Responsibility: - Only REQUEST actions - No state logic - No override systems - Subsystem owns
- * all safety + limits
- */
 public final class ClimbCommands {
 
   private ClimbCommands() {}
 
   // ============================================================
-  // ALLIANCE TAG SELECTION
+  // PID CONTROLLERS
   // ============================================================
-
-  private static int getClimbTagId() {
-    Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-
-    return (alliance == Alliance.Red) ? 16 : 32;
-  }
 
   private static final PIDController forwardController =
       new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
@@ -48,32 +37,67 @@ public final class ClimbCommands {
   }
 
   // ============================================================
-  // DRIVE ALIGNMENT (VISION ONLY)
+  // ALLIANCE HELPERS
+  // ============================================================
+
+  private static Alliance alliance() {
+    return DriverStation.getAlliance().orElse(Alliance.Blue);
+  }
+
+  private static boolean isRed() {
+    return alliance() == Alliance.Red;
+  }
+
+  // ONE unified yaw target (no contradictions)
+  private static Rotation2d targetYaw() {
+    // Flip if your physical mounting requires it
+    return isRed() ? Rotation2d.kZero : Rotation2d.fromDegrees(180);
+  }
+
+  // ============================================================
+  // FILTER STATE
+  // ============================================================
+
+  private static double filteredTX = 0.0;
+  private static double filteredTY = 0.0;
+
+  private static void updateFilter(double tx, double ty) {
+    filteredTX = 0.8 * filteredTX + 0.2 * tx;
+    filteredTY = 0.8 * filteredTY + 0.2 * ty;
+  }
+
+  // ============================================================
+  // SIMPLE ALIGN (FIXED)
   // ============================================================
 
   public static Command autoClimbDrive(Drive drive, Vision vision) {
 
     return Commands.run(
             () -> {
-              int tagId = getClimbTagId();
+              int targetTag = isRed() ? 16 : 32;
 
-              if (!vision.hasTag(tagId)) {
-                drive.runVelocity(new ChassisSpeeds(0, 0, 0));
+              if (!vision.hasTag(targetTag)) {
+                drive.stop();
                 return;
               }
 
               double tx = vision.getTX();
               double ty = vision.getTY();
 
-              final double kP_X = 0.05;
-              final double kP_Y = 0.05;
-              final double kP_ROT = 0.03;
+              updateFilter(tx, ty);
 
-              double strafe = tx * kP_X;
-              double forward = ty * kP_Y;
-              double omega = tx * kP_ROT;
+              double kP_X = 0.05;
+              double kP_Y = 0.05;
+              double kP_ROT = 0.03;
 
-              drive.runVelocity(new ChassisSpeeds(forward, strafe, omega));
+              double vx = filteredTY * kP_Y;
+              double vy = filteredTX * kP_X;
+
+              double yawError = drive.getRotation().minus(targetYaw()).getRadians();
+
+              double omega = yawError * kP_ROT;
+
+              drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
             },
             drive)
         .finallyDo(drive::stop)
@@ -81,73 +105,51 @@ public final class ClimbCommands {
   }
 
   // ============================================================
-  // CLIMB ACTIONS (DIRECT STATE REQUESTS ONLY)
+  // MAIN DOCKING COMMAND (CLEAN + CONSISTENT)
   // ============================================================
-
-  public static Command waitForHome(ClimbSubsystem climb) {
-    return Commands.waitUntil(climb::isHomed).withTimeout(2.0);
-  }
-
-  public static Command autoClimberUp(ClimbSubsystem climb) {
-    return climb.upCommand().withName("ClimbAutoUp");
-    // return Commands.runOnce(climb::moveUp, climb).withName("ClimbAutoUp");
-  }
 
   public static Command dockToClimb(Drive drive, Vision vision) {
 
-    turnController.enableContinuousInput(-Math.PI, Math.PI);
-
     return Commands.run(
             () -> {
-              var poseOpt = vision.getRearTagRelativePose();
-
-              if (poseOpt.isEmpty()) {
+              if (!LimelightHelpers.getTV(Constants.Climb.Vision.REAR_LIMELIGHT)) {
                 drive.stop();
                 return;
               }
 
-              Pose3d pose = poseOpt.get();
+              double tx = LimelightHelpers.getTX(Constants.Climb.Vision.REAR_LIMELIGHT);
+              double ty = LimelightHelpers.getTY(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-              // checking position values for debugging
-              drive.runVelocity(new ChassisSpeeds(0.0, 0.5, 0.0));
-              Logger.recordOutput("ClimbDock/X", pose.getX());
-              Logger.recordOutput("ClimbDock/Y", pose.getY());
-              Logger.recordOutput("ClimbDock/Z", pose.getZ());
+              updateFilter(tx, ty);
 
-              double forwardError = pose.getX() - Constants.Climb.Vision.TARGET_FORWARD_METERS;
-              double lateralError = pose.getY() - Constants.Climb.Vision.TARGET_LATERAL_METERS;
+              double targetTX = Constants.Climb.Vision.targetTX();
+              double targetTY = Constants.Climb.Vision.targetTY();
 
-              double yawError =
-                  pose.getRotation()
-                      .toRotation2d()
-                      .minus(Constants.Climb.Vision.TARGET_YAW)
-                      .getRadians();
+              double txError = filteredTX - targetTX;
+              double tyError = filteredTY - targetTY;
 
-              double vx = -forwardController.calculate(forwardError, 0.0);
+              double yawError = drive.getRotation().minus(targetYaw()).getRadians();
 
-              double vy = -strafeController.calculate(lateralError, 0.0);
+              Logger.recordOutput("ClimbDock/TX", filteredTX);
+              Logger.recordOutput("ClimbDock/TY", filteredTY);
+              Logger.recordOutput("ClimbDock/TXError", txError);
+              Logger.recordOutput("ClimbDock/TYError", tyError);
+              Logger.recordOutput("ClimbDock/YawError", yawError);
 
-              double omega = -turnController.calculate(yawError, 0.0);
+              double vx = forwardController.calculate(tyError, 0.0);
+              double vy = strafeController.calculate(txError, 0.0);
+              double omega = turnController.calculate(yawError, 0.0);
 
-              // Precision mode
-              double distance = Math.hypot(forwardError, lateralError);
+              double distance = Math.hypot(txError, tyError);
 
-              double maxLinear =
-                  distance < Constants.Climb.Vision.PRECISION_MODE_DISTANCE
-                      ? Constants.Climb.Vision.PRECISION_LINEAR_SPEED
-                      : Constants.Climb.Vision.MAX_LINEAR_SPEED;
+              if (distance > 3.0) {
+                omega = 0.0;
+              }
 
-              vx = MathUtil.clamp(vx, -maxLinear, maxLinear);
+              vx = MathUtil.clamp(vx, -0.8, 0.8);
+              vy = MathUtil.clamp(vy, -0.8, 0.8);
+              omega = MathUtil.clamp(omega, -1.0, 1.0);
 
-              vy = MathUtil.clamp(vy, -maxLinear, maxLinear);
-
-              omega =
-                  MathUtil.clamp(
-                      omega,
-                      -Constants.Climb.Vision.MAX_ANGULAR_SPEED,
-                      Constants.Climb.Vision.MAX_ANGULAR_SPEED);
-
-              // Deadbands
               if (Math.abs(vx) < 0.03) vx = 0.0;
               if (Math.abs(vy) < 0.03) vy = 0.0;
               if (Math.abs(omega) < 0.03) omega = 0.0;
@@ -157,41 +159,34 @@ public final class ClimbCommands {
             drive)
         .until(
             () -> {
-              var poseOpt = vision.getRearTagRelativePose();
-
-              if (poseOpt.isEmpty()) {
+              if (!LimelightHelpers.getTV(Constants.Climb.Vision.REAR_LIMELIGHT)) {
                 return false;
               }
 
-              Pose3d pose = poseOpt.get();
+              double tx = filteredTX;
+              double ty = filteredTY;
 
-              double forwardError =
-                  Math.abs(pose.getZ() - Constants.Climb.Vision.TARGET_FORWARD_METERS);
+              double txError = Math.abs(tx - Constants.Climb.Vision.targetTX());
+              double tyError = Math.abs(ty - Constants.Climb.Vision.targetTY());
 
-              double lateralError =
-                  Math.abs(pose.getX() - Constants.Climb.Vision.TARGET_LATERAL_METERS);
+              double yawError = Math.abs(drive.getRotation().minus(targetYaw()).getRadians());
 
-              double yawError =
-                  Math.abs(
-                      pose.getRotation()
-                          .toRotation2d()
-                          .minus(Constants.Climb.Vision.TARGET_YAW)
-                          .getRadians());
-
-              return forwardError < Constants.Climb.Vision.FORWARD_TOLERANCE
-                  && lateralError < Constants.Climb.Vision.LATERAL_TOLERANCE
-                  && yawError < Constants.Climb.Vision.YAW_TOLERANCE_RAD;
+              return txError < 1.0 && tyError < 1.0 && yawError < 0.08;
             })
-        .finallyDo(interrupted -> drive.stop());
+        .finallyDo(drive::stop)
+        .withName("DockToClimb");
   }
 
-  // public static Command climbUp(ClimbSubsystem climb) {
-  // System.out.println("Climb Up Command Created");
-  // return Commands.startEnd(climb::moveUp, climb::stop,
-  // climb).withName("ClimbUp");
-  // }
+  // ============================================================
+  // CLIMBER COMMANDS (UNCHANGED LOGICALLY)
+  // ============================================================
+
+  public static Command waitForHome(ClimbSubsystem climb) {
+    return Commands.waitUntil(climb::isHomed).withTimeout(2.0).withName("WaitForClimbHome");
+  }
+
   public static Command hookUp(ClimbSubsystem climb) {
-    return Commands.startEnd(() -> climb.moveUp(), climb::stop, climb).withName("HookUp");
+    return Commands.startEnd(climb::moveUp, climb::stop, climb).withName("HookUp");
   }
 
   public static Command climbDown(ClimbSubsystem climb) {
@@ -206,27 +201,21 @@ public final class ClimbCommands {
     return climb.homeCommand().withName("ClimbHome");
   }
 
+  public static Command autoClimberUp(ClimbSubsystem climb) {
+    return climb.upCommand().withName("ClimbAutoUp");
+  }
+
   // ============================================================
-  // FULL AUTO CLIMB SEQUENCE
+  // FULL SEQUENCE
   // ============================================================
 
   public static Command climbSequence(Drive drive, Vision vision, ClimbSubsystem climb) {
 
     return Commands.sequence(
-
-            // Align under bar
-            autoClimbDrive(drive, vision).withTimeout(2.5),
-
-            // Raise hook
+            dockToClimb(drive, vision).withTimeout(4.0),
             hookUp(climb).withTimeout(1.8),
-
-            // settle time
             Commands.waitSeconds(0.4),
-
-            // adjust / descend
             climbDown(climb).withTimeout(1.0),
-
-            // ensure stop
             stop(climb))
         .withName("FullClimbSequence");
   }

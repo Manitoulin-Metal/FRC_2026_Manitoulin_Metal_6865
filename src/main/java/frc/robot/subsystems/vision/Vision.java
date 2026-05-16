@@ -13,6 +13,8 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
@@ -31,6 +33,11 @@ public class Vision extends SubsystemBase {
   private final Alert[] disconnectedAlerts;
   private final Drive drive;
   private final Supplier<Pose2d> robotPoseSupplier;
+
+  private static final Pose2d BLUE_TAG = new Pose2d(1.0, 5.0, Rotation2d.kZero);
+
+  private static final Pose2d RED_TAG =
+      new Pose2d(Constants.Field.LENGTH_METERS - 1.0, 5.0, Rotation2d.fromDegrees(180));
 
   public Vision(
       VisionConsumer consumer, Supplier<Pose2d> robotPoseSupplier, Drive drive, VisionIO... io) {
@@ -56,10 +63,6 @@ public class Vision extends SubsystemBase {
   // ==
 
   private boolean enabled = true;
-
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
-  }
 
   // ==================================================
   // Rear Camera Helpers (camera0)
@@ -104,18 +107,31 @@ public class Vision extends SubsystemBase {
     // =====================================================
     if (Constants.currentMode == Constants.Mode.SIM) {
 
+      Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+
+      Pose2d tagPose = (alliance == Alliance.Red) ? RED_TAG : BLUE_TAG;
+
       Pose2d robotPose = robotPoseSupplier.get();
 
-      Pose2d tagPose = new Pose2d(1.0, 5.0, Rotation2d.kZero);
-
+      // Robot-relative transform to tag
       Transform2d robotToTag = new Transform2d(robotPose, tagPose);
+
+      Logger.recordOutput("Vision/SIM/AllianceRed", alliance == Alliance.Red);
+
+      Logger.recordOutput("Vision/SIM/RobotPose", robotPose);
+
+      Logger.recordOutput("Vision/SIM/TagPose", tagPose);
+
+      Logger.recordOutput("Vision/SIM/RobotToTagX", robotToTag.getX());
+
+      Logger.recordOutput("Vision/SIM/RobotToTagY", robotToTag.getY());
 
       return Optional.of(
           new Pose3d(
               robotToTag.getX(),
               robotToTag.getY(),
               0.0,
-              new Rotation3d(0, 0, robotToTag.getRotation().getRadians())));
+              new Rotation3d(0.0, 0.0, robotToTag.getRotation().getRadians())));
     }
     // =====================================================
     // REAL VISION

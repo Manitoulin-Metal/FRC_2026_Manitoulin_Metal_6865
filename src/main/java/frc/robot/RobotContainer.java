@@ -51,7 +51,6 @@ public class RobotContainer {
   // VISION
   // ============================================================
   private final Vision vision;
-
   private boolean visionEnabled = true;
 
   // ============================================================
@@ -83,12 +82,12 @@ public class RobotContainer {
     vision =
         new Vision(
             drive::addVisionMeasurement,
-            drive::getPose,
+            () -> drive.getPose(),
             drive,
             new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
             new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
+
     drive.setVision(vision);
-    vision.setEnabled(visionEnabled);
 
     // ---------------- DEFAULT DRIVE ----------------
     drive.setDefaultCommand(
@@ -222,14 +221,14 @@ public class RobotContainer {
 
     driver.y().whileTrue(ClimbCommands.dockToClimb(drive, vision));
     // driver
-    //     .y()
-    //     .onTrue(
-    //         Commands.runOnce(
-    //             () -> {
-    //               visionEnabled = !visionEnabled;
-    //               vision.setEnabled(visionEnabled);
-    //               SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
-    //             }));
+    // .y()
+    // .onTrue(
+    // Commands.runOnce(
+    // () -> {
+    // visionEnabled = !visionEnabled;
+    // vision.setEnabled(visionEnabled);
+    // SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
+    // }));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
