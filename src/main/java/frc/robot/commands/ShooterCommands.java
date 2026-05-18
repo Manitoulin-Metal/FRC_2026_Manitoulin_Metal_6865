@@ -2,75 +2,91 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
+import frc.robot.Constants;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.WhipSubsystem;
+import java.util.function.Supplier;
 
 public final class ShooterCommands {
 
   private ShooterCommands() {}
 
-  /** Timed shoot sequence: run shooter and kicker in parallel, then stop both. */
-  public static Command timedShoot(
-      ShooterSubsystem shooter,
-      KickerSubsystem kicker,
-      IntakeDeploySubsystem intakeDeploy,
-      double shooterRps,
-      double timeoutSeconds) {
-    return Commands.runOnce(intakeDeploy::shake, intakeDeploy)
-        .andThen(
-            Commands.parallel(
-                    // Commands.run(() -> shooter.runShooter(shooterRps), shooter)
-
-                    Commands.startEnd(
-                            () -> shooter.runShooter(shooterRps), shooter::stopShooter, shooter)
-                        .andThen(new WaitCommand(1)),
-                    kicker.kickerCommand())
-                .withTimeout(timeoutSeconds))
-        .finallyDo(
-            interrupted -> {
-              shooter.stopShooter();
-              intakeDeploy.deploy();
-            });
-  }
-
-  /** Teleop shoot + whip assist while held. */
+  /**
+   * Timed shoot sequence: run shooter and kicker in parallel, then stop both. * /** shoot + whip
+   */
   public static Command shootWithWhipAndShake(
       ShooterSubsystem shooter,
       WhipSubsystem whip,
+      KickerSubsystem kicker,
       IntakeDeploySubsystem intakeDeploy,
       double shooterRps) {
+
     return Commands.runOnce(intakeDeploy::shake, intakeDeploy)
         .andThen(
             Commands.parallel(
-                Commands.run(() -> shooter.runShooter(shooterRps), shooter), whip.whipCommand()))
+                Commands.run(() -> shooter.runShooter(shooterRps), shooter),
+                whip.whipCommand(),
+
+                // kicker now just runs simple logic based on shooter readiness inside command
+                Commands.run(
+                    () -> {
+                      if (shooter.atTarget()) {
+                        kicker.setKicker(0.5);
+                      } else {
+                        kicker.setKicker(0.0);
+                      }
+                    },
+                    kicker)))
         .finallyDo(
             interrupted -> {
               shooter.stopShooter();
+              kicker.stop();
               intakeDeploy.deploy();
             });
   }
 
-  /** Run shooter + whip with no intake action. */
-  public static Command shootWithWhip(
-      ShooterSubsystem shooter, WhipSubsystem whip, double shooterRps) {
-    return Commands.parallel(
-            Commands.run(() -> shooter.runShooter(shooterRps), shooter), whip.whipCommand())
-        .finallyDo(interrupted -> shooter.stopShooter());
-  }
+  public static Command smartShoot(
+      ShooterSubsystem shooter,
+      KickerSubsystem kicker,
+      WhipSubsystem whip,
+      IntakeDeploySubsystem intake,
+      Supplier<Double> distanceMeters) {
 
-  /** Runs shooter at a constant RPS while held. */
-  public static Command runShooterAtRps(
-      ShooterSubsystem shooter, IntakeDeploySubsystem intakeDeploy, double shooterRps) {
-    return Commands.runOnce(intakeDeploy::shake, intakeDeploy)
-        .andThen(Commands.run(() -> shooter.runShooter(shooterRps), shooter))
+    return Commands.runOnce(intake::shake, intake)
+        .andThen(
+            Commands.parallel(
+
+                // WHIP ALWAYS RUNS
+                whip.whipCommand(),
+
+                // FULL CONTROL LOOP
+                Commands.run(
+                    () -> {
+                      double distance = distanceMeters.get();
+
+                      var profile = Constants.getShotProfile(distance);
+
+                      // SHOOTER follows field model
+                      shooter.runShooter(profile.shooterRps);
+
+                      // KICKER reacts to shooter velocity vs profile threshold
+                      double currentRps = shooter.getVelocityRps();
+
+                      if (currentRps >= profile.kickerRpsThreshold) {
+                        kicker.setKicker(0.5);
+                      } else {
+                        kicker.setKicker(0.0);
+                      }
+                    },
+                    shooter,
+                    kicker)))
         .finallyDo(
             interrupted -> {
-              shooter.stopShooter(); // When interrupted, the Shooter stops running
-              intakeDeploy
-                  .deploy(); // When interrupted, the IntakeDeploy sets itself to Deploy Mode
+              shooter.stopShooter();
+              kicker.stop();
+              intake.deploy();
             });
   }
 }

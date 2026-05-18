@@ -31,7 +31,6 @@ public class Vision extends SubsystemBase {
   private final VisionIO[] io;
   private final VisionIOInputsAutoLogged[] inputs;
   private final Alert[] disconnectedAlerts;
-  private final Drive drive;
   private final Supplier<Pose2d> robotPoseSupplier;
 
   private static final Pose2d BLUE_TAG = new Pose2d(1.0, 5.0, Rotation2d.kZero);
@@ -43,7 +42,6 @@ public class Vision extends SubsystemBase {
       VisionConsumer consumer, Supplier<Pose2d> robotPoseSupplier, Drive drive, VisionIO... io) {
     this.consumer = consumer;
     this.robotPoseSupplier = robotPoseSupplier;
-    this.drive = drive;
     this.io = io;
 
     inputs = new VisionIOInputsAutoLogged[io.length];
@@ -128,9 +126,9 @@ public class Vision extends SubsystemBase {
 
       return Optional.of(
           new Pose3d(
-              robotToTag.getX(),
-              robotToTag.getY(),
+              robotToTag.getY(), // left/right
               0.0,
+              robotToTag.getX(), // forward/back
               new Rotation3d(0.0, 0.0, robotToTag.getRotation().getRadians())));
     }
     // =====================================================
@@ -219,66 +217,78 @@ public class Vision extends SubsystemBase {
       disconnectedAlerts[i].set(!inputs[i].connected);
     }
 
+    // =====================================================
+    // SIMULATED VISION MEASUREMENT
+    // =====================================================
+
     List<Pose3d> accepted = new ArrayList<>();
     List<Pose3d> rejected = new ArrayList<>();
 
-    // ONLY front camera contributes pose
-    int cameraIndex = FRONT_CAMERA;
+    // =====================================================
+    // Vision Pose Processing
+    //
+    // Front camera = primary field localization
+    // Rear camera = secondary / fallback localization
+    // Rear camera is mainly intended for climb docking.
+    // =====================================================
 
-    for (var observation : inputs[cameraIndex].poseObservations) {
+    for (int cameraIndex = 0; cameraIndex < inputs.length; cameraIndex++) {
 
-      boolean reject =
-          observation.tagCount() == 0
-              || (observation.tagCount() == 1 && observation.ambiguity() > maxAmbiguity)
-              || (observation.tagCount() == 1 && observation.averageTagDistance() > 3.5)
-              || Math.abs(observation.pose().getZ()) > maxZError
-              || observation.pose().getX() < 0
-              || observation.pose().getX() > aprilTagLayout.getFieldLength()
-              || observation.pose().getY() < 0
-              || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+      for (var observation : inputs[cameraIndex].poseObservations) {
 
-      if (reject) {
-        rejected.add(observation.pose());
-        continue;
+        boolean reject =
+            observation.tagCount() == 0
+                || (observation.tagCount() == 1 && observation.ambiguity() > maxAmbiguity)
+                || (observation.tagCount() == 1 && observation.averageTagDistance() > 3.5)
+                || Math.abs(observation.pose().getZ()) > maxZError
+                || observation.pose().getX() < 0
+                || observation.pose().getX() > aprilTagLayout.getFieldLength()
+                || observation.pose().getY() < 0
+                || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+
+        if (reject) {
+          rejected.add(observation.pose());
+          continue;
+        }
+
+        accepted.add(observation.pose());
+
+        Logger.recordOutput("Vision/Camera" + cameraIndex + "/Pose", observation.pose().toPose2d());
+        Logger.recordOutput("Vision/LatestPose", observation.pose().toPose2d());
+
+        double factor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
+        // replacing with...
+        // double linear = linearStdDevBaseline * factor;
+        // double angular = angularStdDevBaseline * factor;
+
+        // if (observation.type() == PoseObservationType.MEGATAG_2) {
+        // linear *= linearStdDevMegatag2Factor;
+        // angular *= angularStdDevMegatag2Factor;
+        // }
+
+        double linear = linearStdDevBaseline * factor;
+        double angular = angularStdDevBaseline * factor;
+
+        if (observation.type() == PoseObservationType.MEGATAG_2) {
+
+          linear *= linearStdDevMegatag2Factor;
+
+          // Let gyro dominate heading
+          angular = 9999999.0;
+
+        } else {
+
+          angular *= angularStdDevMegatag2Factor;
+        }
+
+        linear *= cameraStdDevFactors[cameraIndex];
+        angular *= cameraStdDevFactors[cameraIndex];
+
+        consumer.accept(
+            observation.pose().toPose2d(),
+            observation.timestamp(),
+            VecBuilder.fill(linear, linear, angular));
       }
-
-      accepted.add(observation.pose());
-
-      Logger.recordOutput("Vision/Camera" + cameraIndex + "/Pose", observation.pose().toPose2d());
-      Logger.recordOutput("Vision/LatestPose", observation.pose().toPose2d());
-
-      double factor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
-      // replacing with...
-      // double linear = linearStdDevBaseline * factor;
-      // double angular = angularStdDevBaseline * factor;
-
-      // if (observation.type() == PoseObservationType.MEGATAG_2) {
-      // linear *= linearStdDevMegatag2Factor;
-      // angular *= angularStdDevMegatag2Factor;
-      // }
-
-      double linear = linearStdDevBaseline * factor;
-      double angular = angularStdDevBaseline * factor;
-
-      if (observation.type() == PoseObservationType.MEGATAG_2) {
-
-        linear *= linearStdDevMegatag2Factor;
-
-        // Let gyro dominate heading
-        angular = 9999999.0;
-
-      } else {
-
-        angular *= angularStdDevMegatag2Factor;
-      }
-
-      linear *= cameraStdDevFactors[cameraIndex];
-      angular *= cameraStdDevFactors[cameraIndex];
-
-      consumer.accept(
-          observation.pose().toPose2d(),
-          observation.timestamp(),
-          VecBuilder.fill(linear, linear, angular));
     }
 
     Logger.recordOutput("Vision/AcceptedPoses", accepted.toArray(new Pose3d[0]));

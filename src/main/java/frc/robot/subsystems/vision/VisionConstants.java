@@ -60,8 +60,8 @@ public final class VisionConstants {
   public static final double angularStdDevBaseline = 0.06;
 
   public static final double[] cameraStdDevFactors = {
-    1.4, // rear less trusted globally
-    1.0 // front primary odometry correction
+    2.5, // rear camera
+    1.0 // front camera
   };
 
   public static final double linearStdDevMegatag2Factor = 0.50;

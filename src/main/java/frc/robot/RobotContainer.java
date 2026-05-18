@@ -163,7 +163,8 @@ public class RobotContainer {
         "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(2.0));
     NamedCommands.registerCommand(
         "Shoot",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0).withTimeout(8.0));
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, 48.0)
+            .withTimeout(8.0));
   }
 
   private Command visionTestCommand() {
@@ -219,7 +220,7 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
                 }));
 
-    driver.y().whileTrue(ClimbCommands.dockToClimb(drive, vision));
+    driver.y().whileTrue(ClimbCommands.dockToClimb(drive));
     // driver
     // .y()
     // .onTrue(
@@ -239,7 +240,7 @@ public class RobotContainer {
                 () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
                 drive));
 
-    driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
+    // driver.leftTrigger(0.5).whileTrue(kicker.kickerCommand());
 
     // driver.y().whileTrue(DriveCommands.alignToTag(32, drive, vision));
 
@@ -255,11 +256,14 @@ public class RobotContainer {
 
     operator
         .rightTrigger(0.5)
-        .toggleOnTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0));
+        .toggleOnTrue(
+            ShooterCommands.shootWithWhipAndShake(
+                shooter, whip, kicker, intakeDeploy, Constants.DEMO_RPS));
 
-    operator
-        .y()
-        .whileTrue(ShooterCommands.shootWithWhipAndShake(shooter, whip, intakeDeploy, 48.0));
+    // operator
+    //     .y()
+    //     .whileTrue(
+    //         ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, 48.0));
   }
 
   // ============================================================

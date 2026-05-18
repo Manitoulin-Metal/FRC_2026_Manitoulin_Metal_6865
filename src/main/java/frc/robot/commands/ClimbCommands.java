@@ -51,7 +51,7 @@ public final class ClimbCommands {
   // ONE unified yaw target (no contradictions)
   private static Rotation2d targetYaw() {
     // Flip if your physical mounting requires it
-    return isRed() ? Rotation2d.kZero : Rotation2d.fromDegrees(180);
+    return new Rotation2d(Math.PI); // sets to 180deg
   }
 
   // ============================================================
@@ -108,70 +108,178 @@ public final class ClimbCommands {
   // MAIN DOCKING COMMAND (CLEAN + CONSISTENT)
   // ============================================================
 
-  public static Command dockToClimb(Drive drive, Vision vision) {
+  // ============================================================
+  // MAIN DOCKING COMMAND
+  // ============================================================
+  //
+  // Uses Limelight TARGET SPACE pose data.
+  //
+  // TARGET SPACE AXES:
+  // pose[0] = X = left/right offset from tag (strafe)
+  // pose[2] = Z = forward/back distance from tag
+  // pose[4] = Yaw relative to tag
+  //
+  // ------------------------------------------------------------
+  // CALIBRATION / TESTING NOTES
+  // ------------------------------------------------------------
+  //
+  // 1. Disable robot and physically place robot where you WANT
+  //    the final docking location to be.
+  //
+  // 2. Observe logged values:
+  //
+  //    ClimbDock/TX
+  //    ClimbDock/TZ
+  //    ClimbDock/Yaw
+  //
+  // 3. Copy those values into:
+  //
+  //    Constants.Climb.Vision.blueTX
+  //    Constants.Climb.Vision.blueTY
+  //
+  // 4. Re-enable robot and test.
+  //
+  // 5. IMPORTANT SIGN TEST:
+  //
+  //    Move robot FARTHER from tag:
+  //
+  //    If TZ increases:
+  //       forward PID probably needs NEGATIVE sign.
+  //
+  //    If TZ decreases:
+  //       remove negative sign from vx.
+  //
+  // 6. STRAFE TEST:
+  //
+  //    Move robot LEFT:
+  //
+  //    If TX increases:
+  //       strafe sign is correct.
+  //
+  //    If TX decreases:
+  //       invert vy.
+  //
+  // ------------------------------------------------------------
+
+  public static Command dockToClimb(Drive drive) {
 
     return Commands.run(
             () -> {
+
+              // ------------------------------------------------
+              // Ensure Limelight sees target
+              // ------------------------------------------------
+
               if (!LimelightHelpers.getTV(Constants.Climb.Vision.REAR_LIMELIGHT)) {
                 drive.stop();
                 return;
               }
 
-              double tx = LimelightHelpers.getTX(Constants.Climb.Vision.REAR_LIMELIGHT);
-              double ty = LimelightHelpers.getTY(Constants.Climb.Vision.REAR_LIMELIGHT);
+              // ------------------------------------------------
+              // Read TARGET SPACE pose directly from Limelight
+              // ------------------------------------------------
 
-              updateFilter(tx, ty);
+              double[] pose =
+                  LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-              double targetTX = Constants.Climb.Vision.targetTX();
-              double targetTY = Constants.Climb.Vision.targetTY();
+              // TARGET SPACE VALUES
+              double tx = pose[0]; // left/right
+              double tz = pose[2]; // forward/back
+              double yawDeg = pose[4]; // yaw in degrees
 
-              double txError = filteredTX - targetTX;
-              double tyError = filteredTY - targetTY;
+              // ------------------------------------------------
+              // Apply smoothing filter
+              // ------------------------------------------------
 
-              double yawError = drive.getRotation().minus(targetYaw()).getRadians();
+              updateFilter(tx, tz);
 
-              Logger.recordOutput("ClimbDock/TX", filteredTX);
-              Logger.recordOutput("ClimbDock/TY", filteredTY);
-              Logger.recordOutput("ClimbDock/TXError", txError);
-              Logger.recordOutput("ClimbDock/TYError", tyError);
-              Logger.recordOutput("ClimbDock/YawError", yawError);
+              // ------------------------------------------------
+              // Desired docking pose
+              // ------------------------------------------------
 
-              double vx = forwardController.calculate(tyError, 0.0);
-              double vy = strafeController.calculate(txError, 0.0);
-              double omega = turnController.calculate(yawError, 0.0);
+              double desiredTX = Constants.Climb.Vision.targetTX;
+              double desiredTZ = Constants.Climb.Vision.targetTY;
 
-              double distance = Math.hypot(txError, tyError);
+              // ------------------------------------------------
+              // PID calculations
+              // ------------------------------------------------
+              //
+              // IMPORTANT:
+              // Forward is NEGATED because Limelight target-space
+              // Z axis is inverted relative to robot forward
+              // on many rear-camera setups.
+              //
+              // If robot drives AWAY from tag:
+              // remove the negative sign from vx.
+              //
+              // ------------------------------------------------
 
-              if (distance > 3.0) {
-                omega = 0.0;
-              }
+              double vx = -forwardController.calculate(filteredTY, desiredTZ);
+
+              double vy = strafeController.calculate(filteredTX, desiredTX);
+
+              double omega = turnController.calculate(yawDeg, 0.0);
+
+              // ------------------------------------------------
+              // Clamp outputs
+              // ------------------------------------------------
 
               vx = MathUtil.clamp(vx, -0.8, 0.8);
               vy = MathUtil.clamp(vy, -0.8, 0.8);
               omega = MathUtil.clamp(omega, -1.0, 1.0);
 
+              // ------------------------------------------------
+              // Deadbands
+              // ------------------------------------------------
+
               if (Math.abs(vx) < 0.03) vx = 0.0;
               if (Math.abs(vy) < 0.03) vy = 0.0;
               if (Math.abs(omega) < 0.03) omega = 0.0;
 
+              // ------------------------------------------------
+              // Logging for calibration
+              // ------------------------------------------------
+
+              Logger.recordOutput("ClimbDock/TX", filteredTX);
+              Logger.recordOutput("ClimbDock/TZ", filteredTY);
+              Logger.recordOutput("ClimbDock/YawDeg", yawDeg);
+
+              Logger.recordOutput("ClimbDock/DesiredTX", desiredTX);
+              Logger.recordOutput("ClimbDock/DesiredTZ", desiredTZ);
+
+              Logger.recordOutput("ClimbDock/TXError", desiredTX - filteredTX);
+
+              Logger.recordOutput("ClimbDock/TZError", desiredTZ - filteredTY);
+
+              Logger.recordOutput("ClimbDock/YawErrorDeg", yawDeg);
+
+              Logger.recordOutput("ClimbDock/VX", vx);
+              Logger.recordOutput("ClimbDock/VY", vy);
+              Logger.recordOutput("ClimbDock/Omega", omega);
+
+              // ------------------------------------------------
+              // Final drive command
+              // ------------------------------------------------
+
               drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
             },
             drive)
+
+        // --------------------------------------------------------
+        // Finish condition
+        // --------------------------------------------------------
+
         .until(
             () -> {
               if (!LimelightHelpers.getTV(Constants.Climb.Vision.REAR_LIMELIGHT)) {
                 return false;
               }
 
-              double tx = filteredTX;
-              double ty = filteredTY;
+              double txError = Math.abs(filteredTX - Constants.Climb.Vision.targetTX);
 
-              double txError = Math.abs(tx - Constants.Climb.Vision.targetTX());
-              double tyError = Math.abs(ty - Constants.Climb.Vision.targetTY());
+              double tzError = Math.abs(filteredTY - Constants.Climb.Vision.targetTY);
 
-              double yawError = Math.abs(drive.getRotation().minus(targetYaw()).getRadians());
-
-              return txError < 1.0 && tyError < 1.0 && yawError < 0.08;
+              return txError < 0.03 && tzError < 0.04;
             })
         .finallyDo(drive::stop)
         .withName("DockToClimb");
@@ -212,7 +320,7 @@ public final class ClimbCommands {
   public static Command climbSequence(Drive drive, Vision vision, ClimbSubsystem climb) {
 
     return Commands.sequence(
-            dockToClimb(drive, vision).withTimeout(4.0),
+            dockToClimb(drive).withTimeout(4.0),
             hookUp(climb).withTimeout(1.8),
             Commands.waitSeconds(0.4),
             climbDown(climb).withTimeout(1.0),

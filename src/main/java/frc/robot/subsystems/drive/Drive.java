@@ -36,7 +36,6 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -272,16 +271,7 @@ public class Drive extends SubsystemBase {
       simGyro.addYawRadians(omega * dt);
     }
 
-    Pose2d pose = poseEstimator.getEstimatedPosition();
-
-    double x = pose.getX();
-    double y = pose.getY();
-
-    SmartDashboard.putBoolean("AlignTesting/TryingToAlignToTag", false);
-
-    double fieldLength = Constants.Field.LENGTH_METERS;
-
-    double fieldWidth = Constants.Field.WIDTH_METERS;
+    Logger.recordOutput("AlignTesting/TryingToAlignToTag", false);
 
     // already being updated elsewhere
     // if (x != pose.getX() || y != pose.getY()) {
@@ -413,7 +403,6 @@ public class Drive extends SubsystemBase {
   }
 
   /** Returns the measured chassis speeds of the robot. */
-  @AutoLogOutput(key = "SwerveChassisSpeeds/Measured")
   private ChassisSpeeds getChassisSpeeds() {
     return kinematics.toChassisSpeeds(getModuleStates());
   }

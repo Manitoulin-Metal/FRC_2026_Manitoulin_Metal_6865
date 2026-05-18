@@ -4,11 +4,7 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotBase;
-import frc.robot.Constants.Climb.Motion;
 import frc.robot.subsystems.vision.VisionConstants;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -42,15 +38,18 @@ public final class Constants {
   // =========================================================
   // SHOOTER
   // =========================================================
+  public static double rpmToRps(double rpm) {
+    return rpm / 60.0;
+  }
 
-  public static final double SHOOTER_RPS = 28.0;
-  public static final double KICKER_TRIGGER_RPS = 22.0;
-  public static final double WHIP_TRIGGER_RPS = 20.0;
+  public static final double SHOOTER_RPS = rpmToRps(1680.0);
+  public static final double KICKER_TRIGGER_RPS = rpmToRps(1320.0);
+  public static final double WHIP_TRIGGER_RPS = rpmToRps(1200.0);
 
   public static final double SHOOTER_AT_TARGET_TOLERANCE_RPS = 3.0;
   public static final double SHOOTER_MIN_RPS = 28.0;
 
-  public static final double AUTO_SHOOT_RPS = 28.0;
+  public static final double DEMO_RPS = 28.0;
 
   public static final double WHIP_SLOW_SPEED = -0.15;
 
@@ -69,19 +68,43 @@ public final class Constants {
   // SHOOTER DISTANCE TABLE
   // =========================================================
 
-  public static double getRPMForDistance(double distance) {
+  public static double getRpsForDistance(double distanceMeters) {
 
-    if (distance < 2.40) {
-      return 3550;
+    double rpm;
+
+    if (distanceMeters < 2.40) {
+      rpm = 3550;
+    } else {
+      rpm = 4200;
     }
 
-    return 4200;
+    return rpmToRps(rpm);
   }
 
   public static final double[] SHOOTER_DISTANCE_BREAKPOINTS_METERS = {1.5, 2.5, 3.5, 4.5, 5.5};
 
   public static final double[] SHOOTER_TARGET_RPS_BY_DISTANCE = {65.0, 68.0, 70.0, 72.0, 75.0};
 
+  public static class ShotProfile {
+    public final double shooterRps;
+    public final double kickerRpsThreshold;
+    public final double whipSpeed;
+
+    public ShotProfile(double shooterRps, double kickerRpsThreshold, double whipSpeed) {
+      this.shooterRps = shooterRps;
+      this.kickerRpsThreshold = kickerRpsThreshold;
+      this.whipSpeed = whipSpeed;
+    }
+  }
+
+  public static ShotProfile getShotProfile(double distanceMeters) {
+
+    double shooterRps = getRpsForDistance(distanceMeters);
+
+    double kickerThreshold = shooterRps - SHOOTER_AT_TARGET_TOLERANCE_RPS;
+
+    return new ShotProfile(shooterRps, kickerThreshold, WHIP_SLOW_SPEED);
+  }
   // =========================================================
   // AUTO / VISION
   // =========================================================
@@ -237,40 +260,44 @@ public final class Constants {
           new LoggedNetworkNumber("Tuning/Climb/BlueTY", +0);
 
       // ------------------------------------------------
-      // RED TARGETS
-      // ------------------------------------------------
+      // // RED TARGETS
+      // // ------------------------------------------------
 
-      public static final LoggedNetworkNumber redTX =
-          new LoggedNetworkNumber("Tuning/Climb/RedTX", 7.35);
+      // public static final LoggedNetworkNumber redTX =
+      //     new LoggedNetworkNumber("Tuning/Climb/RedTX", 7.35);
 
-      public static final LoggedNetworkNumber redTY =
-          new LoggedNetworkNumber("Tuning/Climb/RedTY", 13.5);
+      // public static final LoggedNetworkNumber redTY =
+      //     new LoggedNetworkNumber("Tuning/Climb/RedTY", 13.5);
 
       // ------------------------------------------------
       // Dynamic alliance helpers
       // ------------------------------------------------
 
-      public static double targetTX() {
+      // public static double targetTX() {
 
-        Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+      //   Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
-        return alliance == Alliance.Red ? redTX.get() : blueTX.get();
-      }
+      //   return alliance == Alliance.Red ? redTX.get() : blueTX.get();
+      // }
 
-      public static double targetTY() {
+      // public static double targetTY() {
 
-        Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+      //   Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
 
-        return alliance == Alliance.Red ? redTY.get() : blueTY.get();
-      }
+      //   return alliance == Alliance.Red ? redTY.get() : blueTY.get();
+      // }
 
-      public static Rotation2d targetYaw() {
-        return Rotation2d.kZero;
-      }
+      // public static Rotation2d targetYaw() {
+      //   return Rotation2d.kZero;
+      // }
 
       // ------------------------------------------------
       // Tolerances
       // ------------------------------------------------
+
+      public static final double targetTX = 0.0;
+
+      public static final double targetTY = 0.0;
 
       public static final double TX_TOLERANCE = 1.0;
 
