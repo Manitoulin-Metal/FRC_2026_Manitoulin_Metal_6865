@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.vision.LimelightHelpers;
 import frc.robot.subsystems.vision.Vision;
 import java.util.Optional;
 
@@ -62,63 +63,61 @@ public final class DriveCommands {
   // CLIMB DOCKING (CLEAN ROBOT-RELATIVE VERSION)
   // ============================================================
 
+  @SuppressWarnings("resource")
   public static Command dockToClimb(Drive drive, Vision vision) {
 
-  PIDController forwardController =
-      new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
+    PIDController forwardController = new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
 
-  PIDController strafeController =
-      new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
+    PIDController strafeController = new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
 
-  PIDController turnController =
-      new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
+    PIDController turnController = new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
 
-  turnController.enableContinuousInput(-Math.PI, Math.PI);
+    turnController.enableContinuousInput(-Math.PI, Math.PI);
 
-  return Commands.startRun(
-      () -> {
-        System.out.println("DockToClimb RUNNING");
-        forwardController.reset();
-        strafeController.reset();
-        turnController.reset();
-      },
-      () -> {
+    return Commands.startRun(
+        () -> {
+          System.out.println("DockToClimb RUNNING");
+          System.out.println("ALLIANCE = " + DriverStation.getAlliance());
+          System.out.println("CLIMB TAG = " + DriveCommands.getClimbTagId());
+          forwardController.reset();
+          strafeController.reset();
+          turnController.reset();
+        },
+        () -> {
 
-        Optional<Transform2d> robotToTagOpt = vision.getDockingTarget();
+          Optional<Transform2d> robotToTagOpt = vision.getDockingTarget();
 
-        if (robotToTagOpt.isEmpty()) {
-          System.out.println("DockToClimb: NO TAG");
-          drive.stop();
-          return;
-        }
+          if (robotToTagOpt.isEmpty()) {
+            drive.stop();
+            return;
+          }
 
-        Transform2d robotToTag = robotToTagOpt.get();
+          Transform2d robotToTag = robotToTagOpt.get();
 
-        // IMPORTANT: we want error = tag relative to robot inverse
-        Transform2d error = robotToTag.inverse();
+          // IMPORTANT: we want error = tag relative to robot inverse
+          Transform2d error = robotToTag.inverse();
 
-        double forwardError = error.getX();
-        double strafeError = error.getY();
-        double rotError = error.getRotation().getRadians();
+          double forwardError = error.getX();
+          double strafeError = error.getY();
+          double rotError = error.getRotation().getRadians();
 
-        double vx = forwardController.calculate(forwardError, 0.0);
-        double vy = strafeController.calculate(strafeError, 0.0);
-        double omega = turnController.calculate(rotError, 0.0);
+          double vx = forwardController.calculate(forwardError, 0.0);
+          double vy = strafeController.calculate(strafeError, 0.0);
+          double omega = turnController.calculate(rotError, 0.0);
 
-        vx = MathUtil.clamp(vx, -0.8, 0.8);
-        vy = MathUtil.clamp(vy, -0.8, 0.8);
-        omega = MathUtil.clamp(omega, -1.2, 1.2);
+          vx = MathUtil.clamp(vx, -0.8, 0.8);
+          vy = MathUtil.clamp(vy, -0.8, 0.8);
+          omega = MathUtil.clamp(omega, -1.2, 1.2);
 
-        vx *= drive.getMaxLinearSpeedMetersPerSec();
-        vy *= drive.getMaxLinearSpeedMetersPerSec();
-        omega *= drive.getMaxAngularSpeedRadPerSec();
+          vx *= drive.getMaxLinearSpeedMetersPerSec();
+          vy *= drive.getMaxLinearSpeedMetersPerSec();
+          omega *= drive.getMaxAngularSpeedRadPerSec();
 
-        drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
-      },
-      drive
-  ).finallyDo(drive::stop)
-   .withName("DockToClimb");
-}
+          drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+        },
+        drive).finallyDo(drive::stop)
+        .withName("DockToClimb");
+  }
 
   // ============================================================
   // SIMPLE DRIVE TO POSE (UNCHANGED)

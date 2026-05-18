@@ -15,6 +15,8 @@ import frc.robot.subsystems.drive.Drive;
 import java.util.*;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 public class Vision extends SubsystemBase {
 
@@ -122,21 +124,24 @@ public class Vision extends SubsystemBase {
   }
 
   // ==========================================================
-  // DOCKING TARGET FOR CLIMB (FROM REAR CAMERA)
-  // ==========================================================
+// DOCKING TARGET FOR CLIMB (FROM REAR CAMERA)
+// ==========================================================
 
-  public Optional<Transform2d> getDockingTarget() {
+public Optional<Transform2d> getDockingTarget() {
 
-      // ==========================================================
-  // SIM OVERRIDE (FOR TESTING)
   // ==========================================================
-  if (Constants.currentMode == Constants.Mode.SIM) {
+// SIM OVERRIDE
+// ==========================================================
+if (Constants.currentMode == Constants.Mode.SIM) {
 
   Pose2d robotPose = robotPoseSupplier.get();
 
   if (robotPose == null) return Optional.empty();
 
-  int tagId = Constants.Climb.Hardware.PRIMARY_CLIMB_TAG_ID;
+  int tagId =
+      DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+          ? 16
+          : 32;
 
   var tagOpt = VisionConstants.aprilTagLayout.getTagPose(tagId);
 
@@ -144,24 +149,42 @@ public class Vision extends SubsystemBase {
 
   Pose2d tagPose = tagOpt.get().toPose2d();
 
-  // robot → tag transform (this is EXACTLY what Drive expects)
-  return Optional.of(new Transform2d(robotPose, tagPose));
-}
+  // ==========================================
+  // OFFSET TARGET POSE
+  // ==========================================
+  Pose2d targetPose =
+      tagPose.transformBy(
+          new Transform2d(
+              1.15,   // 1.2m in front of tag
+              0.3,  // 20cm to the left of tag (facing same direction as tag)
+              Rotation2d.kZero));
 
+  // robot -> tag transform
+  return Optional.of(new Transform2d(robotPose, targetPose));
+  
+}
+  // ==========================================================
+  // REAL LIMELIGHT PATH
+  // ==========================================================
   double[] pose =
-      LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
+      LimelightHelpers.getBotPose_TargetSpace(
+          Constants.Climb.Vision.REAR_LIMELIGHT
+      );
 
   if (pose == null || pose.length < 6) return Optional.empty();
 
-  double x = pose[0];
-  double y = pose[2];
-  double yaw = pose[4];
+  // Limelight target-space is already robot-relative:
+  double forward = pose[0]; // X forward
+  double strafe  = pose[1]; // Y left/right
+  double yawDeg  = pose[5]; // (safer index in most configs)
 
-  return Optional.of(new Transform2d(
-      y,
-      x,
-      Rotation2d.fromDegrees(yaw)
-  ));
+  return Optional.of(
+      new Transform2d(
+          forward,
+          strafe,
+          Rotation2d.fromDegrees(yawDeg)
+      )
+  );
 }
 
   // ==========================================================
