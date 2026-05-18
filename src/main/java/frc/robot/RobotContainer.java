@@ -100,8 +100,6 @@ public class RobotContainer {
 
     // ---------------- AUTO ----------------
 
-    registerNamedCommands(); // Register named commands for auto builder before Chooser construction
-
     autoChooser = new LoggedDashboardChooser<>("Auto", AutoBuilder.buildAutoChooser());
 
     configureBindings();
@@ -147,8 +145,6 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("intakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
-    NamedCommands.registerCommand("ClimbAutoDrive", ClimbCommands.autoClimbDrive(drive, vision));
-
     // NamedCommands.registerCommand("ClimbAutoUp",
     // ClimbCommands.climbUp(climb).withTimeout(2.0));
 
@@ -164,13 +160,13 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "Shoot",
         ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, 48.0)
-            .withTimeout(8.0));
+            .withTimeout(5.0));
   }
 
   private Command visionTestCommand() {
     return Commands.runOnce(
         () -> {
-          Pose2d tagPose = vision.getEstimatedPose();
+          Pose2d tagPose = vision.getBestEstimatedPose().orElse(null);
 
           if (tagPose == null) {
             System.out.println("No vision pose detected");
@@ -220,16 +216,7 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
                 }));
 
-    driver.y().whileTrue(ClimbCommands.dockToClimb(drive));
-    // driver
-    // .y()
-    // .onTrue(
-    // Commands.runOnce(
-    // () -> {
-    // visionEnabled = !visionEnabled;
-    // vision.setEnabled(visionEnabled);
-    // SmartDashboard.putBoolean("Vision Enabled", visionEnabled);
-    // }));
+    driver.y().whileTrue(DriveCommands.dockToClimb(drive, vision));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 

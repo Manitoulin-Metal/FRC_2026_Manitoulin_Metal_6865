@@ -16,21 +16,19 @@ import java.util.Optional;
 
 public final class DriveCommands {
 
-  private DriveCommands() {}
+  private DriveCommands() {
+  }
 
   // ============================================================
   // TAG SELECTION
   // ============================================================
 
   static int getClimbTagId() {
-    return DriverStation.getAlliance().isPresent()
-            && DriverStation.getAlliance().get() == Alliance.Red
-        ? 16
-        : 32;
+    return DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
   }
 
   // ============================================================
-  // TELEOP DRIVE (unchanged)
+  // TELEOP DRIVE (UNCHANGED LOGIC, CLEANED)
   // ============================================================
 
   public static Command joystickDrive(
@@ -42,141 +40,119 @@ public final class DriveCommands {
 
     return Commands.run(
         () -> {
-          double x = xSupplier.getAsDouble();
-          double y = ySupplier.getAsDouble();
-          double omega = omegaSupplier.getAsDouble();
+          double x = MathUtil.applyDeadband(xSupplier.getAsDouble(), 0.05);
+          double y = MathUtil.applyDeadband(ySupplier.getAsDouble(), 0.05);
+          double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), 0.05);
+          ChassisSpeeds speeds = new ChassisSpeeds(
+              x * drive.getMaxLinearSpeedMetersPerSec(),
+              y * drive.getMaxLinearSpeedMetersPerSec(),
+              omega * drive.getMaxAngularSpeedRadPerSec());
 
-          ChassisSpeeds speeds =
-              new ChassisSpeeds(
-                  x * drive.getMaxLinearSpeedMetersPerSec(),
-                  y * drive.getMaxLinearSpeedMetersPerSec(),
-                  omega * drive.getMaxAngularSpeedRadPerSec());
-
-          boolean isFlipped =
-              DriverStation.getAlliance().isPresent()
-                  && DriverStation.getAlliance().get() == Alliance.Red;
+          boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
 
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
                   speeds,
-                  isFlipped
-                      ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                      : drive.getRotation()));
+                  isRed ? drive.getRotation().plus(new Rotation2d(Math.PI)) : drive.getRotation()));
         },
         drive);
   }
 
   // ============================================================
-  // 🚨 FIXED CLIMB DOCKING (MAIN FIX IS HERE)
+  // CLIMB DOCKING (CLEAN ROBOT-RELATIVE VERSION)
   // ============================================================
 
-  @SuppressWarnings("resource")
   public static Command dockToClimb(Drive drive, Vision vision) {
 
-    PIDController forwardController = new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
-    PIDController strafeController = new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
-    PIDController turnController = new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
+  PIDController forwardController =
+      new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
 
-    turnController.enableContinuousInput(-Math.PI, Math.PI);
+  PIDController strafeController =
+      new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
 
-    return Commands.run(
-            () -> {
-              Optional<Pose3d> poseOpt = vision.getRearTagRelativePose();
+  PIDController turnController =
+      new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
 
-              if (poseOpt.isEmpty()) {
-                drive.stop();
-                return;
-              }
+  turnController.enableContinuousInput(-Math.PI, Math.PI);
 
-              Pose3d current = poseOpt.get();
-              /*
-               * ROBOT-RELATIVE TAG SPACE
-               * X = left/right
-               * Z = forward/back
-               * rotation Z = yaw
-               */
+  return Commands.startRun(
+      () -> {
+        System.out.println("DockToClimb RUNNING");
+        forwardController.reset();
+        strafeController.reset();
+        turnController.reset();
+      },
+      () -> {
 
-              // ===============================
-              // DESIRED SETPOINT (your tuned offsets)
-              // ===============================
-              double desiredX = Constants.Climb.Vision.blueTX.get();
-              double desiredZ = Constants.Climb.Vision.blueTY.get();
+        Optional<Transform2d> robotToTagOpt = vision.getDockingTarget();
 
-              // ===============================
-              // ERROR (what PID should drive to zero)
-              // ===============================
-              double strafeError = current.getX() - desiredX;
-              double forwardError = current.getZ() - desiredZ;
-              double yawError = current.getRotation().getZ();
-              double forward = -forwardController.calculate(forwardError, 0.0);
-              double strafe = -strafeController.calculate(strafeError, 0.0);
-              double turn = -turnController.calculate(yawError, 0.0);
+        if (robotToTagOpt.isEmpty()) {
+          System.out.println("DockToClimb: NO TAG");
+          drive.stop();
+          return;
+        }
 
-              forward = MathUtil.clamp(forward, -1.0, 1.0);
-              strafe = MathUtil.clamp(strafe, -1.0, 1.0);
-              turn = MathUtil.clamp(turn, -1.5, 1.5);
+        Transform2d robotToTag = robotToTagOpt.get();
 
-              forward *= drive.getMaxLinearSpeedMetersPerSec();
-              strafe *= drive.getMaxLinearSpeedMetersPerSec();
-              turn *= drive.getMaxAngularSpeedRadPerSec();
+        // IMPORTANT: we want error = tag relative to robot inverse
+        Transform2d error = robotToTag.inverse();
 
-              drive.runVelocity(new ChassisSpeeds(forward, strafe, turn));
-            },
-            drive)
-        .until(
-            () -> {
-              Optional<Pose3d> poseOpt = vision.getRearTagRelativePose();
+        double forwardError = error.getX();
+        double strafeError = error.getY();
+        double rotError = error.getRotation().getRadians();
 
-              if (poseOpt.isEmpty()) return false;
+        double vx = forwardController.calculate(forwardError, 0.0);
+        double vy = strafeController.calculate(strafeError, 0.0);
+        double omega = turnController.calculate(rotError, 0.0);
 
-              Pose3d targetSpace = poseOpt.get();
+        vx = MathUtil.clamp(vx, -0.8, 0.8);
+        vy = MathUtil.clamp(vy, -0.8, 0.8);
+        omega = MathUtil.clamp(omega, -1.2, 1.2);
 
-              double strafeError = Math.abs(targetSpace.getX());
+        vx *= drive.getMaxLinearSpeedMetersPerSec();
+        vy *= drive.getMaxLinearSpeedMetersPerSec();
+        omega *= drive.getMaxAngularSpeedRadPerSec();
 
-              // ✅ FIXED: must match execute logic exactly
-              double forwardError = Math.abs(targetSpace.getZ());
-
-              double yawError = Math.abs(targetSpace.getRotation().getZ());
-
-              return strafeError < 0.03 && forwardError < 0.04 && yawError < Math.toRadians(3);
-            })
-        .andThen(drive::stop)
-        .withName("DockToClimb");
-  }
+        drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+      },
+      drive
+  ).finallyDo(drive::stop)
+   .withName("DockToClimb");
+}
 
   // ============================================================
-  // SIMPLE DRIVE TO POSE (unchanged)
+  // SIMPLE DRIVE TO POSE (UNCHANGED)
   // ============================================================
 
   public static Command driveToPose(
       Drive drive, Pose2d targetPose, double kPLinear, double kPRotation) {
 
     return Commands.run(
-            () -> {
-              Pose2d current = drive.getPose();
+        () -> {
+          Pose2d current = drive.getPose();
 
-              double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
-              double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
+          double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
+          double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
 
-              double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
+          double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
 
-              double rotSpeed = rotError * kPRotation;
+          double rotSpeed = rotError * kPRotation;
 
-              xSpeed = MathUtil.clamp(xSpeed, -3, 3);
-              ySpeed = MathUtil.clamp(ySpeed, -3, 3);
-              rotSpeed = MathUtil.clamp(rotSpeed, -3, 3);
+          xSpeed = MathUtil.clamp(xSpeed, -3, 3);
+          ySpeed = MathUtil.clamp(ySpeed, -3, 3);
+          rotSpeed = MathUtil.clamp(rotSpeed, -3, 3);
 
-              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-            },
-            drive)
+          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+        },
+        drive)
         .andThen(drive::stop);
   }
 
   // ============================================================
-  // CLIMB TAG DRIVE (unchanged logic, safe)
+  // FIELD-BASED CLIMB DRIVE (OPTIONAL LEGACY SAFE VERSION)
   // ============================================================
 
-  public static Command driveToClimb(
+  public static Command driveToClimbPose(
       Drive drive,
       AprilTagFieldLayout fieldLayout,
       Transform2d offset,
@@ -184,25 +160,26 @@ public final class DriveCommands {
       double kPRotation) {
 
     return Commands.run(
-            () -> {
-              int tagId = getClimbTagId();
+        () -> {
+          int tagId = getClimbTagId();
 
-              Optional<Pose3d> tagOpt = fieldLayout.getTagPose(tagId);
-              if (tagOpt.isEmpty()) return;
+          var tagOpt = fieldLayout.getTagPose(tagId);
+          if (tagOpt.isEmpty())
+            return;
 
-              Pose2d targetPose = tagOpt.get().toPose2d().transformBy(offset);
-              Pose2d current = drive.getPose();
+          Pose2d targetPose = tagOpt.get().toPose2d().transformBy(offset);
+          Pose2d current = drive.getPose();
 
-              double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
-              double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
+          double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
+          double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
 
-              double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
+          double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
 
-              double rotSpeed = rotError * kPRotation;
+          double rotSpeed = rotError * kPRotation;
 
-              drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-            },
-            drive)
+          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
+        },
+        drive)
         .andThen(drive::stop);
   }
 }

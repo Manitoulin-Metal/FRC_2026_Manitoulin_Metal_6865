@@ -282,7 +282,7 @@ public class Drive extends SubsystemBase {
     // Bump detection and vision reset during autonomous
     if (DriverStation.isAutonomous() && vision != null) {
 
-      Pose2d visionPose = vision.getEstimatedPose();
+      Pose2d visionPose = vision.getBestEstimatedPose().orElse(null);
 
       // Only proceed if vision actually has a valid pose
       if (visionPose != null) {
