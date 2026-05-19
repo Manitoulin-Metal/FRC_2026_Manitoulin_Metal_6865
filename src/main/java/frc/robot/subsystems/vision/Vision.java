@@ -150,8 +150,8 @@ if (Constants.currentMode == Constants.Mode.SIM) {
   Pose2d targetPose =
       tagPose.transformBy(
           new Transform2d(
-              1.15,   // 1.2m in front of tag
-              0.3,  // 20cm to the right of tag (looking from above)
+              1.15,   // 1.15m in front of tag
+              0.3,  //   0.3m to the right of tag (looking from above)
               Rotation2d.kZero));
 
   // robot -> tag transform
@@ -179,8 +179,19 @@ double[] pose =
     LimelightHelpers.getBotPose_TargetSpace(
         Constants.Climb.Vision.REAR_LIMELIGHT);
 
-if (pose == null || pose.length < 6) {
-  return Optional.empty();
+// ==========================================================
+// RAW LIMELIGHT DATA LOGGING (FOR DEBUGGING ONLY)
+// ==========================================================
+if (pose != null && pose.length >= 6) {
+
+    Logger.recordOutput("Climb/RawBotPoseTargetSpace", pose);
+
+    Logger.recordOutput("Climb/RawForward", pose[0]);
+    Logger.recordOutput("Climb/RawUp", pose[1]);
+    Logger.recordOutput("Climb/RawRight", pose[2]);
+    Logger.recordOutput("Climb/RawRoll", pose[3]);
+    Logger.recordOutput("Climb/RawYaw", pose[4]);
+    Logger.recordOutput("Climb/RawPitch", pose[5]);
 }
 
 // Limelight target-space
