@@ -14,6 +14,7 @@ import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.LimelightHelpers;
 import frc.robot.subsystems.vision.Vision;
 import java.util.Optional;
+import org.littletonrobotics.junction.Logger;
 
 public final class DriveCommands {
 
@@ -60,46 +61,121 @@ public final class DriveCommands {
   }
 
   // ============================================================
-  // CLIMB DOCKING (CLEAN ROBOT-RELATIVE VERSION)
+  // CLIMB DOCKING (ROBOT-RELATIVE VERSION)
   // ============================================================
 
-  @SuppressWarnings("resource")
-  public static Command dockToClimb(Drive drive, Vision vision) {
+@SuppressWarnings("resource")
+public static Command dockToClimb(Drive drive, Vision vision) {
 
-    PIDController forwardController = new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
+    PIDController forwardController =
+            new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
 
-    PIDController strafeController = new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
+    PIDController strafeController =
+            new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
 
-    PIDController turnController = new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
+    PIDController turnController =
+            new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
 
     turnController.enableContinuousInput(-Math.PI, Math.PI);
 
     return Commands.runEnd(
-        () -> {
+        new Runnable() {
 
-          Optional<Transform2d> robotToTagOpt = vision.getDockingTarget();
+            int logCounter = 0;
 
-          if (robotToTagOpt.isEmpty()) {
-            drive.stop();
-            return;
-          }
+            @Override
+            public void run() {
 
-          Transform2d robotToTag = robotToTagOpt.get();
-          Transform2d error = robotToTag.inverse();
+                Optional<Transform2d> robotToTagOpt = vision.getDockingTarget();
 
-          double vx = forwardController.calculate(error.getX(), 0.0);
-          double vy = strafeController.calculate(error.getY(), 0.0);
-          double omega = turnController.calculate(error.getRotation().getRadians(), 0.0);
+                boolean hasTarget = robotToTagOpt.isPresent();
 
-          vx = MathUtil.clamp(vx, -0.8, 0.8) * drive.getMaxLinearSpeedMetersPerSec();
-          vy = MathUtil.clamp(vy, -0.8, 0.8) * drive.getMaxLinearSpeedMetersPerSec();
-          omega = MathUtil.clamp(omega, -1.2, 1.2) * drive.getMaxAngularSpeedRadPerSec();
+                if (!hasTarget) {
+                    drive.stop();
 
-          drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+                    // lightweight log (always safe)
+                    Logger.recordOutput("DockToClimb/hasTarget", false);
+                    return;
+                }
+
+                Transform2d robotToTag = robotToTagOpt.get();
+                Transform2d error = robotToTag.inverse();
+
+                double xError = error.getX();
+                double yError = error.getY();
+                double thetaError = error.getRotation().getRadians();
+
+                double distance = Math.hypot(xError, yError);
+
+                // ============================================================
+                // STAGE CONTROL
+                // ============================================================
+                boolean slowMode = distance < 0.6;
+
+                double gainScale;
+                double maxXY;
+                double omegaScale;
+
+                if (!slowMode) {
+                    gainScale = 1.0;
+                    maxXY = 0.8;
+                    omegaScale = 1.0;
+                } else {
+                    gainScale = 0.5;
+                    maxXY = 0.3;
+                    omegaScale = 0.7;
+                }
+
+                // ============================================================
+                // PID CONTROL
+                // ============================================================
+                double vx = forwardController.calculate(xError, 0.0);
+                double vy = strafeController.calculate(yError, 0.0);
+                double omega = turnController.calculate(thetaError, 0.0);
+
+                vx *= gainScale;
+                vy *= gainScale;
+                omega *= omegaScale;
+
+                vx = MathUtil.clamp(vx, -maxXY, maxXY);
+                vy = MathUtil.clamp(vy, -maxXY, maxXY);
+                omega = MathUtil.clamp(omega, -1.2, 1.2);
+
+                vx *= drive.getMaxLinearSpeedMetersPerSec();
+                vy *= drive.getMaxLinearSpeedMetersPerSec();
+                omega *= drive.getMaxAngularSpeedRadPerSec();
+
+                drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+
+                // ============================================================
+                // THROTTLED LOGGING (EVERY 5 CYCLES)
+                // ============================================================
+                logCounter++;
+
+                if (logCounter % 5 == 0) {
+
+                    Logger.recordOutput("DockToClimb/hasTarget", true);
+
+                    Logger.recordOutput("DockToClimb/xError", xError);
+                    Logger.recordOutput("DockToClimb/yError", yError);
+                    Logger.recordOutput("DockToClimb/thetaError", thetaError);
+                    Logger.recordOutput("DockToClimb/distance", distance);
+
+                    Logger.recordOutput("DockToClimb/vx", vx);
+                    Logger.recordOutput("DockToClimb/vy", vy);
+                    Logger.recordOutput("DockToClimb/omega", omega);
+
+                    boolean atGoal =
+                            distance < 0.10 && Math.abs(thetaError) < 0.08;
+
+                    Logger.recordOutput("DockToClimb/atGoal", atGoal);
+                }
+            }
         },
         drive::stop,
-        drive).withName("DockToClimb");
-  }
+        drive
+    ).withName("DockToClimb");
+}
 
   // ============================================================
   // SIMPLE DRIVE TO POSE (UNCHANGED)
@@ -122,41 +198,6 @@ public final class DriveCommands {
           xSpeed = MathUtil.clamp(xSpeed, -3, 3);
           ySpeed = MathUtil.clamp(ySpeed, -3, 3);
           rotSpeed = MathUtil.clamp(rotSpeed, -3, 3);
-
-          drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
-        },
-        drive)
-        .andThen(drive::stop);
-  }
-
-  // ============================================================
-  // FIELD-BASED CLIMB DRIVE (OPTIONAL LEGACY SAFE VERSION)
-  // ============================================================
-
-  public static Command driveToClimbPose(
-      Drive drive,
-      AprilTagFieldLayout fieldLayout,
-      Transform2d offset,
-      double kPLinear,
-      double kPRotation) {
-
-    return Commands.run(
-        () -> {
-          int tagId = getClimbTagId();
-
-          var tagOpt = fieldLayout.getTagPose(tagId);
-          if (tagOpt.isEmpty())
-            return;
-
-          Pose2d targetPose = tagOpt.get().toPose2d().transformBy(offset);
-          Pose2d current = drive.getPose();
-
-          double xSpeed = (targetPose.getX() - current.getX()) * kPLinear;
-          double ySpeed = (targetPose.getY() - current.getY()) * kPLinear;
-
-          double rotError = targetPose.getRotation().minus(current.getRotation()).getRadians();
-
-          double rotSpeed = rotError * kPRotation;
 
           drive.runVelocity(new ChassisSpeeds(xSpeed, ySpeed, rotSpeed));
         },
