@@ -1,9 +1,7 @@
 package frc.robot.commands;
 
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.Constants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
@@ -11,23 +9,6 @@ import frc.robot.subsystems.vision.Vision;
 public final class ClimbCommands {
 
   private ClimbCommands() {}
-
-  // ============================================================
-  // PID CONTROLLERS
-  // ============================================================
-
-  private static final PIDController forwardController =
-      new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
-
-  private static final PIDController strafeController =
-      new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
-
-  private static final PIDController turnController =
-      new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
-
-  static {
-    turnController.enableContinuousInput(-Math.PI, Math.PI);
-  }
 
   // ============================================================
   // CLIMBER COMMANDS
@@ -64,8 +45,8 @@ public final class ClimbCommands {
   public static Command climbSequence(Drive drive, Vision vision, ClimbSubsystem climb) {
 
     return Commands.sequence(
-            DriveCommands.dockToClimb(drive, vision).withTimeout(4.0),
             hookUp(climb).withTimeout(1.8),
+            DriveCommands.dockToClimb(drive, vision).withTimeout(4.0), 
             Commands.waitSeconds(0.4),
             climbDown(climb).withTimeout(1.0),
             stop(climb))

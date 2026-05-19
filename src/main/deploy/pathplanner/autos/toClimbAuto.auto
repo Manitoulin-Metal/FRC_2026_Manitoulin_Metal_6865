@@ -17,6 +17,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "DockToClimb"
+          }
+        },
+        {
           "type": "wait",
           "data": {
             "waitTime": 2.0

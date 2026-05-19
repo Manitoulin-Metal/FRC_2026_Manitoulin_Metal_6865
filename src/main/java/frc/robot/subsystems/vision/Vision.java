@@ -28,11 +28,6 @@ public class Vision extends SubsystemBase {
 
   private boolean enabled = true;
 
-  // SIM TAGS (ONLY USED FOR SIM GEOMETRY)
-  private static final Pose2d BLUE_TAG = new Pose2d(1.0, 5.0, Rotation2d.kZero);
-  private static final Pose2d RED_TAG =
-      new Pose2d(Constants.Field.LENGTH_METERS - 1.0, 5.0, Rotation2d.fromDegrees(180));
-
   public Vision(
       VisionConsumer consumer, Supplier<Pose2d> robotPoseSupplier, Drive drive, VisionIO... io) {
 
@@ -156,35 +151,48 @@ if (Constants.currentMode == Constants.Mode.SIM) {
       tagPose.transformBy(
           new Transform2d(
               1.15,   // 1.2m in front of tag
-              0.3,  // 20cm to the left of tag (facing same direction as tag)
+              0.3,  // 20cm to the right of tag (looking from above)
               Rotation2d.kZero));
 
   // robot -> tag transform
   return Optional.of(new Transform2d(robotPose, targetPose));
   
 }
-  // ==========================================================
-  // REAL LIMELIGHT PATH
-  // ==========================================================
-  double[] pose =
-      LimelightHelpers.getBotPose_TargetSpace(
-          Constants.Climb.Vision.REAR_LIMELIGHT
-      );
+// ==========================================================
+// REAL LIMELIGHT PATH
+// ==========================================================
 
-  if (pose == null || pose.length < 6) return Optional.empty();
+int desiredTag =
+    DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+        ? 16
+        : 32;
 
-  // Limelight target-space is already robot-relative:
-  double forward = pose[0]; // X forward
-  double strafe  = pose[1]; // Y left/right
-  double yawDeg  = pose[5]; // (safer index in most configs)
+double seenTag =
+    LimelightHelpers.getFiducialID(
+        Constants.Climb.Vision.REAR_LIMELIGHT);
 
-  return Optional.of(
-      new Transform2d(
-          forward,
-          strafe,
-          Rotation2d.fromDegrees(yawDeg)
-      )
-  );
+if ((int) seenTag != desiredTag) {
+  return Optional.empty();
+}
+
+double[] pose =
+    LimelightHelpers.getBotPose_TargetSpace(
+        Constants.Climb.Vision.REAR_LIMELIGHT);
+
+if (pose == null || pose.length < 6) {
+  return Optional.empty();
+}
+
+// Limelight target-space
+double strafe = pose[0];
+double forward = pose[2];
+double yawDeg = pose[4];
+
+return Optional.of(
+    new Transform2d(
+        forward,
+        strafe,
+        Rotation2d.fromDegrees(yawDeg)));
 }
 
   // ==========================================================

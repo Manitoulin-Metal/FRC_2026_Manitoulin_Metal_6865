@@ -74,15 +74,7 @@ public final class DriveCommands {
 
     turnController.enableContinuousInput(-Math.PI, Math.PI);
 
-    return Commands.startRun(
-        () -> {
-          System.out.println("DockToClimb RUNNING");
-          System.out.println("ALLIANCE = " + DriverStation.getAlliance());
-          System.out.println("CLIMB TAG = " + DriveCommands.getClimbTagId());
-          forwardController.reset();
-          strafeController.reset();
-          turnController.reset();
-        },
+    return Commands.runEnd(
         () -> {
 
           Optional<Transform2d> robotToTagOpt = vision.getDockingTarget();
@@ -93,30 +85,20 @@ public final class DriveCommands {
           }
 
           Transform2d robotToTag = robotToTagOpt.get();
-
-          // IMPORTANT: we want error = tag relative to robot inverse
           Transform2d error = robotToTag.inverse();
 
-          double forwardError = error.getX();
-          double strafeError = error.getY();
-          double rotError = error.getRotation().getRadians();
+          double vx = forwardController.calculate(error.getX(), 0.0);
+          double vy = strafeController.calculate(error.getY(), 0.0);
+          double omega = turnController.calculate(error.getRotation().getRadians(), 0.0);
 
-          double vx = forwardController.calculate(forwardError, 0.0);
-          double vy = strafeController.calculate(strafeError, 0.0);
-          double omega = turnController.calculate(rotError, 0.0);
-
-          vx = MathUtil.clamp(vx, -0.8, 0.8);
-          vy = MathUtil.clamp(vy, -0.8, 0.8);
-          omega = MathUtil.clamp(omega, -1.2, 1.2);
-
-          vx *= drive.getMaxLinearSpeedMetersPerSec();
-          vy *= drive.getMaxLinearSpeedMetersPerSec();
-          omega *= drive.getMaxAngularSpeedRadPerSec();
+          vx = MathUtil.clamp(vx, -0.8, 0.8) * drive.getMaxLinearSpeedMetersPerSec();
+          vy = MathUtil.clamp(vy, -0.8, 0.8) * drive.getMaxLinearSpeedMetersPerSec();
+          omega = MathUtil.clamp(omega, -1.2, 1.2) * drive.getMaxAngularSpeedRadPerSec();
 
           drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
         },
-        drive).finallyDo(drive::stop)
-        .withName("DockToClimb");
+        drive::stop,
+        drive).withName("DockToClimb");
   }
 
   // ============================================================
