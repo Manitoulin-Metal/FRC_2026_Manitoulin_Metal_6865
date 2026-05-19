@@ -21,6 +21,24 @@
           "data": {
             "name": "Shoot"
           }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbAutoUp"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "DockToClimb"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbAutoDown"
+          }
         }
       ]
     }

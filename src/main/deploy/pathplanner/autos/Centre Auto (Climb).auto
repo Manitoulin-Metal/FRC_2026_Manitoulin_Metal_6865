@@ -7,19 +7,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Centre Path Blue"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "driveToClimb"
+            "pathName": "Centre Path"
           }
         },
         {
           "type": "named",
           "data": {
             "name": "ClimbAutoUp"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "DockToClimb"
           }
         },
         {

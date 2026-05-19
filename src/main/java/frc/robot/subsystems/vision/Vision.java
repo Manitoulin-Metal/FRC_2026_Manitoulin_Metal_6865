@@ -9,14 +9,14 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import java.util.*;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 public class Vision extends SubsystemBase {
 
@@ -119,92 +119,105 @@ public class Vision extends SubsystemBase {
   }
 
   // ==========================================================
-// DOCKING TARGET FOR CLIMB (FROM REAR CAMERA)
-// ==========================================================
-
-public Optional<Transform2d> getDockingTarget() {
-
+  // DOCKING TARGET FOR CLIMB (FROM REAR CAMERA)
   // ==========================================================
-// SIM OVERRIDE
-// ==========================================================
-if (Constants.currentMode == Constants.Mode.SIM) {
 
-  Pose2d robotPose = robotPoseSupplier.get();
+  public Optional<Transform2d> getDockingTarget() {
 
-  if (robotPose == null) return Optional.empty();
+    // ==========================================================
+    // SIM OVERRIDE
+    // ==========================================================
+    if (Constants.currentMode == Constants.Mode.SIM) {
 
-  int tagId =
-      DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
-          ? 16
-          : 32;
+      Pose2d robotPose = robotPoseSupplier.get();
 
-  var tagOpt = VisionConstants.aprilTagLayout.getTagPose(tagId);
+      if (robotPose == null) return Optional.empty();
 
-  if (tagOpt.isEmpty()) return Optional.empty();
+      int tagId = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
 
-  Pose2d tagPose = tagOpt.get().toPose2d();
+      var tagOpt = VisionConstants.aprilTagLayout.getTagPose(tagId);
 
-  // ==========================================
-  // OFFSET TARGET POSE
-  // ==========================================
-  Pose2d targetPose =
-      tagPose.transformBy(
-          new Transform2d(
-              1.15,   // 1.15m in front of tag
-              0.3,  //   0.3m to the right of tag (looking from above)
-              Rotation2d.kZero));
+      if (tagOpt.isEmpty()) return Optional.empty();
 
-  // robot -> tag transform
-  return Optional.of(new Transform2d(robotPose, targetPose));
-  
-}
-// ==========================================================
-// REAL LIMELIGHT PATH
-// ==========================================================
+      Pose2d tagPose = tagOpt.get().toPose2d();
 
-int desiredTag =
-    DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
-        ? 16
-        : 32;
+      // ==========================================
+      // OFFSET TARGET POSE
+      // ==========================================
+      Pose2d targetPose =
+          tagPose.transformBy(
+              new Transform2d(
+                  1.15, // 1.15m in front of tag
+                  0.3, //   0.3m to the right of tag (looking from above)
+                  Rotation2d.kZero));
 
-double seenTag =
-    LimelightHelpers.getFiducialID(
-        Constants.Climb.Vision.REAR_LIMELIGHT);
+      // robot -> tag transform
+      return Optional.of(new Transform2d(robotPose, targetPose));
+    }
+    // ==========================================================
+    // REAL LIMELIGHT PATH
+    // ==========================================================
 
-if ((int) seenTag != desiredTag) {
-  return Optional.empty();
-}
+    int desiredTag = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
 
-double[] pose =
-    LimelightHelpers.getBotPose_TargetSpace(
-        Constants.Climb.Vision.REAR_LIMELIGHT);
+    double seenTag = LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-// ==========================================================
-// RAW LIMELIGHT DATA LOGGING (FOR DEBUGGING ONLY)
-// ==========================================================
-if (pose != null && pose.length >= 6) {
+    if ((int) seenTag != desiredTag) {
+      return Optional.empty();
+    }
 
-    Logger.recordOutput("Climb/RawBotPoseTargetSpace", pose);
+    double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-    Logger.recordOutput("Climb/RawForward", pose[0]);
-    Logger.recordOutput("Climb/RawUp", pose[1]);
-    Logger.recordOutput("Climb/RawRight", pose[2]);
-    Logger.recordOutput("Climb/RawRoll", pose[3]);
-    Logger.recordOutput("Climb/RawYaw", pose[4]);
-    Logger.recordOutput("Climb/RawPitch", pose[5]);
-}
+    // ==========================================================
+    // RAW LIMELIGHT DATA LOGGING (FOR DEBUGGING ONLY)
+    // ==========================================================
+    if (pose != null && pose.length >= 6) {
 
-// Limelight target-space
-double strafe = pose[0];
-double forward = pose[2];
-double yawDeg = pose[4];
+      // Logger.recordOutput("Climb/RawBotPoseTargetSpace", pose);
 
-return Optional.of(
-    new Transform2d(
-        forward,
-        strafe,
-        Rotation2d.fromDegrees(yawDeg)));
-}
+      Logger.recordOutput("Climb/RawForward", pose[0]);
+      Logger.recordOutput("Climb/RawRight", pose[1]);
+      Logger.recordOutput("Climb/RawYaw", pose[5]);
+    }
+
+    // Limelight target-space
+    // double strafe = pose[0];
+    // double forward = pose[1];
+    // double yawDeg = pose[5];
+
+    // return Optional.of(new Transform2d(forward, strafe, Rotation2d.fromDegrees(yawDeg)));
+
+    // ==========================================================
+    // RAW LIMELIGHT VALUES
+    // ==========================================================
+
+    double rawForward = pose[0];
+    double rawStrafe = pose[1];
+    double rawYawDeg = pose[5];
+
+    // ==========================================================
+    // DESIRED DOCKING TARGET
+    // ==========================================================
+
+    double targetForward = 7.15;
+    double targetStrafe = -0.34;
+    double targetYawDeg = 2.97;
+
+    // ==========================================================
+    // ERROR FROM TARGET
+    // ==========================================================
+
+    double forwardError = (rawForward - targetForward);
+    double strafeError = (rawStrafe - targetStrafe);
+    double yawErrorDeg = (rawYawDeg - targetYawDeg);
+
+    // ==========================================================
+    // RETURN ROBOT → TARGET ERROR
+    // ==========================================================
+
+    return Optional.of(
+        new Transform2d(forwardError, strafeError, Rotation2d.fromDegrees(yawErrorDeg)));
+  }
 
   // ==========================================================
   // PERIODIC

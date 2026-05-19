@@ -46,7 +46,7 @@ public final class ClimbCommands {
 
     return Commands.sequence(
             hookUp(climb).withTimeout(1.8),
-            DriveCommands.dockToClimb(drive, vision).withTimeout(4.0), 
+            DriveCommands.dockToClimb(drive, vision).withTimeout(4.0),
             Commands.waitSeconds(0.4),
             climbDown(climb).withTimeout(1.0),
             stop(climb))
