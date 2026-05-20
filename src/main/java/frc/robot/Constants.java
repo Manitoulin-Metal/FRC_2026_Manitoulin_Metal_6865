@@ -325,7 +325,7 @@ public final class Constants {
 
       public static final double kP_STRAFE = 0.9;
 
-      public static final double kP_TURN = 0.8;
+      public static final double kP_TURN = 2.4;
     }
 
     // =====================================================

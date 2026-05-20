@@ -205,7 +205,7 @@ public class Drive extends SubsystemBase {
     odometryLock.lock();
     try {
       gyroIO.updateInputs(gyroInputs);
-      Logger.processInputs("Drive/Gyro", gyroInputs);
+      // Logger.processInputs("Drive/Gyro", gyroInputs);
 
       for (var module : modules) {
         module.periodic();

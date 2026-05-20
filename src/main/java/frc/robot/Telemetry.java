@@ -32,6 +32,7 @@ public class Telemetry {
    */
   public Telemetry(double maxSpeed) {
     MaxSpeed = maxSpeed;
+    // SignalLogger.setPath("/u/ctre-logs");
     // SignalLogger.start();
   }
 

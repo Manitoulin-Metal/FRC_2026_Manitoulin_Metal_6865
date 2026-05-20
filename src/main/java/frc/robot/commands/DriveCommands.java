@@ -140,7 +140,7 @@ public final class DriveCommands {
                 vy *= drive.getMaxLinearSpeedMetersPerSec();
                 omega *= drive.getMaxAngularSpeedRadPerSec();
 
-                drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+                drive.runVelocity(new ChassisSpeeds(vx, -vy, -omega));
 
                 // ============================================================
                 // THROTTLED LOGGING (EVERY 5 CYCLES)
@@ -149,18 +149,18 @@ public final class DriveCommands {
 
                 if (logCounter % 5 == 0) {
 
-                  Logger.recordOutput("DockToClimb/hasTarget", true);
+                  // Logger.recordOutput("DockToClimb/hasTarget", true);
 
-                  Logger.recordOutput("DockToClimb/xError", xError);
-                  Logger.recordOutput("DockToClimb/yError", yError);
-                  Logger.recordOutput("DockToClimb/thetaError", thetaError);
-                  Logger.recordOutput("DockToClimb/distance", distance);
+                  // Logger.recordOutput("DockToClimb/xError", xError);
+                  // Logger.recordOutput("DockToClimb/yError", yError);
+                  // Logger.recordOutput("DockToClimb/thetaError", thetaError);
+                  // Logger.recordOutput("DockToClimb/distance", distance);
 
-                  Logger.recordOutput("DockToClimb/vx", vx);
-                  Logger.recordOutput("DockToClimb/vy", vy);
-                  Logger.recordOutput("DockToClimb/omega", omega);
+                  // Logger.recordOutput("DockToClimb/vx", vx);
+                  // Logger.recordOutput("DockToClimb/vy", vy);
+                  // Logger.recordOutput("DockToClimb/omega", omega);
 
-                  boolean atGoal = distance < 0.10 && Math.abs(thetaError) < 0.08;
+                  boolean atGoal = distance < 0.02 && Math.abs(thetaError) < 0.01;
 
                   Logger.recordOutput("DockToClimb/atGoal", atGoal);
                 }

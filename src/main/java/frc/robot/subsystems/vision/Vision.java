@@ -16,7 +16,6 @@ import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import java.util.*;
 import java.util.function.Supplier;
-import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
 
@@ -175,9 +174,9 @@ public class Vision extends SubsystemBase {
 
       // Logger.recordOutput("Climb/RawBotPoseTargetSpace", pose);
 
-      Logger.recordOutput("Climb/RawForward", pose[0]);
-      Logger.recordOutput("Climb/RawRight", pose[1]);
-      Logger.recordOutput("Climb/RawYaw", pose[5]);
+      // Logger.recordOutput("Climb/RawForward", pose[0]);
+      // Logger.recordOutput("Climb/RawRight", pose[1]);
+      // Logger.recordOutput("Climb/RawYaw", pose[5]);
     }
 
     // Limelight target-space
@@ -199,9 +198,9 @@ public class Vision extends SubsystemBase {
     // DESIRED DOCKING TARGET
     // ==========================================================
 
-    double targetForward = 7.15;
-    double targetStrafe = -0.34;
-    double targetYawDeg = 2.97;
+    double targetForward = 0.83;
+    double targetStrafe = 0.23;
+    double targetYawDeg = 0 - 180.0; // 180 degree flip because rear camera is facing backwards
 
     // ==========================================================
     // ERROR FROM TARGET
@@ -230,7 +229,7 @@ public class Vision extends SubsystemBase {
 
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);
-      Logger.processInputs("Vision/Camera" + i, inputs[i]);
+      // Logger.processInputs("Vision/Camera" + i, inputs[i]);
       disconnectedAlerts[i].set(!inputs[i].connected);
     }
 
@@ -255,8 +254,8 @@ public class Vision extends SubsystemBase {
       }
     }
 
-    Logger.recordOutput("Vision/Accepted", accepted.toArray(new Pose3d[0]));
-    Logger.recordOutput("Vision/Rejected", rejected.toArray(new Pose3d[0]));
+    // Logger.recordOutput("Vision/Accepted", accepted.toArray(new Pose3d[0]));
+    // Logger.recordOutput("Vision/Rejected", rejected.toArray(new Pose3d[0]));
   }
 
   @FunctionalInterface

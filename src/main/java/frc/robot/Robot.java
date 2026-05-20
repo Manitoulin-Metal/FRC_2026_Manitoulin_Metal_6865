@@ -54,7 +54,7 @@ public class Robot extends LoggedRobot {
       case REAL:
 
         // Running on a real robot, log to a USB stick ("/U/logs")
-        Logger.addDataReceiver(new WPILOGWriter("/U/logs"));
+        Logger.addDataReceiver(new WPILOGWriter("/u/logs"));
 
         // Keep NT for live viewing
         Logger.addDataReceiver(new NT4Publisher());
@@ -97,17 +97,20 @@ public class Robot extends LoggedRobot {
     // Threads.setCurrentThreadPriority(true, 99);
 
     // for calibrating Robot components in simulation
-    Logger.recordOutput("RobotPose", new Pose2d());
+    if (RobotBase.isSimulation()) {
+      Logger.recordOutput("RobotPose", new Pose2d());
 
-    Logger.recordOutput(
-        "ComponentPoses",
-        new Pose3d[] {
-          // Component 0 = Intake
-          new Pose3d(.3, 0.15, 0.225, new Rotation3d(0, angle, 0)),
+      Logger.recordOutput(
+          "ComponentPoses",
+          new Pose3d[] {
 
-          // Component 1 = Climber
-          new Pose3d(0.0, 0.0, Math.sin(Timer.getTimestamp()) * -0.15, new Rotation3d())
-        });
+            // Component 0 = Intake
+            new Pose3d(.3, 0.15, 0.225, new Rotation3d(0, angle, 0)),
+
+            // Component 1 = Climber
+            new Pose3d(0.0, 0.0, Math.sin(Timer.getTimestamp()) * -0.15, new Rotation3d())
+          });
+    }
 
     // Runs the Scheduler. This is responsible for polling buttons, adding
     // newly-scheduled commands, running already-scheduled commands, removing
