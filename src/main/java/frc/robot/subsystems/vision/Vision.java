@@ -199,9 +199,9 @@ public class Vision extends SubsystemBase {
     // DESIRED DOCKING TARGET
     // ==========================================================
 
-    double targetForward = 7.15;
-    double targetStrafe = -0.34;
-    double targetYawDeg = 2.97;
+    double targetForward = .83;
+    double targetStrafe = -0.889;
+    double targetYawDeg = 0 - 180;
 
     // ==========================================================
     // ERROR FROM TARGET
