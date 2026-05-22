@@ -155,68 +155,44 @@ public class Vision extends SubsystemBase {
       return Optional.of(new Transform2d(robotPose, targetPose));
     }
     // ==========================================================
-    // REAL LIMELIGHT PATH
+    // REAL LIMELIGHT PATH (CLEAN ROBOT → TAG)
     // ==========================================================
 
     int desiredTag = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
 
     double seenTag = LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT);
 
+    // Only trust correct tag
     if ((int) seenTag != desiredTag) {
       return Optional.empty();
     }
 
     double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-    // ==========================================================
-    // RAW LIMELIGHT DATA LOGGING (FOR DEBUGGING ONLY)
-    // ==========================================================
-    if (pose != null && pose.length >= 6) {
-
-      // Logger.recordOutput("Climb/RawBotPoseTargetSpace", pose);
-
-      Logger.recordOutput("Climb/RawForward", pose[0]);
-      Logger.recordOutput("Climb/RawRight", pose[1]);
-      Logger.recordOutput("Climb/RawYaw", pose[5]);
+    // Safety check
+    if (pose == null || pose.length < 6) {
+      return Optional.empty();
     }
 
-    // Limelight target-space
-    // double strafe = pose[0];
-    // double forward = pose[1];
-    // double yawDeg = pose[5];
-
-    // return Optional.of(new Transform2d(forward, strafe, Rotation2d.fromDegrees(yawDeg)));
-
     // ==========================================================
-    // RAW LIMELIGHT VALUES
+    // RAW LIMELIGHT MEASUREMENT (robot → tag in tag frame)
     // ==========================================================
 
-    double rawForward = pose[0];
-    double rawStrafe = pose[1];
-    double rawYawDeg = pose[5];
+    double x = pose[0]; // forward (tag frame)
+    double y = pose[1]; // right/left (tag frame)
+    double yawDeg = pose[5];
+
+    // Logging (safe, direct sensor view)
+    Logger.recordOutput("Climb/RawForward", x);
+    Logger.recordOutput("Climb/RawRight", y);
+    Logger.recordOutput("Climb/RawYaw", yawDeg);
 
     // ==========================================================
-    // DESIRED DOCKING TARGET
+    // RETURN PURE TRANSFORM
+    // robot → tag (NO TARGET SUBTRACTION HERE)
     // ==========================================================
 
-    double targetForward = .83;
-    double targetStrafe = -0.889;
-    double targetYawDeg = 0 - 180;
-
-    // ==========================================================
-    // ERROR FROM TARGET
-    // ==========================================================
-
-    double forwardError = (rawForward - targetForward);
-    double strafeError = (rawStrafe - targetStrafe);
-    double yawErrorDeg = (rawYawDeg - targetYawDeg);
-
-    // ==========================================================
-    // RETURN ROBOT → TARGET ERROR
-    // ==========================================================
-
-    return Optional.of(
-        new Transform2d(forwardError, strafeError, Rotation2d.fromDegrees(yawErrorDeg)));
+    return Optional.of(new Transform2d(new Translation2d(x, y), Rotation2d.fromDegrees(yawDeg)));
   }
 
   // ==========================================================
