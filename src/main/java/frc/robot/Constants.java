@@ -247,72 +247,56 @@ public final class Constants {
 
     public static final class Vision {
 
+      private Vision() {}
+
       public static final String REAR_LIMELIGHT = VisionConstants.rearCameraName;
 
-      // ------------------------------------------------
-      // BLUE TARGETS
-      // ------------------------------------------------
+      // ===================================================
+      // DOCKING TARGET POSE
+      //
+      // Desired robot pose relative to the climb tag.
+      //
+      // These values are tuned on the real robot using
+      // AdvantageScope logs.
+      //
+      // Procedure:
+      // 1. Manually place robot in perfect climbing position
+      // 2. Record Dock/RawForward
+      // 3. Record Dock/RawStrafe
+      // 4. Record Dock/RawYawDeg
+      // 5. Copy values here
+      // ===================================================
 
-      public static final LoggedNetworkNumber blueTX =
-          new LoggedNetworkNumber("Tuning/Climb/BlueTX", -0);
+      public static final LoggedNetworkNumber targetForward =
+          new LoggedNetworkNumber("Tuning/Climb/TargetForward", 0.83);
 
-      public static final LoggedNetworkNumber blueTY =
-          new LoggedNetworkNumber("Tuning/Climb/BlueTY", +0);
+      public static final LoggedNetworkNumber targetStrafe =
+          new LoggedNetworkNumber("Tuning/Climb/TargetStrafe", -0.23);
 
-      // ------------------------------------------------
-      // // RED TARGETS
-      // // ------------------------------------------------
+      public static final LoggedNetworkNumber targetYawDeg =
+          new LoggedNetworkNumber("Tuning/Climb/TargetYawDeg", 0.0);
 
-      // public static final LoggedNetworkNumber redTX =
-      //     new LoggedNetworkNumber("Tuning/Climb/RedTX", 7.35);
+      // ===================================================
+      // DOCKING TOLERANCES
+      // ===================================================
 
-      // public static final LoggedNetworkNumber redTY =
-      //     new LoggedNetworkNumber("Tuning/Climb/RedTY", 13.5);
+      public static final double POSITION_TOLERANCE_METERS = 0.03;
 
-      // ------------------------------------------------
-      // Dynamic alliance helpers
-      // ------------------------------------------------
+      public static final double YAW_TOLERANCE_DEG = 2.0;
 
-      // public static double targetTX() {
+      // ===================================================
+      // SPEED LIMITS
+      // ===================================================
 
-      //   Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+      public static final double FAST_MAX_LINEAR = 0.80;
 
-      //   return alliance == Alliance.Red ? redTX.get() : blueTX.get();
-      // }
+      public static final double SLOW_MAX_LINEAR = 0.30;
 
-      // public static double targetTY() {
+      public static final double FAST_MAX_OMEGA = 1.20;
 
-      //   Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+      public static final double SLOW_MAX_OMEGA = 0.70;
 
-      //   return alliance == Alliance.Red ? redTY.get() : blueTY.get();
-      // }
-
-      // public static Rotation2d targetYaw() {
-      //   return Rotation2d.kZero;
-      // }
-
-      // ------------------------------------------------
-      // Tolerances
-      // ------------------------------------------------
-
-      public static final double targetTX = 0.0;
-
-      public static final double targetTY = 0.0;
-
-      public static final double TX_TOLERANCE = 1.0;
-
-      public static final double TY_TOLERANCE = 1.0;
-
-      public static final double YAW_TOLERANCE_RAD = Math.toRadians(2.0);
-
-      // ------------------------------------------------
-      // Speed limits
-      // ------------------------------------------------
-
-      public static final double MAX_LINEAR_SPEED = 0.8;
-
-      public static final double MAX_ANGULAR_SPEED = 1.0;
-      public static final double PRECISION_LINEAR_SPEED = 0.25;
+      public static final double SLOW_MODE_DISTANCE = 0.60;
     }
 
     // =====================================================

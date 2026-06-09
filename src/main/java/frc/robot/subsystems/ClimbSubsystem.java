@@ -35,6 +35,7 @@ public class ClimbSubsystem extends SubsystemBase {
   // =========================================================
   // HARDWARE
   // =========================================================
+  private final LEDSubsystem led;
   private final SparkFlex motor = new SparkFlex(60, MotorType.kBrushless);
   private final RelativeEncoder encoder;
   private final DigitalInput limitSwitch =
@@ -50,7 +51,8 @@ public class ClimbSubsystem extends SubsystemBase {
   // CONSTRUCTOR
   // =========================================================
   @SuppressWarnings("removal")
-  public ClimbSubsystem() {
+  public ClimbSubsystem(LEDSubsystem led) {
+    this.led = led;
     SparkFlexConfig config = new SparkFlexConfig();
     config.idleMode(IdleMode.kBrake);
 
@@ -98,11 +100,9 @@ public class ClimbSubsystem extends SubsystemBase {
   // =========================================================
 
   public void moveUp() {
-    System.out.println(state);
+
     if (state == State.DISABLED) return;
-    System.out.println("moveUp called in ClimbSubsystem.");
     state = State.UP;
-    System.out.println("State set to UP in ClimbSubsystem.");
   }
 
   public void moveDown() {
@@ -151,11 +151,26 @@ public class ClimbSubsystem extends SubsystemBase {
   // }
 
   public Command upCommand() {
-    return Commands.runOnce(() -> this.state = State.UP, this).withName("ClimbUpCommand");
+    return Commands.runOnce(
+            () -> {
+              this.state = State.UP;
+              led.requestState(LEDSubsystem.LEDState.CLIMBING);
+            },
+            this)
+        .withName("ClimbUpCommand");
   }
 
   public Command downCommand() {
-    return Commands.startEnd(this::moveDown, this::stop, this);
+    return Commands.startEnd(
+        () -> {
+          led.requestState(LEDSubsystem.LEDState.CLIMBING);
+          moveDown();
+        },
+        () -> {
+          stop();
+          led.clearState(LEDSubsystem.LEDState.CLIMBING);
+        },
+        this);
   }
 
   public Command homeCommand() {

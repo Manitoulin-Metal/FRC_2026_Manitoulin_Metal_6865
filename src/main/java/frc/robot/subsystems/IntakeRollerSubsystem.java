@@ -18,6 +18,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       new SparkFlex(Constants.Intake.MOTOR_ID, MotorType.kBrushless);
 
   private final SparkClosedLoopController velocityController;
+  private final LEDSubsystem led;
 
   public enum Mode {
     IDLE,
@@ -35,8 +36,8 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   private boolean pieceLatched = false;
 
-  @SuppressWarnings("removal")
-  public IntakeRollerSubsystem() {
+  public IntakeRollerSubsystem(LEDSubsystem led) {
+    this.led = led;
 
     SparkFlexConfig config = new SparkFlexConfig();
 
@@ -77,7 +78,6 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     return runOnce(() -> setMode(Mode.IDLE));
   }
 
-  // NamedCommand collectFuel
   public Command collectFuelCommand() {
     return intakeToggleCommand();
   }
@@ -114,20 +114,33 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     boolean startupDone = intakeStartTimer.get() > Constants.Intake.STARTUP_IGNORE_TIME;
 
     switch (currentMode) {
-      case IDLE -> setVelocity(Constants.Intake.IDLE_RPM);
+      case IDLE -> {
+        setVelocity(Constants.Intake.IDLE_RPM);
+        led.clearState(LEDSubsystem.LEDState.INTAKING);
+      }
 
-      case REVERSE -> setVelocity(Constants.Intake.REVERSE_RPM);
+      case REVERSE -> {
+        setVelocity(Constants.Intake.REVERSE_RPM);
+        led.clearState(LEDSubsystem.LEDState.INTAKING);
+      }
 
       case INTAKE -> {
         setVelocity(Constants.Intake.INTAKE_RPM);
 
+        // 🐝 LED ONLY ACTIVE DURING INTAKE
+        led.requestState(LEDSubsystem.LEDState.INTAKING);
+
+        // -------- JAM DETECTION (FIXED TIMER LOGIC) --------
         if (startupDone && jamDetected()) {
+
           if (jamTimer.get() > Constants.Intake.JAM_DETECT_TIME) {
+
             currentMode = Mode.UNJAM_REVERSE;
             jamTimer.restart();
           }
+
         } else {
-          jamTimer.reset();
+          jamTimer.restart(); // ✅ FIX: was reset()
         }
 
         if (jamDetected() && !pieceLatched && countTimer.get() > Constants.Intake.COUNT_DELAY) {
@@ -144,7 +157,11 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       case UNJAM_REVERSE -> {
         setVelocity(Constants.Intake.REVERSE_RPM);
 
+        // keep LED intake state so driver sees "still working"
+        led.requestState(LEDSubsystem.LEDState.INTAKING);
+
         if (jamTimer.get() > Constants.Intake.UNJAM_REVERSE_TIME) {
+
           currentMode = Mode.UNJAM_FORWARD;
           jamTimer.restart();
         }
@@ -153,7 +170,10 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       case UNJAM_FORWARD -> {
         setVelocity(Constants.Intake.INTAKE_RPM);
 
+        led.requestState(LEDSubsystem.LEDState.INTAKING);
+
         if (jamTimer.get() > Constants.Intake.UNJAM_FORWARD_TIME) {
+
           currentMode = Mode.INTAKE;
           jamTimer.restart();
         }

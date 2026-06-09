@@ -1,202 +1,345 @@
-// // Copyright (c) FIRST and other WPILib contributors.
-// // Open Source Software; you can modify and/or share it under the terms of
-// // the WPILib BSD license file in the root directory of this project.
+package frc.robot.subsystems;
 
-// package frc.robot.subsystems;
+import edu.wpi.first.wpilibj.AddressableLED;
+import edu.wpi.first.wpilibj.AddressableLEDBuffer;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-// import com.ctre.phoenix6.controls.SolidColor;
-// import com.ctre.phoenix6.hardware.CANdle;
-// import com.ctre.phoenix6.signals.RGBWColor;
-// import edu.wpi.first.wpilibj.AddressableLED;
-// import edu.wpi.first.wpilibj.AddressableLEDBuffer;
-// import edu.wpi.first.wpilibj.LEDPattern;
-// import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-// import edu.wpi.first.wpilibj.util.Color;
-// import edu.wpi.first.wpilibj2.command.Command;
-// import edu.wpi.first.wpilibj2.command.SubsystemBase;
+public class LEDSubsystem extends SubsystemBase {
 
-// public class LEDSubsystem extends SubsystemBase {
-//   @SuppressWarnings({"deprecated", "removal"})
-//   private final CANdle candle = new CANdle(4, "DriveCanivore");
+  // =========================================================
+  // LED CONFIG
+  // =========================================================
 
-//   private final SolidColor candleColorRequest = new SolidColor(0, 7);
+  private static final int PWM_PORT = 9;
+  private static final int LED_LENGTH = 100;
 
-//   private static final int kPort = 9;
-//   private static final int kLength = 120;
+  private final AddressableLED led;
+  private final AddressableLEDBuffer buffer;
 
-//   private final AddressableLED m_led;
-//   private final AddressableLEDBuffer m_ledBuffer;
+  // =========================================================
+  // ANIMATION STATE
+  // =========================================================
 
-//   /** Creates a new LEDSubsystem. */
-//   public LEDSubsystem() {
-//     m_led = new AddressableLED(kPort);
-//     m_ledBuffer = new AddressableLEDBuffer(kLength);
-//     m_led.setLength(kLength);
-//     m_led.start();
-//     setCandleColor(0, 0, 0);
-//   }
+  private int tick = 0;
 
-//   /**
-//    * Example command factory method.
-//    *
-//    * @return a command
-//    */
-//   public Command LEDCommand(String color) {
-//     return runOnce(
-//         () -> {
-//           switch (color) {
-//             case "red":
-//               RED();
-//               break;
-//             case "green":
-//               GREEN();
-//               break;
-//             case "blue":
-//               BLUE();
-//               break;
-//             case "yellow":
-//               YELLOW();
-//               break;
-//             case "purple":
-//               PURPLE();
-//               break;
-//             case "orange":
-//               ORANGE();
-//               break;
-//             case "team_pattern_1":
-//               TEAM_PATTERN1();
-//               break;
-//             case "team_pattern_2":
-//               TEAM_PATTERN2();
-//               break;
-//             case "rainbow":
-//               RAINBOW();
-//               break;
-//             default:
-//               OFF();
-//               break;
-//           }
-//         });
-//   }
+  // =========================================================
+  // LED STATES
+  // =========================================================
 
-//   public Command runPattern(LEDPattern pattern) {
-//     return runOnce(
-//         () -> {
-//           pattern.applyTo(m_ledBuffer);
-//           pushOutputs();
-//         });
-//   }
+  public enum LEDState {
+    DISABLED(10),
+    ENABLED(20),
+    INTAKING(60),
+    VISION_LOCK(70),
+    SHOOTER_READY(75),
+    SHOOTING(80),
+    CLIMBING(90),
+    ENDGAME(100);
 
-//   public void RED() {
-//     SmartDashboard.putString("Candle Colour: ", "Red");
-//     setAllLEDs(255, 0, 0);
-//   }
+    public final int priority;
 
-//   public void BLUE() {
-//     SmartDashboard.putString("Candle Colour: ", "Blue");
-//     setAllLEDs(0, 0, 255);
-//   }
+    LEDState(int priority) {
+      this.priority = priority;
+    }
+  }
 
-//   public void GREEN() {
-//     SmartDashboard.putString("Candle Colour: ", "Green");
-//     setAllLEDs(0, 255, 0);
-//   }
+  private LEDState currentState = LEDState.DISABLED;
 
-//   public void YELLOW() {
-//     SmartDashboard.putString("Candle Colour: ", "Yellow");
-//     setAllLEDs(255, 255, 0);
-//   }
+  // =========================================================
+  // CONSTRUCTOR
+  // =========================================================
 
-//   public void PURPLE() {
-//     SmartDashboard.putString("Candle Colour: ", "Purple");
-//     setAllLEDs(160, 32, 240);
-//   }
+  public LEDSubsystem() {
 
-//   public void ORANGE() {
-//     SmartDashboard.putString("Candle Colour: ", "Orange");
-//     setAllLEDs(255, 165, 0);
-//   }
+    led = new AddressableLED(PWM_PORT);
+    buffer = new AddressableLEDBuffer(LED_LENGTH);
 
-//   public void OFF() {
-//     SmartDashboard.putString("Candle Colour: ", "Off");
-//     setAllLEDs(0, 0, 0);
-//   }
+    led.setLength(buffer.getLength());
+    led.setData(buffer);
+    led.start();
+  }
 
-//   private void setAllLEDs(int red, int green, int blue) {
-//     for (int i = 0; i < m_ledBuffer.getLength(); i++) {
-//       m_ledBuffer.setRGB(i, red, green, blue);
-//     }
-//     pushOutputs();
-//   }
+  // =========================================================
+  // STATE CONTROL
+  // =========================================================
 
-//   private void pushOutputs() {
-//     m_led.setData(m_ledBuffer);
-//     syncCandleFromBuffer();
-//   }
+  public void requestState(LEDState newState) {
 
-//   private void syncCandleFromBuffer() {
-//     if (m_ledBuffer.getLength() == 0) {
-//       setCandleColor(0, 0, 0);
-//       return;
-//     }
+    if (newState.priority >= currentState.priority) {
+      currentState = newState;
+    }
+  }
 
-//     Color firstPixel = m_ledBuffer.getLED(0);
-//     int red = (int) Math.round(firstPixel.red * 255.0);
-//     int green = (int) Math.round(firstPixel.green * 255.0);
-//     int blue = (int) Math.round(firstPixel.blue * 255.0);
-//     setCandleColor(red, green, blue);
-//   }
+  public void clearState(LEDState state) {
 
-//   private void setCandleColor(int red, int green, int blue) {
-//     candle.clearAllAnimations();
-//     candle.setControl(candleColorRequest.withColor(new RGBWColor(red, green, blue)));
-//   }
+    if (currentState == state) {
 
-//   public void TEAM_PATTERN1() {
-//     for (int i = 0; i < m_ledBuffer.getLength(); i++) {
-//       if (i % 2 == 0) {
-//         m_ledBuffer.setLED(i, Color.kYellow);
-//       } else {
-//         m_ledBuffer.setLED(i, Color.kBlack);
-//       }
-//     }
-//     pushOutputs();
-//   }
+      if (DriverStation.isDisabled()) {
+        currentState = LEDState.DISABLED;
+      } else {
+        currentState = LEDState.ENABLED;
+      }
+    }
+  }
 
-//   public void TEAM_PATTERN2() {
-//     LEDPattern pattern =
-//         LEDPattern.gradient(LEDPattern.GradientType.kDiscontinuous, Color.kYellow, Color.kBlack);
-//     pattern.applyTo(m_ledBuffer);
-//     pushOutputs();
-//   }
+  // =========================================================
+  // PERIODIC
+  // =========================================================
 
-//   public void RAINBOW() {
-//     LEDPattern base = LEDPattern.rainbow(255, 128);
-//     base.applyTo(m_ledBuffer);
-//     pushOutputs();
-//   }
+  @Override
+  public void periodic() {
 
-//   /** Flashing red pattern for gyro disconnected alert */
-//   public void gyroDisconnectedAlert() {
-//     boolean isRedPhase = (int) (System.currentTimeMillis() / 500) % 2 == 0;
-//     if (isRedPhase) {
-//       setAllLEDs(255, 0, 0);
-//     } else {
-//       setAllLEDs(0, 0, 0);
-//     }
-//   }
+    tick++;
 
-//   public boolean exampleCondition() {
-//     return false;
-//   }
+    // =======================================================
+    // BASE STATE MANAGEMENT
+    // =======================================================
 
-//   @Override
-//   public void periodic() {
-//     // This method will be called once per scheduler run
-//   }
+    if (DriverStation.isDisabled()) {
 
-//   @Override
-//   public void simulationPeriodic() {
-//     // This method will be called once per scheduler run during simulation
-//   }
-// }
+      currentState = LEDState.DISABLED;
+
+    } else if (currentState == LEDState.DISABLED) {
+
+      currentState = LEDState.ENABLED;
+    }
+
+    // =======================================================
+    // ENDGAME AUTO OVERRIDE
+    // =======================================================
+
+    if (DriverStation.isTeleopEnabled()) {
+
+      double matchTime = DriverStation.getMatchTime();
+
+      // Automatically override during endgame
+      if (matchTime > 0 && matchTime <= 20) {
+
+        currentState = LEDState.ENDGAME;
+      }
+    }
+
+    // =======================================================
+    // STATE MACHINE
+    // =======================================================
+
+    switch (currentState) {
+      case DISABLED:
+        beeIdlePattern();
+        break;
+
+      case ENABLED:
+        queenBeePulse();
+        break;
+
+      case INTAKING:
+        nectarFlow();
+        break;
+
+      case VISION_LOCK:
+        visionLock();
+        break;
+
+      case SHOOTER_READY:
+        shooterReady();
+        break;
+
+      case SHOOTING:
+        stingerFire();
+        break;
+
+      case CLIMBING:
+        climbingPattern();
+        break;
+
+      case ENDGAME:
+        endgamePulse();
+        break;
+    }
+  }
+
+  // =========================================================
+  // DISABLED - HIVE IDLE
+  // =========================================================
+
+  private void beeIdlePattern() {
+
+    for (int i = 0; i < buffer.getLength(); i++) {
+
+      double wave = 0.5 + 0.5 * Math.sin((i * 0.18) + (tick * 0.03));
+
+      Color color;
+
+      if (wave > 0.72) {
+
+        // warm honey gold
+        color = new Color(0.95, 0.72, 0.18);
+
+      } else if (wave > 0.48) {
+
+        // amber
+        color = new Color(0.75, 0.45, 0.08);
+
+      } else if (wave > 0.28) {
+
+        // dim gold
+        color = new Color(0.38, 0.28, 0.05);
+
+      } else {
+
+        // soft shadow
+        color = new Color(0.02, 0.015, 0.005);
+      }
+
+      buffer.setLED(i, color);
+    }
+
+    push();
+  }
+
+  // =========================================================
+  // ENABLED - QUEEN BEE
+  // =========================================================
+
+  private void queenBeePulse() {
+
+    double pulse = 0.35 + 0.15 * Math.sin(tick * 0.04);
+
+    Color color = new Color(pulse, pulse * 0.75, 0.08);
+
+    solid(color);
+  }
+
+  // =========================================================
+  // INTAKING - NECTAR FLOW
+  // =========================================================
+
+  private void nectarFlow() {
+
+    for (int i = 0; i < buffer.getLength(); i++) {
+
+      double wave = 0.5 + 0.5 * Math.sin((i * 0.45) - (tick * 0.25));
+
+      Color color = new Color(0.0, wave * 0.8, 0.05);
+
+      buffer.setLED(i, color);
+    }
+
+    push();
+  }
+
+  // =========================================================
+  // VISION LOCK
+  // =========================================================
+
+  private void visionLock() {
+
+    double pulse = 0.5 + 0.5 * Math.sin(tick * 0.12);
+
+    solid(new Color(pulse, pulse * 0.8, 0.1));
+  }
+
+  // =========================================================
+  // SHOOTER READY
+  // =========================================================
+
+  private void shooterReady() {
+
+    double pulse = 0.4 + 0.4 * Math.sin(tick * 0.18);
+
+    solid(new Color(pulse, pulse * 0.45, 0.0));
+  }
+
+  // =========================================================
+  // SHOOTING - STINGER FIRE
+  // =========================================================
+
+  private void stingerFire() {
+
+    for (int i = 0; i < buffer.getLength(); i++) {
+
+      double wave = 0.5 + 0.5 * Math.sin((i * 0.8) - (tick * 0.7));
+
+      Color color;
+
+      if (wave > 0.7) {
+
+        color = Color.kWhite;
+
+      } else if (wave > 0.4) {
+
+        color = new Color(1.0, 0.45, 0.0);
+
+      } else {
+
+        color = new Color(0.25, 0.08, 0.0);
+      }
+
+      buffer.setLED(i, color);
+    }
+
+    push();
+  }
+
+  // =========================================================
+  // CLIMBING - ASCENSION
+  // =========================================================
+
+  private void climbingPattern() {
+
+    boolean flash = (tick / 3) % 2 == 0;
+
+    Color color =
+        flash
+            ? new Color(1.0, 0.9, 0.1) // intense gold flash
+            : new Color(0.0, 0.0, 0.0); // full blackout
+
+    solid(color);
+  }
+
+  // =========================================================
+  // ENDGAME
+  // =========================================================
+
+  private void endgamePulse() {
+
+    double matchTime = DriverStation.getMatchTime();
+
+    double speed;
+
+    // Final 10 seconds = faster pulse
+    if (matchTime <= 10) {
+
+      speed = 0.45;
+
+    } else {
+
+      speed = 0.20;
+    }
+
+    double pulse = 0.5 + 0.5 * Math.sin(tick * speed);
+
+    Color color = new Color(pulse, pulse * 0.55, 0.02);
+
+    solid(color);
+  }
+
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  private void solid(Color color) {
+
+    for (int i = 0; i < buffer.getLength(); i++) {
+      buffer.setLED(i, color);
+    }
+
+    push();
+  }
+
+  private void push() {
+    led.setData(buffer);
+  }
+}

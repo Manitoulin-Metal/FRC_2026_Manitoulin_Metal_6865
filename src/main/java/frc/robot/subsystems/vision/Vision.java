@@ -119,80 +119,112 @@ public class Vision extends SubsystemBase {
   }
 
   // ==========================================================
-  // DOCKING TARGET FOR CLIMB (FROM REAR CAMERA)
+  // DOCKING TARGET FOR CLIMB
+  //
+  // Returns:
+  //   SIM  -> robot → desired dock pose
+  //   REAL -> robot → tag measurement from Limelight
+  //
+  // The climb command is responsible for converting
+  // measurements into docking errors.
   // ==========================================================
 
   public Optional<Transform2d> getDockingTarget() {
 
     // ==========================================================
-    // SIM OVERRIDE
+    // SIMULATION
     // ==========================================================
     if (Constants.currentMode == Constants.Mode.SIM) {
 
       Pose2d robotPose = robotPoseSupplier.get();
 
-      if (robotPose == null) return Optional.empty();
+      if (robotPose == null) {
+        return Optional.empty();
+      }
 
       int tagId = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
 
       var tagOpt = VisionConstants.aprilTagLayout.getTagPose(tagId);
 
-      if (tagOpt.isEmpty()) return Optional.empty();
+      if (tagOpt.isEmpty()) {
+        return Optional.empty();
+      }
 
       Pose2d tagPose = tagOpt.get().toPose2d();
 
-      // ==========================================
-      // OFFSET TARGET POSE
-      // ==========================================
+      // ========================================================
+      // SIM TARGET POSE
+      //
+      // This is the desired climb position used only in SIM.
+      // The dock command drives robot → targetPose until
+      // the transform becomes (0,0,0).
+      // ========================================================
+
       Pose2d targetPose =
           tagPose.transformBy(
               new Transform2d(
-                  1.15, // 1.15m in front of tag
-                  0.3, //   0.3m to the right of tag (looking from above)
+                  1.15, // forward from tag
+                  0.30, // sideways offset
                   Rotation2d.kZero));
 
-      // robot -> tag transform
+      Logger.recordOutput("Dock/SimTargetPose", targetPose);
+
       return Optional.of(new Transform2d(robotPose, targetPose));
     }
+
     // ==========================================================
-    // REAL LIMELIGHT PATH (CLEAN ROBOT → TAG)
+    // REAL LIMELIGHT PATH
     // ==========================================================
 
     int desiredTag = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
 
     double seenTag = LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-    // Only trust correct tag
+    // only accept the climb tag
     if ((int) seenTag != desiredTag) {
       return Optional.empty();
     }
 
     double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-    // Safety check
     if (pose == null || pose.length < 6) {
       return Optional.empty();
     }
 
     // ==========================================================
-    // RAW LIMELIGHT MEASUREMENT (robot → tag in tag frame)
+    // LIMELIGHT TARGET SPACE
+    //
+    // These are the raw values you will tune from.
+    // Read these when the robot is physically docked.
     // ==========================================================
 
-    double x = pose[0]; // forward (tag frame)
-    double y = pose[1]; // right/left (tag frame)
-    double yawDeg = pose[5];
-
-    // Logging (safe, direct sensor view)
-    Logger.recordOutput("Climb/RawForward", x);
-    Logger.recordOutput("Climb/RawRight", y);
-    Logger.recordOutput("Climb/RawYaw", yawDeg);
+    double rawForward = pose[0];
+    double rawStrafe = pose[1];
+    double rawYawDeg = pose[5];
 
     // ==========================================================
-    // RETURN PURE TRANSFORM
-    // robot → tag (NO TARGET SUBTRACTION HERE)
+    // TUNING LOGS
     // ==========================================================
 
-    return Optional.of(new Transform2d(new Translation2d(x, y), Rotation2d.fromDegrees(yawDeg)));
+    Logger.recordOutput("Dock/RawForward", rawForward);
+    Logger.recordOutput("Dock/RawStrafe", rawStrafe);
+    Logger.recordOutput("Dock/RawYawDeg", rawYawDeg);
+
+    Logger.recordOutput("Dock/TargetForward", Constants.Climb.Vision.targetForward.get());
+
+    Logger.recordOutput("Dock/TargetStrafe", Constants.Climb.Vision.targetStrafe.get());
+
+    Logger.recordOutput("Dock/TargetYawDeg", Constants.Climb.Vision.targetYawDeg.get());
+
+    // ==========================================================
+    // RETURN PURE MEASUREMENT
+    //
+    // robot → tag
+    // ==========================================================
+
+    return Optional.of(
+        new Transform2d(
+            new Translation2d(rawForward, rawStrafe), Rotation2d.fromDegrees(rawYawDeg)));
   }
 
   // ==========================================================

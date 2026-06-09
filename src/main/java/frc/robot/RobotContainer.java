@@ -40,12 +40,13 @@ public class RobotContainer {
   // ============================================================
   // SUBSYSTEMS
   // ============================================================
+  private final LEDSubsystem led = new LEDSubsystem();
   private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
-  private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem();
+  private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(led);
   private final ShooterSubsystem shooter = new ShooterSubsystem();
   private final KickerSubsystem kicker = new KickerSubsystem(shooter);
   private final WhipSubsystem whip = new WhipSubsystem(shooter);
-  private final ClimbSubsystem climb = new ClimbSubsystem();
+  private final ClimbSubsystem climb = new ClimbSubsystem(led);
 
   // ============================================================
   // VISION
@@ -172,7 +173,7 @@ public class RobotContainer {
         "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(2.0));
     NamedCommands.registerCommand(
         "Shoot",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, 48.0)
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 48.0)
             .withTimeout(5.0));
   }
 
@@ -254,12 +255,12 @@ public class RobotContainer {
         .rightTrigger(0.5)
         .toggleOnTrue(
             ShooterCommands.shootWithWhipAndShake(
-                shooter, whip, kicker, intakeDeploy, Constants.DEMO_RPS));
+                shooter, whip, kicker, intakeDeploy, led, Constants.DEMO_RPS));
 
     // operator
     // .y()
     // .whileTrue(
-    // ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy,
+    // ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 48.0));
     // 48.0));
   }
 

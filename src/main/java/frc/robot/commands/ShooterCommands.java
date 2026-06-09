@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.IntakeDeploySubsystem;
 import frc.robot.subsystems.KickerSubsystem;
+import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.WhipSubsystem;
 import java.util.function.Supplier;
@@ -21,21 +22,42 @@ public final class ShooterCommands {
       WhipSubsystem whip,
       KickerSubsystem kicker,
       IntakeDeploySubsystem intakeDeploy,
+      LEDSubsystem led,
       double shooterRps) {
 
-    return Commands.runOnce(intakeDeploy::shake, intakeDeploy)
+    return Commands.runOnce(
+            () -> {
+              intakeDeploy.shake();
+
+              // shooter spin-up state
+              led.requestState(LEDSubsystem.LEDState.SHOOTER_READY);
+            },
+            intakeDeploy)
         .andThen(
             Commands.parallel(
+
+                // SHOOTER
                 Commands.run(() -> shooter.runShooter(shooterRps), shooter),
+
+                // WHIP
                 whip.whipCommand(),
 
-                // kicker now just runs simple logic based on shooter readiness inside command
+                // KICKER + LED LOGIC
                 Commands.run(
                     () -> {
                       if (shooter.atTarget()) {
+
                         kicker.setKicker(0.5);
+
+                        // actively firing
+                        led.requestState(LEDSubsystem.LEDState.SHOOTING);
+
                       } else {
+
                         kicker.setKicker(0.0);
+
+                        // still spinning up
+                        led.requestState(LEDSubsystem.LEDState.SHOOTER_READY);
                       }
                     },
                     kicker)))
@@ -44,6 +66,10 @@ public final class ShooterCommands {
               shooter.stopShooter();
               kicker.stop();
               intakeDeploy.deploy();
+
+              // clear shooting states
+              led.clearState(LEDSubsystem.LEDState.SHOOTING);
+              led.clearState(LEDSubsystem.LEDState.SHOOTER_READY);
             });
   }
 

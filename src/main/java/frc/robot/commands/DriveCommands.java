@@ -99,19 +99,21 @@ public final class DriveCommands {
                 // 🧭 DOCK TARGET (THIS IS YOUR ONLY TUNING SURFACE)
                 //
                 // SIM:
-                //   leave as (0,0,0) → works perfectly because is using
-                //   same measurement as control target (robot → tag)
-                //   field coordinates
-               
-                // ============================================================
-                double desiredX = 0.0; // forward offset from tag
-                double desiredY = 0.0; // sideways offset from tag
-                double desiredThetaDeg = 0.0; // robot facing relative to tag
+                // leave as (0,0,0) → works perfectly because is using
+                // same measurement as control target (robot → tag)
+                // field coordinates
 
-                //REAL ROBOT TUNING (UNCOMMENT AND FILL IN VALUES FROM HUD)
+                // ============================================================
+                double desiredX = Constants.Climb.Vision.targetForward.get();
+
+                double desiredY = Constants.Climb.Vision.targetStrafe.get();
+
+                double desiredThetaDeg = Constants.Climb.Vision.targetYawDeg.get();
+
+                // REAL ROBOT TUNING (UNCOMMENT AND FILL IN VALUES FROM HUD)
                 // ============================================================
                 // double desiredX = 0.83; // forward offset from tag
-                // double desiredY = -0.; // sideways offset from tag
+                // double desiredY = -0.23; // sideways offset from tag
                 // double desiredThetaDeg = 0.0; // robot facing relative to tag
 
                 // ============================================================
@@ -119,7 +121,7 @@ public final class DriveCommands {
                 // ============================================================
                 double measuredX = robotToTag.getX();
                 double measuredY = robotToTag.getY();
-                
+
                 // ============================================================
                 // ERROR (DESIRED - MEASURED)
                 // ============================================================
@@ -224,6 +226,25 @@ public final class DriveCommands {
             drive::stop,
             drive)
         .withName("DockToClimb");
+  }
+
+  // ============================================================
+  // Temporary Command to Tune Docking Vision Target (REAL ROBOT ONLY
+  // - SIM USES RAW MEASUREMENT AS TARGET)
+  // ============================================================
+
+  public static Command logDockingPose(Vision vision) {
+    return Commands.run(
+        () -> {
+          vision
+              .getDockingTarget()
+              .ifPresent(
+                  transform -> {
+                    Logger.recordOutput("Dock/RawForward", transform.getX());
+                    Logger.recordOutput("Dock/RawStrafe", transform.getY());
+                    Logger.recordOutput("Dock/RawYawDeg", transform.getRotation().getDegrees());
+                  });
+        });
   }
   // ============================================================
   // SIMPLE DRIVE TO POSE (UNCHANGED)
