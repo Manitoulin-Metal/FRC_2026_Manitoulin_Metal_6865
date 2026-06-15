@@ -19,11 +19,11 @@ public final class ClimbCommands {
   }
 
   public static Command hookUp(ClimbSubsystem climb) {
-    return Commands.startEnd(climb::moveUp, climb::stop, climb).withName("HookUp");
+    return climb.upCommand().withName("HookUp");
   }
 
   public static Command climbDown(ClimbSubsystem climb) {
-    return Commands.startEnd(climb::moveDown, climb::stop, climb).withName("ClimbDown");
+    return climb.downCommand().withName("ClimbDown");
   }
 
   public static Command stop(ClimbSubsystem climb) {

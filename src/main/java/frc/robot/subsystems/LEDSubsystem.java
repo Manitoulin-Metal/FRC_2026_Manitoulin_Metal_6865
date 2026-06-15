@@ -35,7 +35,8 @@ public class LEDSubsystem extends SubsystemBase {
     VISION_LOCK(70),
     SHOOTER_READY(75),
     SHOOTING(80),
-    CLIMBING(90),
+    CLIMBING_UP(90),
+    CLIMBING_DOWN(90),
     ENDGAME(100);
 
     public final int priority;
@@ -150,8 +151,12 @@ public class LEDSubsystem extends SubsystemBase {
         stingerFire();
         break;
 
-      case CLIMBING:
-        climbingPattern();
+      case CLIMBING_UP:
+        climbingUpPattern();
+        break;
+
+      case CLIMBING_DOWN:
+        climbingDownPattern();
         break;
 
       case ENDGAME:
@@ -284,19 +289,15 @@ public class LEDSubsystem extends SubsystemBase {
   }
 
   // =========================================================
-  // CLIMBING - ASCENSION
+  // CLIMBING - Up and Down can share the same pattern but with different speeds
   // =========================================================
 
-  private void climbingPattern() {
+  private void climbingUpPattern() {
+    rainbowChase(0.75); // slow
+  }
 
-    boolean flash = (tick / 3) % 2 == 0;
-
-    Color color =
-        flash
-            ? new Color(1.0, 0.9, 0.1) // intense gold flash
-            : new Color(0.0, 0.0, 0.0); // full blackout
-
-    solid(color);
+  private void climbingDownPattern() {
+    rainbowChase(3.0); // fast
   }
 
   // =========================================================
@@ -341,5 +342,17 @@ public class LEDSubsystem extends SubsystemBase {
 
   private void push() {
     led.setData(buffer);
+  }
+
+  private void rainbowChase(double speed) {
+
+    for (int i = 0; i < buffer.getLength(); i++) {
+
+      int hue = (int) ((i * 180.0 / buffer.getLength()) + (tick * speed)) % 180;
+
+      buffer.setHSV(i, hue, 255, 128);
+    }
+
+    push();
   }
 }

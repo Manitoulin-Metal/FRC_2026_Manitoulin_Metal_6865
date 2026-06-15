@@ -17,6 +17,47 @@ public final class ShooterCommands {
   /**
    * Timed shoot sequence: run shooter and kicker in parallel, then stop both. * /** shoot + whip
    */
+
+  // temporary command for testing shooter velocity and kicker logic without the whip or intake
+  // deploy shake
+  public static Command toggleTestShootAtSpeed(
+      ShooterSubsystem shooter, KickerSubsystem kicker, double shooterRps) {
+
+    return Commands.startEnd(
+            // START
+            () -> {
+              shooter.runShooter(shooterRps);
+            },
+
+            // END
+            () -> {
+              shooter.stopShooter();
+              kicker.stop();
+            },
+            shooter,
+            kicker)
+        .andThen(
+            Commands.run(
+                () -> {
+                  boolean atSpeed = shooter.atTarget();
+
+                  System.out.println(
+                      "Velocity="
+                          + shooter.getVelocityRps()
+                          + " Target="
+                          + shooterRps
+                          + " AtTarget="
+                          + atSpeed);
+
+                  if (atSpeed) {
+                    kicker.setKicker(0.5);
+                  } else {
+                    kicker.stop();
+                  }
+                },
+                kicker));
+  }
+
   public static Command shootWithWhipAndShake(
       ShooterSubsystem shooter,
       WhipSubsystem whip,
@@ -40,11 +81,12 @@ public final class ShooterCommands {
                 Commands.run(() -> shooter.runShooter(shooterRps), shooter),
 
                 // WHIP
-                whip.whipCommand(),
+                whip.runWhipCommand(),
 
                 // KICKER + LED LOGIC
-                Commands.run(
+                Commands.runEnd(
                     () -> {
+                      // kicker run continuously
                       if (shooter.atTarget()) {
 
                         kicker.setKicker(0.5);
@@ -60,12 +102,13 @@ public final class ShooterCommands {
                         led.requestState(LEDSubsystem.LEDState.SHOOTER_READY);
                       }
                     },
-                    kicker)))
+                    kicker::stop)))
         .finallyDo(
             interrupted -> {
               shooter.stopShooter();
               kicker.stop();
               intakeDeploy.deploy();
+              whip.stop();
 
               // clear shooting states
               led.clearState(LEDSubsystem.LEDState.SHOOTING);
@@ -85,7 +128,7 @@ public final class ShooterCommands {
             Commands.parallel(
 
                 // WHIP ALWAYS RUNS
-                whip.whipCommand(),
+                whip.runWhipCommand(),
 
                 // FULL CONTROL LOOP
                 Commands.run(

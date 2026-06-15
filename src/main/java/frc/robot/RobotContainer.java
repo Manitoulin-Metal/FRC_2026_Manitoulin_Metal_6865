@@ -256,12 +256,6 @@ public class RobotContainer {
         .toggleOnTrue(
             ShooterCommands.shootWithWhipAndShake(
                 shooter, whip, kicker, intakeDeploy, led, Constants.DEMO_RPS));
-
-    // operator
-    // .y()
-    // .whileTrue(
-    // ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 48.0));
-    // 48.0));
   }
 
   // ============================================================

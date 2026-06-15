@@ -58,14 +58,7 @@ public class ShooterSubsystem extends SubsystemBase {
   /** Run shooter at velocity RPS */
   public void runShooter(double speedRps) {
     targetRps = speedRps;
-    // double rampRate = 65.0; // RPS/sec
-    double rampRate = 15.0; // RPS/sec
-    currentRps =
-        MathUtil.clamp(
-            currentRps + Math.copySign(rampRate * (1.0 / 50.0), speedRps - currentRps),
-            -Math.abs(speedRps),
-            Math.abs(speedRps));
-    shooter.setControl(velocityRequest.withVelocity(currentRps));
+    shooter.setControl(velocityRequest.withVelocity(speedRps));
   }
 
   /** Stop shooter */
@@ -94,9 +87,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /** Stop command: stops shooter instantly */
   /** Returns true if shooter velocity is at target within tolerance */
+  // public boolean atTarget() {
+  //   return Math.abs(targetRps - getVelocityRps()) <= Constants.SHOOTER_AT_TARGET_TOLERANCE_RPS
+  //       && getVelocityRps() >= Constants.SHOOTER_MIN_RPS;
+  // }
   public boolean atTarget() {
-    return Math.abs(targetRps - getVelocityRps()) <= Constants.SHOOTER_AT_TARGET_TOLERANCE_RPS
-        && getVelocityRps() >= Constants.SHOOTER_MIN_RPS;
+    return Math.abs(targetRps - getVelocityRps()) <= Constants.SHOOTER_AT_TARGET_TOLERANCE_RPS;
   }
 
   public Command stopCommand() {
@@ -105,6 +101,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+
+    Logger.recordOutput("Shooter/VelocityRPS", getVelocityRps());
+    Logger.recordOutput("Shooter/TargetRPS", targetRps);
+    Logger.recordOutput("Shooter/AtTarget", atTarget());
     // Live PID/FF tuning updates (like IntakeRoller)
     // updatePIDIfChanged(); // Can't do this because the motors dont like constantly being
     // reconfigged. When values changed in dashboard it forces a reenable.

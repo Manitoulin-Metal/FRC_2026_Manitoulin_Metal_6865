@@ -151,24 +151,27 @@ public class ClimbSubsystem extends SubsystemBase {
   // }
 
   public Command upCommand() {
-    return Commands.runOnce(
-            () -> {
-              this.state = State.UP;
-              led.requestState(LEDSubsystem.LEDState.CLIMBING);
-            },
-            this)
-        .withName("ClimbUpCommand");
+    return Commands.startEnd(
+        () -> {
+          led.requestState(LEDSubsystem.LEDState.CLIMBING_UP);
+          moveUp();
+        },
+        () -> {
+          stop();
+          led.clearState(LEDSubsystem.LEDState.CLIMBING_UP);
+        },
+        this);
   }
 
   public Command downCommand() {
     return Commands.startEnd(
         () -> {
-          led.requestState(LEDSubsystem.LEDState.CLIMBING);
+          led.requestState(LEDSubsystem.LEDState.CLIMBING_DOWN);
           moveDown();
         },
         () -> {
           stop();
-          led.clearState(LEDSubsystem.LEDState.CLIMBING);
+          led.clearState(LEDSubsystem.LEDState.CLIMBING_DOWN);
         },
         this);
   }
