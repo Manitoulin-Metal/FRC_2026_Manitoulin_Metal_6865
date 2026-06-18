@@ -268,13 +268,13 @@ public final class Constants {
       // ===================================================
 
       public static final LoggedNetworkNumber targetForward =
-          new LoggedNetworkNumber("Tuning/Climb/TargetForward", 0.83);
+          new LoggedNetworkNumber("Tuning/Climb/TargetForward", -1.155);
 
       public static final LoggedNetworkNumber targetStrafe =
-          new LoggedNetworkNumber("Tuning/Climb/TargetStrafe", -0.23);
+          new LoggedNetworkNumber("Tuning/Climb/TargetStrafe", -0.330);
 
       public static final LoggedNetworkNumber targetYawDeg =
-          new LoggedNetworkNumber("Tuning/Climb/TargetYawDeg", 0.0);
+          new LoggedNetworkNumber("Tuning/Climb/TargetYawDeg", 0);
 
       // ===================================================
       // DOCKING TOLERANCES

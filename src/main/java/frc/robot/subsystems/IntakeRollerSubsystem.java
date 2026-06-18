@@ -36,6 +36,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
 
   private boolean pieceLatched = false;
 
+  @SuppressWarnings("removal")
   public IntakeRollerSubsystem(LEDSubsystem led) {
     this.led = led;
 

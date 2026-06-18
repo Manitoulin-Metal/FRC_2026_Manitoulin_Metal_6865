@@ -2,7 +2,6 @@ package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -13,6 +12,7 @@ public class WhipSubsystem extends SubsystemBase {
   // Motor
   private final SparkMax whip = new SparkMax(57, MotorType.kBrushless);
 
+  @SuppressWarnings("deprecation")
   public WhipSubsystem(ShooterSubsystem shooterSubsystem) {
     whip.setInverted(true);
   }
@@ -41,7 +41,5 @@ public class WhipSubsystem extends SubsystemBase {
   }
 
   @Override
-  public void periodic() {
-    SmartDashboard.putNumber("Whip/Output", whip.get());
-  }
+  public void periodic() {}
 }

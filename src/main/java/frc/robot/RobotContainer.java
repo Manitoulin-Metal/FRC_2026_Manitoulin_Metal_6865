@@ -234,6 +234,8 @@ public class RobotContainer {
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
+    driver.a().whileTrue(DriveCommands.logDockingPoseOnce(vision));
+
     driver
         .b()
         .onTrue(

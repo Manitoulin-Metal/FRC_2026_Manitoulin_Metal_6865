@@ -57,26 +57,20 @@ public class Vision extends SubsystemBase {
     return inputs[REAR_CAMERA].latestTargetObservation.ty().getDegrees();
   }
 
-  public boolean hasTag(int id) {
-    for (int c = 0; c < inputs.length; c++) {
-      for (int tag : inputs[c].tagIds) {
-        if (tag == id) return true;
-      }
-    }
-    return false;
-  }
-
   // ==========================================================
-  // FRONT CAMERA POSE
+  // BEST POSE
   // ==========================================================
 
-  public Optional<Pose2d> getEstimatedPoseFromCamera1() {
-    return getLatestPose(FRONT_CAMERA);
+  public Optional<Pose2d> getBestEstimatedPose() {
+    Optional<Pose2d> front = getLatestPose(FRONT_CAMERA);
+    if (front.isPresent()) return front;
+
+    return getLatestPose(REAR_CAMERA);
   }
 
   private Optional<Pose2d> getLatestPose(int camera) {
     Pose2d best = null;
-    double newest = -999;
+    double newest = -1;
 
     for (var obs : inputs[camera].poseObservations) {
       if (obs.timestamp() > newest) {
@@ -84,147 +78,72 @@ public class Vision extends SubsystemBase {
         best = obs.pose().toPose2d();
       }
     }
-
     return Optional.ofNullable(best);
   }
 
   // ==========================================================
-  // REAR POSE
+  // DOCK TARGET (UNIFIED)
   // ==========================================================
-
-  public Optional<Pose3d> getRearTargetSpacePoseForClimb() {
-
-    if (!inputs[REAR_CAMERA].connected) return Optional.empty();
-    if (!inputs[REAR_CAMERA].hasTargets) return Optional.empty();
-
-    return Optional.of(inputs[REAR_CAMERA].targetSpacePose);
-  }
-
-  // ==========================================================
-  // BEST POSE (SAFE FALLBACK)
-  // ==========================================================
-
-  public Optional<Pose2d> getBestEstimatedPose() {
-
-    Optional<Pose2d> front = getEstimatedPoseFromCamera1();
-    if (front.isPresent()) return front;
-
-    Optional<Pose3d> rear = getRearTargetSpacePoseForClimb();
-    if (rear.isPresent()) {
-      Pose3d r = rear.get();
-      return Optional.of(new Pose2d(r.getX(), r.getY(), r.getRotation().toRotation2d()));
-    }
-
-    return Optional.empty();
-  }
-
-  // ==========================================================
-  // DOCKING TARGET FOR CLIMB
-  //
-  // Returns:
-  //   SIM  -> robot → desired dock pose
-  //   REAL -> robot → tag measurement from Limelight
-  //
-  // The climb command is responsible for converting
-  // measurements into docking errors.
-  // ==========================================================
-
   public Optional<Transform2d> getDockingTarget() {
 
-    // ==========================================================
+    // =========================
     // SIMULATION
-    // ==========================================================
+    // =========================
     if (Constants.currentMode == Constants.Mode.SIM) {
 
       Pose2d robotPose = robotPoseSupplier.get();
+      if (robotPose == null) return Optional.empty();
 
-      if (robotPose == null) {
-        return Optional.empty();
-      }
-
-      int tagId = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
+      int tagId =
+          DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+              ? Constants.Climb.Hardware.CLIMB_TAG_IDS[1]
+              : Constants.Climb.Hardware.CLIMB_TAG_IDS[0];
 
       var tagOpt = VisionConstants.aprilTagLayout.getTagPose(tagId);
-
-      if (tagOpt.isEmpty()) {
-        return Optional.empty();
-      }
+      if (tagOpt.isEmpty()) return Optional.empty();
 
       Pose2d tagPose = tagOpt.get().toPose2d();
 
-      // ========================================================
-      // SIM TARGET POSE
-      //
-      // This is the desired climb position used only in SIM.
-      // The dock command drives robot → targetPose until
-      // the transform becomes (0,0,0).
-      // ========================================================
+      // =========================================================
+      // CORRECT SIMULATION OF LIMELIGHT TARGET SPACE
+      // =========================================================
 
-      Pose2d targetPose =
-          tagPose.transformBy(
-              new Transform2d(
-                  1.15, // forward from tag
-                  0.30, // sideways offset
-                  Rotation2d.kZero));
+      Transform2d robotToTag = new Transform2d(robotPose, tagPose);
 
-      Logger.recordOutput("Dock/SimTargetPose", targetPose);
+      Logger.recordOutput("Dock/RawForward", robotToTag.getX());
+      Logger.recordOutput("Dock/RawStrafe", robotToTag.getY());
+      Logger.recordOutput("Dock/RawYawDeg", robotToTag.getRotation().getDegrees());
 
-      return Optional.of(new Transform2d(robotPose, targetPose));
+      return Optional.of(robotToTag);
     }
 
-    // ==========================================================
-    // REAL LIMELIGHT PATH
-    // ==========================================================
+    // =========================
+    // REAL LIMELIGHT
+    // =========================
 
-    int desiredTag = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red ? 16 : 32;
+    Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+    int desiredTag =
+        alliance == Alliance.Red
+            ? Constants.Climb.Hardware.CLIMB_TAG_IDS[1]
+            : Constants.Climb.Hardware.CLIMB_TAG_IDS[0];
 
     double seenTag = LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-    // only accept the climb tag
-    if ((int) seenTag != desiredTag) {
-      return Optional.empty();
-    }
+    if ((int) seenTag != desiredTag) return Optional.empty();
 
     double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-    if (pose == null || pose.length < 6) {
-      return Optional.empty();
-    }
+    if (pose == null || pose.length < 6) return Optional.empty();
 
-    // ==========================================================
-    // LIMELIGHT TARGET SPACE
-    //
-    // These are the raw values you will tune from.
-    // Read these when the robot is physically docked.
-    // ==========================================================
+    Transform2d robotToTag =
+        new Transform2d(new Translation2d(pose[0], pose[1]), Rotation2d.fromDegrees(-pose[5]));
 
-    double rawForward = pose[0];
-    double rawStrafe = pose[1];
-    double rawYawDeg = pose[5];
+    // log real too (important for consistency)
+    Logger.recordOutput("Dock/RawForward", pose[0]);
+    Logger.recordOutput("Dock/RawStrafe", pose[1]);
+    Logger.recordOutput("Dock/RawYawDeg", pose[5]);
 
-    // ==========================================================
-    // TUNING LOGS
-    // ==========================================================
-
-    Logger.recordOutput("Dock/RawForward", rawForward);
-    Logger.recordOutput("Dock/RawStrafe", rawStrafe);
-    Logger.recordOutput("Dock/RawYawDeg", rawYawDeg);
-
-    Logger.recordOutput("Dock/TargetForward", Constants.Climb.Vision.targetForward.get());
-
-    Logger.recordOutput("Dock/TargetStrafe", Constants.Climb.Vision.targetStrafe.get());
-
-    Logger.recordOutput("Dock/TargetYawDeg", Constants.Climb.Vision.targetYawDeg.get());
-
-    // ==========================================================
-    // RETURN PURE MEASUREMENT
-    //
-    // robot → tag
-    // ==========================================================
-
-    return Optional.of(
-        new Transform2d(
-            new Translation2d(rawForward, rawStrafe), Rotation2d.fromDegrees(rawYawDeg)));
+    return Optional.of(robotToTag);
   }
 
   // ==========================================================
@@ -242,29 +161,17 @@ public class Vision extends SubsystemBase {
       disconnectedAlerts[i].set(!inputs[i].connected);
     }
 
-    List<Pose3d> accepted = new ArrayList<>();
-    List<Pose3d> rejected = new ArrayList<>();
-
-    for (int cameraIndex = 0; cameraIndex < inputs.length; cameraIndex++) {
-
-      for (var obs : inputs[cameraIndex].poseObservations) {
+    for (int camera = 0; camera < inputs.length; camera++) {
+      for (var obs : inputs[camera].poseObservations) {
 
         boolean reject =
             obs.tagCount() == 0 || obs.ambiguity() > 0.3 || Math.abs(obs.pose().getZ()) > 1.0;
 
-        if (reject) {
-          rejected.add(obs.pose());
-          continue;
-        }
-
-        accepted.add(obs.pose());
+        if (reject) continue;
 
         consumer.accept(obs.pose().toPose2d(), obs.timestamp(), VecBuilder.fill(0.05, 0.05, 0.05));
       }
     }
-
-    Logger.recordOutput("Vision/Accepted", accepted.toArray(new Pose3d[0]));
-    Logger.recordOutput("Vision/Rejected", rejected.toArray(new Pose3d[0]));
   }
 
   @FunctionalInterface

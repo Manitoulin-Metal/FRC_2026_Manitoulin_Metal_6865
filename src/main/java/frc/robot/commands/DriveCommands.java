@@ -65,163 +65,79 @@ public final class DriveCommands {
   @SuppressWarnings("resource")
   public static Command dockToClimb(Drive drive, Vision vision) {
 
-    PIDController forwardController = new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
+    PIDController forward = new PIDController(Constants.Climb.PID.kP_FORWARD, 0, 0);
+    PIDController strafe = new PIDController(Constants.Climb.PID.kP_STRAFE, 0, 0);
+    PIDController turn = new PIDController(Constants.Climb.PID.kP_TURN, 0, 0);
 
-    PIDController strafeController = new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
-
-    PIDController turnController = new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
-
-    turnController.enableContinuousInput(-Math.PI, Math.PI);
+    turn.enableContinuousInput(-Math.PI, Math.PI);
 
     return Commands.runEnd(
-            new Runnable() {
+            () -> {
 
-              int logCounter = 0;
+              // =========================================================
+              // 1. VISION INPUT (FAST EXIT IF LOST)
+              // =========================================================
+              Optional<Transform2d> opt = vision.getDockingTarget();
 
-              @Override
-              public void run() {
-
-                // ============================================================
-                // RAW MEASUREMENT (SIM + REAL IDENTICAL INPUT)
-                // robot → tag
-                // ============================================================
-                Optional<Transform2d> robotToTagOpt = vision.getDockingTarget();
-
-                if (robotToTagOpt.isEmpty()) {
-                  drive.stop();
-                  Logger.recordOutput("DockToClimb/hasTarget", false);
-                  return;
-                }
-
-                Transform2d robotToTag = robotToTagOpt.get();
-
-                // ============================================================
-                // 🧭 DOCK TARGET (THIS IS YOUR ONLY TUNING SURFACE)
-                //
-                // SIM:
-                // leave as (0,0,0) → works perfectly because is using
-                // same measurement as control target (robot → tag)
-                // field coordinates
-
-                // ============================================================
-                double desiredX = Constants.Climb.Vision.targetForward.get();
-
-                double desiredY = Constants.Climb.Vision.targetStrafe.get();
-
-                double desiredThetaDeg = Constants.Climb.Vision.targetYawDeg.get();
-
-                // REAL ROBOT TUNING (UNCOMMENT AND FILL IN VALUES FROM HUD)
-                // ============================================================
-                // double desiredX = 0.83; // forward offset from tag
-                // double desiredY = -0.23; // sideways offset from tag
-                // double desiredThetaDeg = 0.0; // robot facing relative to tag
-
-                // ============================================================
-                // MEASURED STATE (robot → tag)
-                // ============================================================
-                double measuredX = robotToTag.getX();
-                double measuredY = robotToTag.getY();
-
-                // ============================================================
-                // ERROR (DESIRED - MEASURED)
-                // ============================================================
-                double xError = desiredX - measuredX;
-                double yError = desiredY - measuredY;
-
-                double thetaError =
-                    Rotation2d.fromDegrees(desiredThetaDeg)
-                        .minus(robotToTag.getRotation())
-                        .getRadians();
-
-                // ============================================================
-                // 🧠 DEBUG HUD (DO NOT REMOVE - THIS IS YOUR TUNING DASHBOARD)
-                // ============================================================
-                Logger.recordOutput("DockHUD/RobotToTagX", measuredX);
-                Logger.recordOutput("DockHUD/RobotToTagY", measuredY);
-                Logger.recordOutput(
-                    "DockHUD/RobotToTagThetaDeg", robotToTag.getRotation().getDegrees());
-
-                Logger.recordOutput("DockHUD/DesiredX", desiredX);
-                Logger.recordOutput("DockHUD/DesiredY", desiredY);
-                Logger.recordOutput("DockHUD/DesiredThetaDeg", desiredThetaDeg);
-
-                Logger.recordOutput("DockHUD/ErrorX", xError);
-                Logger.recordOutput("DockHUD/ErrorY", yError);
-                Logger.recordOutput("DockHUD/ErrorThetaRad", thetaError);
-
-                // visual vector (error direction in robot frame)
-                Pose2d robotPose = drive.getPose();
-
-                Pose2d errorArrow =
-                    new Pose2d(
-                        robotPose.getTranslation().plus(new Translation2d(xError, yError)),
-                        Rotation2d.fromRadians(thetaError));
-
-                Logger.recordOutput("DockHUD/ErrorArrow", errorArrow);
-
-                // ============================================================
-                // DISTANCE + STAGING
-                // ============================================================
-                double distance = Math.hypot(xError, yError);
-
-                boolean slowMode = distance < 0.6;
-
-                double gainScale;
-                double maxXY;
-                double omegaScale;
-
-                if (!slowMode) {
-                  gainScale = 1.0;
-                  maxXY = 0.8;
-                  omegaScale = 1.0;
-                } else {
-                  gainScale = 0.5;
-                  maxXY = 0.3;
-                  omegaScale = 0.7;
-                }
-
-                // ============================================================
-                // PID CONTROL
-                // ============================================================
-                double vx = forwardController.calculate(xError, 0.0);
-                double vy = strafeController.calculate(yError, 0.0);
-                double omega = turnController.calculate(thetaError, 0.0);
-
-                vx *= gainScale;
-                vy *= gainScale;
-                omega *= omegaScale;
-
-                vx = MathUtil.clamp(vx, -maxXY, maxXY);
-                vy = MathUtil.clamp(vy, -maxXY, maxXY);
-                omega = MathUtil.clamp(omega, -1.2, 1.2);
-
-                vx *= drive.getMaxLinearSpeedMetersPerSec();
-                vy *= drive.getMaxLinearSpeedMetersPerSec();
-                omega *= drive.getMaxAngularSpeedRadPerSec();
-
-                drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
-
-                // ============================================================
-                // THROTTLED LOGGING
-                // ============================================================
-                logCounter++;
-
-                if (logCounter % 5 == 0) {
-
-                  Logger.recordOutput("DockToClimb/hasTarget", true);
-                  Logger.recordOutput("DockToClimb/xError", xError);
-                  Logger.recordOutput("DockToClimb/yError", yError);
-                  Logger.recordOutput("DockToClimb/thetaError", thetaError);
-                  Logger.recordOutput("DockToClimb/distance", distance);
-
-                  Logger.recordOutput("DockToClimb/vx", vx);
-                  Logger.recordOutput("DockToClimb/vy", vy);
-                  Logger.recordOutput("DockToClimb/omega", omega);
-
-                  Logger.recordOutput(
-                      "DockToClimb/atGoal", distance < 0.10 && Math.abs(thetaError) < 0.08);
-                }
+              if (opt.isEmpty()) {
+                drive.runVelocity(new ChassisSpeeds(0, 0, 0));
+                Logger.recordOutput("Dock/HasTarget", false);
+                return;
               }
+
+              Transform2d robotToTag = opt.get();
+              Logger.recordOutput("Dock/HasTarget", true);
+
+              // =========================================================
+              // 2. DESIRED TARGET (ONLY TUNABLE SURFACE)
+              // =========================================================
+              double desiredX = Constants.Climb.Vision.targetForward.get();
+              double desiredY = Constants.Climb.Vision.targetStrafe.get();
+              double desiredTheta =
+                  Rotation2d.fromDegrees(Constants.Climb.Vision.targetYawDeg.get()).getRadians();
+
+              // =========================================================
+              // 3. ERROR SPACE
+              // =========================================================
+              double xErr = desiredX - robotToTag.getX();
+              double yErr = desiredY - robotToTag.getY();
+              double thetaErr = desiredTheta - robotToTag.getRotation().getRadians();
+
+              double dist = Math.hypot(xErr, yErr);
+
+              // =========================================================
+              // 4. GAIN STAGING (SIMPLIFIED)
+              // =========================================================
+              double scale = (dist < 0.6) ? 0.5 : 1.0;
+              double maxXY = (dist < 0.6) ? 0.3 : 0.8;
+              double maxOmega = 1.2;
+
+              // =========================================================
+              // 5. CONTROL OUTPUT
+              // =========================================================
+              double vx = forward.calculate(xErr, 0) * scale;
+              double vy = strafe.calculate(yErr, 0) * scale;
+              double omega = turn.calculate(thetaErr, 0);
+
+              vx = MathUtil.clamp(vx, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
+              vy = MathUtil.clamp(vy, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
+              omega =
+                  MathUtil.clamp(omega, -maxOmega, maxOmega) * drive.getMaxAngularSpeedRadPerSec();
+
+              drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+
+              // =========================================================
+              // 6. MINIMAL LOGGING (NO THROTTLING NEEDED)
+              // =========================================================
+              Logger.recordOutput("Dock/xErr", xErr);
+              Logger.recordOutput("Dock/yErr", yErr);
+              Logger.recordOutput("Dock/thetaErr", thetaErr);
+              Logger.recordOutput("Dock/dist", dist);
+              Logger.recordOutput("Dock/vx", vx);
+              Logger.recordOutput("Dock/vy", vy);
+              Logger.recordOutput("Dock/omega", omega);
+
+              Logger.recordOutput("Dock/atGoal", dist < 0.10 && Math.abs(thetaErr) < 0.08);
             },
             drive::stop,
             drive)
@@ -233,8 +149,8 @@ public final class DriveCommands {
   // - SIM USES RAW MEASUREMENT AS TARGET)
   // ============================================================
 
-  public static Command logDockingPose(Vision vision) {
-    return Commands.run(
+  public static Command logDockingPoseOnce(Vision vision) {
+    return Commands.runOnce(
         () -> {
           vision
               .getDockingTarget()
@@ -247,7 +163,7 @@ public final class DriveCommands {
         });
   }
   // ============================================================
-  // SIMPLE DRIVE TO POSE (UNCHANGED)
+  // SIMPLE DRIVE TO POSE COMMAND (FOR TESTING / TUNING ONLY)
   // ============================================================
 
   public static Command driveToPose(
