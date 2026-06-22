@@ -96,12 +96,25 @@ public final class DriveCommands {
               double desiredTheta =
                   Rotation2d.fromDegrees(Constants.Climb.Vision.targetYawDeg.get()).getRadians();
 
+              Logger.recordOutput("Dock/MeasuredX", robotToTag.getX());
+              Logger.recordOutput("Dock/MeasuredY", robotToTag.getY());
+              Logger.recordOutput("Dock/MeasuredYawDeg", robotToTag.getRotation().getDegrees());
+
+              Logger.recordOutput("Dock/TargetX", desiredX);
+              Logger.recordOutput("Dock/TargetY", desiredY);
+              Logger.recordOutput("Dock/TargetYawDeg", Math.toDegrees(desiredTheta));
+
               // =========================================================
               // 3. ERROR SPACE
               // =========================================================
               double xErr = desiredX - robotToTag.getX();
               double yErr = desiredY - robotToTag.getY();
-              double thetaErr = desiredTheta - robotToTag.getRotation().getRadians();
+              double thetaErr =
+                  MathUtil.angleModulus(
+                      desiredTheta
+                          - robotToTag
+                              .getRotation()
+                              .getRadians()); // angleModulus to wrap to [-pi, pi]
 
               double dist = Math.hypot(xErr, yErr);
 
@@ -115,14 +128,25 @@ public final class DriveCommands {
               // =========================================================
               // 5. CONTROL OUTPUT
               // =========================================================
-              double vx = forward.calculate(xErr, 0) * scale;
-              double vy = strafe.calculate(yErr, 0) * scale;
-              double omega = turn.calculate(thetaErr, 0);
+              double vx = forward.calculate(robotToTag.getX(), desiredX) * scale;
+              double vy = strafe.calculate(robotToTag.getY(), desiredY) * scale;
+              double omega = turn.calculate(robotToTag.getRotation().getRadians(), desiredTheta);
 
               vx = MathUtil.clamp(vx, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
               vy = MathUtil.clamp(vy, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
               omega =
                   MathUtil.clamp(omega, -maxOmega, maxOmega) * drive.getMaxAngularSpeedRadPerSec();
+
+              // ----------------------------------------------------
+              // Deadband near target to prevent hunting/jitter
+              // ----------------------------------------------------
+              if (Math.abs(xErr) < 0.05) vx = 0.0;
+
+              if (Math.abs(yErr) < 0.05) vy = 0.0;
+
+              if (Math.abs(thetaErr) < Math.toRadians(2.0)) {
+                omega = 0.0;
+              }
 
               drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
 
