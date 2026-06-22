@@ -136,11 +136,15 @@ public class Vision extends SubsystemBase {
     if (pose == null || pose.length < 6) return Optional.empty();
 
     Transform2d robotToTag =
-        new Transform2d(new Translation2d(pose[0], pose[1]), Rotation2d.fromDegrees(-pose[5]));
+        new Transform2d(
+            new Translation2d(
+                -pose[2], // forward/back
+                pose[0]), // left/right
+            Rotation2d.fromDegrees(pose[5]));
 
     // log real too (important for consistency)
     Logger.recordOutput("Dock/RawForward", pose[0]);
-    Logger.recordOutput("Dock/RawStrafe", pose[1]);
+    Logger.recordOutput("Dock/RawStrafe", pose[2]);
     Logger.recordOutput("Dock/RawYawDeg", pose[5]);
 
     return Optional.of(robotToTag);
@@ -154,6 +158,52 @@ public class Vision extends SubsystemBase {
   public void periodic() {
 
     if (!enabled) return;
+
+    // ==========================================================
+    // LIMELIGHT DEBUG
+    // ==========================================================
+
+    Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+
+    int desiredTag =
+        alliance == Alliance.Red
+            ? Constants.Climb.Hardware.CLIMB_TAG_IDS[1]
+            : Constants.Climb.Hardware.CLIMB_TAG_IDS[0];
+
+    Logger.recordOutput("LL/DesiredTag", desiredTag);
+
+    Logger.recordOutput("LL/TV", LimelightHelpers.getTV(Constants.Climb.Vision.REAR_LIMELIGHT));
+
+    Logger.recordOutput(
+        "LL/FiducialID", LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT));
+
+    Logger.recordOutput(
+        "LL/TagMatch",
+        (int) LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT) == desiredTag);
+
+    double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
+
+    Logger.recordOutput("LL/PoseValid", pose != null);
+
+    if (pose != null && pose.length >= 6) {
+
+      // Logger.recordOutput("LL/pose0_X", pose[0]);
+      // Logger.recordOutput("LL/pose1_Y", pose[1]);
+      // Logger.recordOutput("LL/pose2_Z", pose[2]);
+
+      // Logger.recordOutput("LL/pose3_Roll", pose[3]);
+      // Logger.recordOutput("LL/pose4_Pitch", pose[4]);
+      // Logger.recordOutput("LL/pose5_Yaw", pose[5]);
+      // Logger.recordOutput(
+      //     "LL/TagMatch",
+      //     (int) LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT)
+      //         == desiredTag);
+
+      // Candidate docking coordinates
+      Logger.recordOutput("Dock/TestForward", -pose[2]);
+      Logger.recordOutput("Dock/TestStrafe", pose[0]);
+      Logger.recordOutput("Dock/TestYawDeg", pose[5]);
+    }
 
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);

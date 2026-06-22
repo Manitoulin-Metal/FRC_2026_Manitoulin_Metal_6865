@@ -165,9 +165,44 @@ public class LEDSubsystem extends SubsystemBase {
     }
   }
 
-  // =========================================================
-  // DISABLED - HIVE IDLE
-  // =========================================================
+  // // =========================================================
+  // // DISABLED - HIVE IDLE
+  // // =========================================================
+
+  // private void beeIdlePattern() {
+
+  //   for (int i = 0; i < buffer.getLength(); i++) {
+
+  //     double wave = 0.5 + 0.5 * Math.sin((i * 0.18) + (tick * 0.03));
+
+  //     Color color;
+
+  //     if (wave > 0.72) {
+
+  //       // warm honey gold
+  //       color = new Color(0.95, 0.72, 0.18);
+
+  //     } else if (wave > 0.48) {
+
+  //       // amber
+  //       color = new Color(0.75, 0.45, 0.08);
+
+  //     } else if (wave > 0.28) {
+
+  //       // dim gold
+  //       color = new Color(0.38, 0.28, 0.05);
+
+  //     } else {
+
+  //       // soft shadow
+  //       color = new Color(0.02, 0.015, 0.005);
+  //     }
+
+  //     buffer.setLED(i, color);
+  //   }
+
+  //   push();
+  // }
 
   private void beeIdlePattern() {
 
@@ -180,22 +215,22 @@ public class LEDSubsystem extends SubsystemBase {
       if (wave > 0.72) {
 
         // warm honey gold
-        color = new Color(0.95, 0.72, 0.18);
+        color = new Color(0, 0.76, 0.67);
 
       } else if (wave > 0.48) {
 
         // amber
-        color = new Color(0.75, 0.45, 0.08);
+        color = new Color(0, 0.76, 0.67);
 
       } else if (wave > 0.28) {
 
         // dim gold
-        color = new Color(0.38, 0.28, 0.05);
+        color = new Color(0, 0.76, 0.67);
 
       } else {
 
         // soft shadow
-        color = new Color(0.02, 0.015, 0.005);
+        color = new Color(0, 0.76, 0.67);
       }
 
       buffer.setLED(i, color);

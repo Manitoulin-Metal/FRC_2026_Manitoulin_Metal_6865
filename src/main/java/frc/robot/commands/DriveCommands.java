@@ -121,9 +121,20 @@ public final class DriveCommands {
               // =========================================================
               // 4. GAIN STAGING (SIMPLIFIED)
               // =========================================================
-              double scale = (dist < 0.6) ? 0.5 : 1.0;
-              double maxXY = (dist < 0.6) ? 0.3 : 0.8;
-              double maxOmega = 1.2;
+              double scale;
+              double maxXY;
+
+              if (dist < 0.15) {
+                scale = 0.20;
+                maxXY = 0.10;
+              } else if (dist < 0.60) {
+                scale = 0.50;
+                maxXY = 0.30;
+              } else {
+                scale = 1.00;
+                maxXY = 0.80;
+              }
+              double maxOmega = (dist < 0.6) ? 0.25 : 1.2;
 
               // =========================================================
               // 5. CONTROL OUTPUT
@@ -140,9 +151,14 @@ public final class DriveCommands {
               // ----------------------------------------------------
               // Deadband near target to prevent hunting/jitter
               // ----------------------------------------------------
-              if (Math.abs(xErr) < 0.05) vx = 0.0;
+              if (Math.abs(xErr) < 0.02) vx = 0.0;
 
-              if (Math.abs(yErr) < 0.05) vy = 0.0;
+              if (Math.abs(yErr) < 0.02) vy = 0.0;
+
+              if (dist < 0.12) {
+                vx *= 0.3;
+                vy *= 0.3;
+              }
 
               if (Math.abs(thetaErr) < Math.toRadians(2.0)) {
                 omega = 0.0;
