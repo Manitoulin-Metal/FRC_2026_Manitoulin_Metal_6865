@@ -175,22 +175,22 @@ public class LEDSubsystem extends SubsystemBase {
       if (wave > 0.72) {
 
         // warm honey gold
-        color = new Color(0.95, 0.72, 0.18);
+        color = new Color(0, 0.76, 1.0);
 
       } else if (wave > 0.48) {
 
         // amber
-        color = new Color(0.75, 0.45, 0.08);
+        color = new Color(0, 0.76, 0.67);
 
       } else if (wave > 0.28) {
 
         // dim gold
-        color = new Color(0.38, 0.28, 0.05);
+        color = new Color(0, 0.76, 0.67);
 
       } else {
 
         // soft shadow
-        color = new Color(0.02, 0.015, 0.005);
+        color = new Color(0, 0.76, 0.67);
       }
 
       buffer.setLED(i, color);
