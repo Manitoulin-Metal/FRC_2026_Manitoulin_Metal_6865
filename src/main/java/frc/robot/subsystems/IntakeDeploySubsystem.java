@@ -13,6 +13,7 @@ import edu.wpi.first.networktables.DoubleEntry;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -61,6 +62,8 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   private final BooleanPublisher hallTriggeredPub;
   private final BooleanPublisher atSetpointPub;
   private IntakeState lastLoggedState = null;
+
+  private double simAngleDeg = 0.0;
 
   public IntakeDeploySubsystem() {
 
@@ -211,6 +214,11 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   public double getAngleDegrees() {
+
+    if (RobotBase.isSimulation()) {
+      return simAngleDeg;
+    }
+
     return encoder.getPosition() * (360.0 / Constants.IntakeDeploy.GEAR_RATIO);
   }
 
@@ -341,11 +349,21 @@ public class IntakeDeploySubsystem extends SubsystemBase {
   }
 
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+
+    switch (state) {
+      case MOVING_TO_DEPLOY:
+        simAngleDeg += 2.0;
+        break;
+
+      case MOVING_TO_STOW:
+        simAngleDeg -= 2.0;
+        break;
+
+      default:
+        break;
+    }
+
+    simAngleDeg = Math.max(0.0, Math.min(simAngleDeg, Constants.IntakeDeploy.DEPLOY_ANGLE));
+  }
 }
-
-// @SuppressWarnings("removal")
-
-// Logging
-// Logger.recordOutput("IntakeDeploy/Position",position);Logger.recordOutput("IntakeDeploy/PIDError",pid.getPositionError());Logger.recordOutput("IntakeDeploy/PIDOutput",output);
-// Logger.recordOutput("IntakeDeploy/Goal", goalPosition);

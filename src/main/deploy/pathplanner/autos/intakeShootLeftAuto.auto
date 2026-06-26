@@ -74,7 +74,13 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "ClimbAutoUp"
+                  "name": "IntakeStow"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ClimbAutoDown"
                 }
               },
               {
@@ -96,7 +102,7 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "ClimbAutoDown"
+                        "name": "ClimbAutoUp"
                       }
                     }
                   ]

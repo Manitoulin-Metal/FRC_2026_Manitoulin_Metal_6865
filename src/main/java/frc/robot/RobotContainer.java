@@ -48,6 +48,8 @@ public class RobotContainer {
   private final WhipSubsystem whip = new WhipSubsystem(shooter);
   private final ClimbSubsystem climb = new ClimbSubsystem(led);
 
+  private final RobotVisualizer visualizer = new RobotVisualizer(intakeDeploy, climb);
+
   // ============================================================
   // VISION
   // ============================================================
@@ -146,7 +148,7 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "IntakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
-    NamedCommands.registerCommand("intakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
+    NamedCommands.registerCommand("IntakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
     // NamedCommands.registerCommand("ClimbAutoUp",
     // ClimbCommands.climbUp(climb).withTimeout(2.0));
@@ -275,11 +277,10 @@ public class RobotContainer {
 
   public Command getAutonomousCommand() {
     return autoChooser.get();
+  }
 
-    // return Commands.sequence(
-
-    // ClimbCommands.climbUp(climb).withTimeout(2.0))
-    // .withName("ClimbOnlyAuto");
+  public RobotVisualizer getVisualizer() {
+    return visualizer;
   }
 
   // ============================================================

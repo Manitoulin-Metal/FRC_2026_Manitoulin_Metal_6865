@@ -68,120 +68,137 @@ public final class DriveCommands {
     PIDController forward = new PIDController(Constants.Climb.PID.kP_FORWARD, 0, 0);
     PIDController strafe = new PIDController(Constants.Climb.PID.kP_STRAFE, 0, 0);
     PIDController turn = new PIDController(Constants.Climb.PID.kP_TURN, 0, 0);
-
     turn.enableContinuousInput(-Math.PI, Math.PI);
 
+    // =========================================================
+    // 🧠 MEMORY OF TARGET (FIELD-RELATIVE)
+    // =========================================================
+    final Pose2d[] cachedTarget = {null};
+    final double[] smoothX = {0}, smoothY = {0}, smoothRot = {0};
+
     return Commands.runEnd(
-            () -> {
+        () -> {
+          Pose2d robotPose = drive.getPose(); // odometry anchor
+          Optional<Transform2d> visionOpt = vision.getDockingTarget();
 
-              // =========================================================
-              // 1. VISION INPUT (FAST EXIT IF LOST)
-              // =========================================================
-              Optional<Transform2d> opt = vision.getDockingTarget();
+          boolean hasVision = visionOpt.isPresent();
 
-              if (opt.isEmpty()) {
-                drive.runVelocity(new ChassisSpeeds(0, 0, 0));
-                Logger.recordOutput("Dock/HasTarget", false);
-                return;
-              }
+          // =========================================================
+          // 🧭 BUILD / UPDATE TARGET MEMORY
+          // =========================================================
+          if (hasVision) {
+            Transform2d robotToTag = visionOpt.get();
 
-              Transform2d robotToTag = opt.get();
-              Logger.recordOutput("Dock/HasTarget", true);
+            Pose2d measuredFieldTarget =
+                robotPose.transformBy(robotToTag); // convert to field frame
 
-              // =========================================================
-              // 2. DESIRED TARGET (ONLY TUNABLE SURFACE)
-              // =========================================================
-              double desiredX = Constants.Climb.Vision.targetForward.get();
-              double desiredY = Constants.Climb.Vision.targetStrafe.get();
-              double desiredTheta =
-                  Rotation2d.fromDegrees(Constants.Climb.Vision.targetYawDeg.get()).getRadians();
+            if (cachedTarget[0] == null) {
+              cachedTarget[0] = measuredFieldTarget;
+            } else {
+              // slow correction of memory (prevents jitter injection)
+              double blend = 0.15;
 
-              Logger.recordOutput("Dock/MeasuredX", robotToTag.getX());
-              Logger.recordOutput("Dock/MeasuredY", robotToTag.getY());
-              Logger.recordOutput("Dock/MeasuredYawDeg", robotToTag.getRotation().getDegrees());
+              cachedTarget[0] =
+                  new Pose2d(
+                      cachedTarget[0].getX() * (1 - blend) + measuredFieldTarget.getX() * blend,
+                      cachedTarget[0].getY() * (1 - blend) + measuredFieldTarget.getY() * blend,
+                      new Rotation2d(
+                          cachedTarget[0].getRotation().getRadians() * (1 - blend)
+                              + measuredFieldTarget.getRotation().getRadians() * blend));
+            }
+          }
 
-              Logger.recordOutput("Dock/TargetX", desiredX);
-              Logger.recordOutput("Dock/TargetY", desiredY);
-              Logger.recordOutput("Dock/TargetYawDeg", Math.toDegrees(desiredTheta));
+          if (cachedTarget[0] == null) {
+            drive.runVelocity(new ChassisSpeeds(0, 0, 0));
+            Logger.recordOutput("Dock/HasTarget", false);
+            return;
+          }
 
-              // =========================================================
-              // 3. ERROR SPACE
-              // =========================================================
-              double xErr = desiredX - robotToTag.getX();
-              double yErr = desiredY - robotToTag.getY();
-              double thetaErr =
-                  MathUtil.angleModulus(
-                      desiredTheta
-                          - robotToTag
-                              .getRotation()
-                              .getRadians()); // angleModulus to wrap to [-pi, pi]
+          Pose2d target = cachedTarget[0];
 
-              double dist = Math.hypot(xErr, yErr);
+          // =========================================================
+          // 🧭 ERROR IN FIELD SPACE (stable)
+          // =========================================================
+          double dx = target.getX() - robotPose.getX();
+          double dy = target.getY() - robotPose.getY();
 
-              // =========================================================
-              // 4. GAIN STAGING (SIMPLIFIED)
-              // =========================================================
-              double scale;
-              double maxXY;
+          double thetaErr =
+              MathUtil.angleModulus(
+                  target.getRotation().getRadians() - robotPose.getRotation().getRadians());
 
-              if (dist < 0.15) {
-                scale = 0.20;
-                maxXY = 0.10;
-              } else if (dist < 0.60) {
-                scale = 0.50;
-                maxXY = 0.30;
-              } else {
-                scale = 1.00;
-                maxXY = 0.80;
-              }
-              double maxOmega = (dist < 0.6) ? 0.25 : 1.2;
+          double dist = Math.hypot(dx, dy);
 
-              // =========================================================
-              // 5. CONTROL OUTPUT
-              // =========================================================
-              double vx = forward.calculate(robotToTag.getX(), desiredX) * scale;
-              double vy = strafe.calculate(robotToTag.getY(), desiredY) * scale;
-              double omega = turn.calculate(robotToTag.getRotation().getRadians(), desiredTheta);
+          // =========================================================
+          // 🧠 PHASE LOGIC
+          // =========================================================
+          boolean lockPhase = dist < 0.10;
+          boolean creepPhase = dist < 0.45;
 
-              vx = MathUtil.clamp(vx, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
-              vy = MathUtil.clamp(vy, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
-              omega =
-                  MathUtil.clamp(omega, -maxOmega, maxOmega) * drive.getMaxAngularSpeedRadPerSec();
+          double scale;
+          double maxXY;
+          double maxOmega;
 
-              // ----------------------------------------------------
-              // Deadband near target to prevent hunting/jitter
-              // ----------------------------------------------------
-              if (Math.abs(xErr) < 0.02) vx = 0.0;
+          if (lockPhase) {
+            scale = 0.12;
+            maxXY = 0.06;
+            maxOmega = 0.10;
+          } else if (creepPhase) {
+            scale = 0.35;
+            maxXY = 0.22;
+            maxOmega = 0.40;
+          } else {
+            scale = 1.0;
+            maxXY = 0.8;
+            maxOmega = 1.2;
+          }
 
-              if (Math.abs(yErr) < 0.02) vy = 0.0;
+          // =========================================================
+          // 🧽 SOFT FILTERING (extra stability in creep/lock)
+          // =========================================================
+          double alpha = lockPhase ? 0.20 : 0.35;
 
-              if (dist < 0.12) {
-                vx *= 0.3;
-                vy *= 0.3;
-              }
+          smoothX[0] = alpha * dx + (1 - alpha) * smoothX[0];
+          smoothY[0] = alpha * dy + (1 - alpha) * smoothY[0];
+          smoothRot[0] = alpha * thetaErr + (1 - alpha) * smoothRot[0];
 
-              if (Math.abs(thetaErr) < Math.toRadians(2.0)) {
-                omega = 0.0;
-              }
+          // =========================================================
+          // CONTROL
+          // =========================================================
+          double vx = forward.calculate(0, smoothX[0]) * scale;
+          double vy = strafe.calculate(0, smoothY[0]) * scale;
+          double omega = turn.calculate(0, smoothRot[0]);
 
-              drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+          vx = MathUtil.clamp(vx, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
 
-              // =========================================================
-              // 6. MINIMAL LOGGING (NO THROTTLING NEEDED)
-              // =========================================================
-              Logger.recordOutput("Dock/xErr", xErr);
-              Logger.recordOutput("Dock/yErr", yErr);
-              Logger.recordOutput("Dock/thetaErr", thetaErr);
-              Logger.recordOutput("Dock/dist", dist);
-              Logger.recordOutput("Dock/vx", vx);
-              Logger.recordOutput("Dock/vy", vy);
-              Logger.recordOutput("Dock/omega", omega);
+          vy = MathUtil.clamp(vy, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
 
-              Logger.recordOutput("Dock/atGoal", dist < 0.10 && Math.abs(thetaErr) < 0.08);
-            },
-            drive::stop,
-            drive)
-        .withName("DockToClimb");
+          omega = MathUtil.clamp(omega, -maxOmega, maxOmega) * drive.getMaxAngularSpeedRadPerSec();
+
+          // =========================================================
+          // 🪶 FINAL HOLD STABILITY
+          // =========================================================
+          if (lockPhase) {
+            if (Math.abs(smoothX[0]) < 0.02) vx = 0;
+            if (Math.abs(smoothY[0]) < 0.02) vy = 0;
+            if (Math.abs(smoothRot[0]) < Math.toRadians(1.5)) omega = 0;
+          }
+
+          drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+
+          // =========================================================
+          // LOGGING
+          // =========================================================
+          Logger.recordOutput("Dock/Dist", dist);
+          Logger.recordOutput("Dock/LockPhase", lockPhase);
+          Logger.recordOutput("Dock/CreepPhase", creepPhase);
+          Logger.recordOutput("Dock/TargetX", target.getX());
+          Logger.recordOutput("Dock/TargetY", target.getY());
+        },
+        () -> {
+          drive.stop();
+          cachedTarget[0] = null;
+        },
+        drive);
   }
 
   // ============================================================

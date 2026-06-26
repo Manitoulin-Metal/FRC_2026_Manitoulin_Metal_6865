@@ -8,6 +8,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -46,6 +47,7 @@ public class ClimbSubsystem extends SubsystemBase {
   // =========================================================
   private boolean homed = false;
   private double homingStartTime = -1;
+  private double simPosition = 0.0;
 
   // =========================================================
   // CONSTRUCTOR
@@ -78,6 +80,11 @@ public class ClimbSubsystem extends SubsystemBase {
   }
 
   public double getPosition() {
+
+    if (RobotBase.isSimulation()) {
+      return simPosition;
+    }
+
     return encoder.getPosition();
   }
 
@@ -257,5 +264,25 @@ public class ClimbSubsystem extends SubsystemBase {
 
     Logger.recordOutput("Climb/AtTop", atTop());
     Logger.recordOutput("Climb/AtBottom", atBottom());
+  }
+
+  @Override
+  public void simulationPeriodic() {
+
+    switch (state) {
+      case UP:
+        simPosition += 5.0;
+        break;
+
+      case DOWN:
+      case HOMING:
+        simPosition -= 5.0;
+        break;
+
+      default:
+        break;
+    }
+
+    simPosition = Math.max(0.0, Math.min(simPosition, Constants.Climb.Motion.UP_TARGET_ROTATIONS));
   }
 }

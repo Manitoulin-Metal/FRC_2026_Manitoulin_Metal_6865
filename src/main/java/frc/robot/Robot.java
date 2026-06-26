@@ -7,10 +7,7 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -90,8 +87,6 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotPeriodic() {
 
-    double angle = (Math.sin(Timer.getTimestamp()) * 0.5 + 0.5) * (Math.PI / 2);
-
     // Optionally switch the thread to high priority to improve loop
     // timing (see the template project documentation for details)
     // Threads.setCurrentThreadPriority(true, 99);
@@ -99,15 +94,7 @@ public class Robot extends LoggedRobot {
     // for calibrating Robot components in simulation
     Logger.recordOutput("RobotPose", new Pose2d());
 
-    Logger.recordOutput(
-        "ComponentPoses",
-        new Pose3d[] {
-          // Component 0 = Intake
-          new Pose3d(.3, 0.15, 0.225, new Rotation3d(0, angle, 0)),
-
-          // Component 1 = Climber
-          new Pose3d(0.0, 0.0, Math.sin(Timer.getTimestamp()) * -0.15, new Rotation3d())
-        });
+    robotContainer.getVisualizer().update();
 
     // Runs the Scheduler. This is responsible for polling buttons, adding
     // newly-scheduled commands, running already-scheduled commands, removing
