@@ -2,7 +2,10 @@ package frc.robot.commands;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -59,166 +62,142 @@ public final class DriveCommands {
   }
 
   // ============================================================
-  // CLIMB DOCKING (SIM SAFE + REAL TUNABLE VERSION)
+  // CLIMB DOCKING (BACK-IN, CLEAN SINGLE-SOURCE VERSION)
   // ============================================================
-
   @SuppressWarnings("resource")
   public static Command dockToClimb(Drive drive, Vision vision) {
 
-    PIDController forward = new PIDController(Constants.Climb.PID.kP_FORWARD, 0, 0);
-    PIDController strafe = new PIDController(Constants.Climb.PID.kP_STRAFE, 0, 0);
-    PIDController turn = new PIDController(Constants.Climb.PID.kP_TURN, 0, 0);
-    turn.enableContinuousInput(-Math.PI, Math.PI);
+    PIDController xPID = new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
+    PIDController yPID = new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
+    PIDController rotPID = new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
 
-    // =========================================================
-    // 🧠 MEMORY OF TARGET (FIELD-RELATIVE)
-    // =========================================================
-    final Pose2d[] cachedTarget = {null};
-    final double[] smoothX = {0}, smoothY = {0}, smoothRot = {0};
+    rotPID.enableContinuousInput(-Math.PI, Math.PI);
 
     return Commands.runEnd(
         () -> {
-          Pose2d robotPose = drive.getPose(); // odometry anchor
-          Optional<Transform2d> visionOpt = vision.getDockingTarget();
-
-          boolean hasVision = visionOpt.isPresent();
 
           // =========================================================
-          // 🧭 BUILD / UPDATE TARGET MEMORY
+          // 1. ROBOT POSE
           // =========================================================
-          if (hasVision) {
-            Transform2d robotToTag = visionOpt.get();
+          Pose2d robotPose = drive.getPose();
 
-            Pose2d measuredFieldTarget =
-                robotPose.transformBy(robotToTag); // convert to field frame
+          // =========================================================
+          // 2. TAG POSE
+          // =========================================================
+          Optional<Pose2d> tagOpt = vision.getClimbTagPose();
 
-            if (cachedTarget[0] == null) {
-              cachedTarget[0] = measuredFieldTarget;
-            } else {
-              // slow correction of memory (prevents jitter injection)
-              double blend = 0.15;
-
-              cachedTarget[0] =
-                  new Pose2d(
-                      cachedTarget[0].getX() * (1 - blend) + measuredFieldTarget.getX() * blend,
-                      cachedTarget[0].getY() * (1 - blend) + measuredFieldTarget.getY() * blend,
-                      new Rotation2d(
-                          cachedTarget[0].getRotation().getRadians() * (1 - blend)
-                              + measuredFieldTarget.getRotation().getRadians() * blend));
-            }
-          }
-
-          if (cachedTarget[0] == null) {
-            drive.runVelocity(new ChassisSpeeds(0, 0, 0));
+          if (tagOpt.isEmpty()) {
+            drive.stop();
             Logger.recordOutput("Dock/HasTarget", false);
             return;
           }
 
-          Pose2d target = cachedTarget[0];
+          Pose2d tagPose = tagOpt.get();
 
           // =========================================================
-          // 🧭 ERROR IN FIELD SPACE (stable)
+          // 3. TUNABLE OFFSET (ONLY SOURCE OF GOAL POSITION)
           // =========================================================
-          double dx = target.getX() - robotPose.getX();
-          double dy = target.getY() - robotPose.getY();
+          double forward = Constants.Climb.Vision.targetForward.get();
+          double strafe = Constants.Climb.Vision.targetStrafe.get();
+          double yawDeg = Constants.Climb.Vision.targetYawDeg.get();
 
-          double thetaErr =
+          Logger.recordOutput("Dock/TargetForward", forward);
+          Logger.recordOutput("Dock/TargetStrafe", strafe);
+          Logger.recordOutput("Dock/TargetYawDeg", yawDeg);
+
+          // =========================================================
+          // 4. BUILD GOAL POSE (FIELD FRAME)
+          // =========================================================
+          Transform2d tagToGoal =
+              new Transform2d(new Translation2d(forward, strafe), Rotation2d.fromDegrees(yawDeg));
+
+          Pose2d goalPose = tagPose.transformBy(tagToGoal);
+
+          // =========================================================
+          // 5. BACK-IN HEADING (STABLE, NO SELF-FIGHTING)
+          //
+          // Robot should face AWAY from tag while docking
+          // =========================================================
+          Translation2d goalToTag = tagPose.getTranslation().minus(goalPose.getTranslation());
+
+          Rotation2d faceTag = new Rotation2d(Math.atan2(goalToTag.getY(), goalToTag.getX()));
+
+          Rotation2d backInHeading = faceTag.rotateBy(Rotation2d.kPi);
+
+          Pose2d finalGoal = new Pose2d(goalPose.getTranslation(), backInHeading);
+
+          // =========================================================
+          // 6. ERROR (FIELD SPACE)
+          // =========================================================
+          double errorX = finalGoal.getX() - robotPose.getX();
+          double errorY = finalGoal.getY() - robotPose.getY();
+
+          double errorTheta =
               MathUtil.angleModulus(
-                  target.getRotation().getRadians() - robotPose.getRotation().getRadians());
+                  finalGoal.getRotation().getRadians() - robotPose.getRotation().getRadians());
 
-          double dist = Math.hypot(dx, dy);
+          double distance = Math.hypot(errorX, errorY);
 
-          // =========================================================
-          // 🧠 PHASE LOGIC
-          // =========================================================
-          boolean lockPhase = dist < 0.10;
-          boolean creepPhase = dist < 0.45;
-
-          double scale;
-          double maxXY;
-          double maxOmega;
-
-          if (lockPhase) {
-            scale = 0.12;
-            maxXY = 0.06;
-            maxOmega = 0.10;
-          } else if (creepPhase) {
-            scale = 0.35;
-            maxXY = 0.22;
-            maxOmega = 0.40;
-          } else {
-            scale = 1.0;
-            maxXY = 0.8;
-            maxOmega = 1.2;
-          }
+          Logger.recordOutput("Dock/GoalPose", goalPose);
+          Logger.recordOutput("Dock/FinalGoalPose", finalGoal);
+          Logger.recordOutput("Dock/ErrorX", errorX);
+          Logger.recordOutput("Dock/ErrorY", errorY);
+          Logger.recordOutput("Dock/Distance", distance);
 
           // =========================================================
-          // 🧽 SOFT FILTERING (extra stability in creep/lock)
+          // 7. SPEED LIMITS (PREVENT OVERSHOOT / OSCILLATION)
           // =========================================================
-          double alpha = lockPhase ? 0.20 : 0.35;
+          boolean slow = distance < Constants.Climb.Vision.SLOW_MODE_DISTANCE;
 
-          smoothX[0] = alpha * dx + (1 - alpha) * smoothX[0];
-          smoothY[0] = alpha * dy + (1 - alpha) * smoothY[0];
-          smoothRot[0] = alpha * thetaErr + (1 - alpha) * smoothRot[0];
+          double maxLinear =
+              slow
+                  ? Constants.Climb.Vision.SLOW_MAX_LINEAR
+                  : Constants.Climb.Vision.FAST_MAX_LINEAR;
 
-          // =========================================================
-          // CONTROL
-          // =========================================================
-          double vx = forward.calculate(0, smoothX[0]) * scale;
-          double vy = strafe.calculate(0, smoothY[0]) * scale;
-          double omega = turn.calculate(0, smoothRot[0]);
-
-          vx = MathUtil.clamp(vx, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
-
-          vy = MathUtil.clamp(vy, -maxXY, maxXY) * drive.getMaxLinearSpeedMetersPerSec();
-
-          omega = MathUtil.clamp(omega, -maxOmega, maxOmega) * drive.getMaxAngularSpeedRadPerSec();
+          double maxOmega =
+              slow ? Constants.Climb.Vision.SLOW_MAX_OMEGA : Constants.Climb.Vision.FAST_MAX_OMEGA;
 
           // =========================================================
-          // 🪶 FINAL HOLD STABILITY
+          // 8. PID CONTROL
           // =========================================================
-          if (lockPhase) {
-            if (Math.abs(smoothX[0]) < 0.02) vx = 0;
-            if (Math.abs(smoothY[0]) < 0.02) vy = 0;
-            if (Math.abs(smoothRot[0]) < Math.toRadians(1.5)) omega = 0;
-          }
+          double vx =
+              MathUtil.clamp(
+                  xPID.calculate(robotPose.getX(), finalGoal.getX()), -maxLinear, maxLinear);
 
-          drive.runVelocity(new ChassisSpeeds(vx, vy, omega));
+          double vy =
+              MathUtil.clamp(
+                  yPID.calculate(robotPose.getY(), finalGoal.getY()), -maxLinear, maxLinear);
+
+          double omega =
+              MathUtil.clamp(
+                  rotPID.calculate(
+                      robotPose.getRotation().getRadians(), finalGoal.getRotation().getRadians()),
+                  -maxOmega,
+                  maxOmega);
 
           // =========================================================
-          // LOGGING
+          // 9. DRIVE
           // =========================================================
-          Logger.recordOutput("Dock/Dist", dist);
-          Logger.recordOutput("Dock/LockPhase", lockPhase);
-          Logger.recordOutput("Dock/CreepPhase", creepPhase);
-          Logger.recordOutput("Dock/TargetX", target.getX());
-          Logger.recordOutput("Dock/TargetY", target.getY());
+          drive.runVelocity(
+              ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, omega, robotPose.getRotation()));
         },
-        () -> {
-          drive.stop();
-          cachedTarget[0] = null;
-        },
+        drive::stop,
         drive);
   }
 
-  // ============================================================
-  // Temporary Command to Tune Docking Vision Target (REAL ROBOT ONLY
-  // - SIM USES RAW MEASUREMENT AS TARGET)
-  // ============================================================
-
   public static Command logDockingPoseOnce(Vision vision) {
     return Commands.runOnce(
-        () -> {
-          vision
-              .getDockingTarget()
-              .ifPresent(
-                  transform -> {
-                    Logger.recordOutput("Dock/RawForward", transform.getX());
-                    Logger.recordOutput("Dock/RawStrafe", transform.getY());
-                    Logger.recordOutput("Dock/RawYawDeg", transform.getRotation().getDegrees());
-                  });
-        });
+        () ->
+            vision
+                .getDockingTarget()
+                .ifPresent(
+                    transform -> {
+                      Logger.recordOutput("Dock/RawForward", transform.getX());
+                      Logger.recordOutput("Dock/RawStrafe", transform.getY());
+                      Logger.recordOutput("Dock/RawYawDeg", transform.getRotation().getDegrees());
+                    }));
   }
+
   // ============================================================
   // SIMPLE DRIVE TO POSE COMMAND (FOR TESTING / TUNING ONLY)
   // ============================================================

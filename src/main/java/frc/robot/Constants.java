@@ -268,10 +268,10 @@ public final class Constants {
       // ===================================================
 
       public static final LoggedNetworkNumber targetForward =
-          new LoggedNetworkNumber("Tuning/Climb/TargetForward", 1.110);
+          new LoggedNetworkNumber("Tuning/Climb/TargetForward", 1.126);
 
       public static final LoggedNetworkNumber targetStrafe =
-          new LoggedNetworkNumber("Tuning/Climb/TargetStrafe", 0.14);
+          new LoggedNetworkNumber("Tuning/Climb/TargetStrafe", 0.237);
 
       public static final LoggedNetworkNumber targetYawDeg =
           new LoggedNetworkNumber("Tuning/Climb/TargetYawDeg", -180);

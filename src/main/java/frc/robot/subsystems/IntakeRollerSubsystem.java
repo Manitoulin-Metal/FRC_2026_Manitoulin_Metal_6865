@@ -128,7 +128,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
       case INTAKE -> {
         setVelocity(Constants.Intake.INTAKE_RPM);
 
-        // 🐝 LED ONLY ACTIVE DURING INTAKE
+        // LED ONLY ACTIVE DURING INTAKE
         led.requestState(LEDSubsystem.LEDState.INTAKING);
 
         // -------- JAM DETECTION (FIXED TIMER LOGIC) --------

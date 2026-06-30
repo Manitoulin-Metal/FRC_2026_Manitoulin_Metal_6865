@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.subsystems.drive.Drive;
 import java.util.*;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
@@ -28,8 +27,7 @@ public class Vision extends SubsystemBase {
 
   private boolean enabled = true;
 
-  public Vision(
-      VisionConsumer consumer, Supplier<Pose2d> robotPoseSupplier, Drive drive, VisionIO... io) {
+  public Vision(VisionConsumer consumer, Supplier<Pose2d> robotPoseSupplier, VisionIO... io) {
 
     this.consumer = consumer;
     this.robotPoseSupplier = robotPoseSupplier;
@@ -46,7 +44,7 @@ public class Vision extends SubsystemBase {
   }
 
   // ==========================================================
-  // BASIC HELPERS
+  // BASIC ANGLE HELPERS (rear camera)
   // ==========================================================
 
   public double getTX() {
@@ -58,13 +56,12 @@ public class Vision extends SubsystemBase {
   }
 
   // ==========================================================
-  // BEST POSE
+  // BEST POSE ESTIMATE (FIXED + RESTORED)
   // ==========================================================
 
   public Optional<Pose2d> getBestEstimatedPose() {
     Optional<Pose2d> front = getLatestPose(FRONT_CAMERA);
     if (front.isPresent()) return front;
-
     return getLatestPose(REAR_CAMERA);
   }
 
@@ -82,78 +79,35 @@ public class Vision extends SubsystemBase {
   }
 
   // ==========================================================
-  // DOCK TARGET (UNIFIED)
+  // CLIMB TAG POSE (FIELD FIXED)
   // ==========================================================
-  public Optional<Transform2d> getDockingTarget() {
 
-    // =========================
-    // SIMULATION
-    // =========================
-    if (Constants.currentMode == Constants.Mode.SIM) {
+  public Optional<Pose2d> getClimbTagPose() {
 
-      Pose2d robotPose = robotPoseSupplier.get();
-      if (robotPose == null) return Optional.empty();
-
-      int tagId =
-          DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
-              ? Constants.Climb.Hardware.CLIMB_TAG_IDS[1]
-              : Constants.Climb.Hardware.CLIMB_TAG_IDS[0];
-
-      var tagOpt = VisionConstants.aprilTagLayout.getTagPose(tagId);
-      if (tagOpt.isEmpty()) return Optional.empty();
-
-      Pose2d tagPose = tagOpt.get().toPose2d();
-
-      // =========================================================
-      // CORRECT SIMULATION OF LIMELIGHT TARGET SPACE
-      // =========================================================
-
-      Transform2d robotToTag = new Transform2d(robotPose, tagPose);
-
-      Logger.recordOutput("Dock/RawForward", robotToTag.getX());
-      Logger.recordOutput("Dock/RawStrafe", robotToTag.getY());
-      Logger.recordOutput("Dock/RawYawDeg", robotToTag.getRotation().getDegrees());
-
-      return Optional.of(robotToTag);
-    }
-
-    // =========================
-    // REAL LIMELIGHT
-    // =========================
-
-    // =========================
-    // REAL LIMELIGHT
-    // =========================
-
-    Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-    int desiredTag =
-        alliance == Alliance.Red
+    int tagId =
+        DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
             ? Constants.Climb.Hardware.CLIMB_TAG_IDS[1]
             : Constants.Climb.Hardware.CLIMB_TAG_IDS[0];
 
-    double seenTag = LimelightHelpers.getFiducialID(Constants.Climb.Vision.REAR_LIMELIGHT);
+    return VisionConstants.aprilTagLayout.getTagPose(tagId).map(Pose3d::toPose2d);
+  }
 
-    if ((int) seenTag != desiredTag) return Optional.empty();
+  // ==========================================================
+  // DOCKING TARGET (RAW LIMELIGHT SPACE ONLY)
+  // ==========================================================
+
+  public Optional<Transform2d> getDockingTarget() {
 
     double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
 
     if (pose == null || pose.length < 6) return Optional.empty();
 
-    // LIMELIGHT TARGET SPACE (confirmed mapping)
-    double strafe = pose[0]; // left/right
-    double forward = -pose[2]; // forward/back corrected sign
+    double strafe = pose[0];
+    double forward = -pose[2];
     double yawDeg = pose[5];
 
-    // optional stability (tiny smoothing even here helps)
-    Transform2d robotToTag =
-        new Transform2d(new Translation2d(forward, strafe), Rotation2d.fromDegrees(yawDeg));
-
-    // log real too (important for consistency)
-    Logger.recordOutput("Dock/RawForward", pose[0]);
-    Logger.recordOutput("Dock/RawStrafe", pose[2]);
-    Logger.recordOutput("Dock/RawYawDeg", pose[5]);
-
-    return Optional.of(robotToTag);
+    return Optional.of(
+        new Transform2d(new Translation2d(forward, strafe), Rotation2d.fromDegrees(yawDeg)));
   }
 
   // ==========================================================
@@ -164,37 +118,6 @@ public class Vision extends SubsystemBase {
   public void periodic() {
 
     if (!enabled) return;
-
-    // ==========================================================
-    // LIMELIGHT DEBUG
-    // ==========================================================
-
-    Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-
-    int desiredTag =
-        alliance == Alliance.Red
-            ? Constants.Climb.Hardware.CLIMB_TAG_IDS[1]
-            : Constants.Climb.Hardware.CLIMB_TAG_IDS[0];
-
-    double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
-
-    boolean valid = pose != null && pose.length >= 6;
-
-    Logger.recordOutput("LL/PoseValid", valid);
-
-    if (valid) {
-      double strafe = pose[0];
-      double forward = -pose[2];
-      double yaw = pose[5];
-
-      Logger.recordOutput("LL/RawStrafe", strafe);
-      Logger.recordOutput("LL/RawForward", forward);
-      Logger.recordOutput("LL/RawYaw", yaw);
-
-      Logger.recordOutput("Dock/TestForward", forward);
-      Logger.recordOutput("Dock/TestStrafe", strafe);
-      Logger.recordOutput("Dock/TestYawDeg", yaw);
-    }
 
     for (int i = 0; i < io.length; i++) {
       io[i].updateInputs(inputs[i]);

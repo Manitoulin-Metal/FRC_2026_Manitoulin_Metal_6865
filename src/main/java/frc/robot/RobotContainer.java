@@ -86,11 +86,8 @@ public class RobotContainer {
         new Vision(
             drive::addVisionMeasurement,
             () -> drive.getPose(),
-            drive,
             new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
             new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
-
-    drive.setVision(vision);
 
     // ---------------- DEFAULT DRIVE ----------------
     drive.setDefaultCommand(
