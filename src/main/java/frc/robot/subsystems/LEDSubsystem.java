@@ -9,41 +9,29 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class LEDSubsystem extends SubsystemBase {
 
   // =========================================================
-  // LED CONFIG
+  // CONFIG
   // =========================================================
-
   private static final int PWM_PORT = 9;
   private static final int LED_LENGTH = 100;
 
   private final AddressableLED led;
   private final AddressableLEDBuffer buffer;
 
-  // =========================================================
-  // ANIMATION STATE
-  // =========================================================
-
   private int tick = 0;
 
   // =========================================================
-  // LED STATES
+  // STATE MACHINE
   // =========================================================
-
   public enum LEDState {
-    DISABLED(10),
-    ENABLED(20),
-    INTAKING(60),
-    VISION_LOCK(70),
-    SHOOTER_READY(75),
-    SHOOTING(80),
-    CLIMBING_UP(90),
-    CLIMBING_DOWN(90),
-    ENDGAME(100);
-
-    public final int priority;
-
-    LEDState(int priority) {
-      this.priority = priority;
-    }
+    DISABLED,
+    ENABLED,
+    INTAKING,
+    VISION_LOCK,
+    SHOOTER_READY,
+    SHOOTING,
+    CLIMBING_UP,
+    CLIMBING_DOWN,
+    ENDGAME
   }
 
   private LEDState currentState = LEDState.DISABLED;
@@ -51,343 +39,143 @@ public class LEDSubsystem extends SubsystemBase {
   // =========================================================
   // CONSTRUCTOR
   // =========================================================
-
   public LEDSubsystem() {
-
     led = new AddressableLED(PWM_PORT);
     buffer = new AddressableLEDBuffer(LED_LENGTH);
 
     led.setLength(buffer.getLength());
-    led.setData(buffer);
     led.start();
   }
 
   // =========================================================
-  // STATE CONTROL
+  // PUBLIC CONTROL
   // =========================================================
-
-  public void requestState(LEDState newState) {
-
-    if (newState.priority >= currentState.priority) {
-      currentState = newState;
-    }
+  public void requestState(LEDState state) {
+    // simple override model (no priority bugs)
+    currentState = state;
   }
 
-  public void clearState(LEDState state) {
+  public void clearToDefault() {
+    currentState = DriverStation.isDisabled() ? LEDState.DISABLED : LEDState.ENABLED;
+  }
 
-    if (currentState == state) {
-
-      if (DriverStation.isDisabled()) {
-        currentState = LEDState.DISABLED;
-      } else {
-        currentState = LEDState.ENABLED;
-      }
-    }
+  public LEDState getState() {
+    return currentState;
   }
 
   // =========================================================
   // PERIODIC
   // =========================================================
-
   @Override
   public void periodic() {
-
     tick++;
 
-    // =======================================================
-    // BASE STATE MANAGEMENT
-    // =======================================================
-
+    // base safety behavior
     if (DriverStation.isDisabled()) {
-
       currentState = LEDState.DISABLED;
-
-    } else if (currentState == LEDState.DISABLED) {
-
-      currentState = LEDState.ENABLED;
     }
 
-    // =======================================================
-    // ENDGAME AUTO OVERRIDE
-    // =======================================================
-
+    // endgame override (centralized here ONLY)
     if (DriverStation.isTeleopEnabled()) {
-
-      double matchTime = DriverStation.getMatchTime();
-
-      // Automatically override during endgame
-      if (matchTime > 0 && matchTime <= 20) {
-
+      double t = DriverStation.getMatchTime();
+      if (t > 0 && t <= 20) {
         currentState = LEDState.ENDGAME;
       }
     }
 
-    // =======================================================
-    // STATE MACHINE
-    // =======================================================
-
     switch (currentState) {
-      case DISABLED:
-        beeIdlePattern();
-        break;
-
-      case ENABLED:
-        queenBeePulse();
-        break;
-
-      case INTAKING:
-        nectarFlow();
-        break;
-
-      case VISION_LOCK:
-        visionLock();
-        break;
-
-      case SHOOTER_READY:
-        shooterReady();
-        break;
-
-      case SHOOTING:
-        stingerFire();
-        break;
-
-      case CLIMBING_UP:
-        climbingUpPattern();
-        break;
-
-      case CLIMBING_DOWN:
-        climbingDownPattern();
-        break;
-
-      case ENDGAME:
-        endgamePulse();
-        break;
+      case DISABLED -> beeIdle();
+      case ENABLED -> queenPulse();
+      case INTAKING -> nectarFlow();
+      case VISION_LOCK -> visionLock();
+      case SHOOTER_READY -> shooterReady();
+      case SHOOTING -> stingerFire();
+      case CLIMBING_UP -> rainbow(0.75);
+      case CLIMBING_DOWN -> rainbow(3.0);
+      case ENDGAME -> endgamePulse();
     }
   }
 
-  // // =========================================================
-  // // DISABLED - HIVE IDLE
-  // // =========================================================
+  // =========================================================
+  // PATTERNS
+  // =========================================================
 
-  // private void beeIdlePattern() {
-
-  //   for (int i = 0; i < buffer.getLength(); i++) {
-
-  //     double wave = 0.5 + 0.5 * Math.sin((i * 0.18) + (tick * 0.03));
-
-  //     Color color;
-
-  //     if (wave > 0.72) {
-
-  //       // warm honey gold
-  //       color = new Color(0.95, 0.72, 0.18);
-
-  //     } else if (wave > 0.48) {
-
-  //       // amber
-  //       color = new Color(0.75, 0.45, 0.08);
-
-  //     } else if (wave > 0.28) {
-
-  //       // dim gold
-  //       color = new Color(0.38, 0.28, 0.05);
-
-  //     } else {
-
-  //       // soft shadow
-  //       color = new Color(0.02, 0.015, 0.005);
-  //     }
-
-  //     buffer.setLED(i, color);
-  //   }
-
-  //   push();
-  // }
-
-  private void beeIdlePattern() {
-
+  private void beeIdle() {
     for (int i = 0; i < buffer.getLength(); i++) {
-
       double wave = 0.5 + 0.5 * Math.sin((i * 0.18) + (tick * 0.03));
 
-      Color color;
+      Color c = (wave > 0.5) ? new Color(0, 0.76, 0.67) : new Color(0, 0.55, 0.45);
 
-      if (wave > 0.72) {
-
-        // warm honey gold
-        color = new Color(0, 0.76, 0.67);
-
-      } else if (wave > 0.48) {
-
-        // amber
-        color = new Color(0, 0.76, 0.67);
-
-      } else if (wave > 0.28) {
-
-        // dim gold
-        color = new Color(0, 0.76, 0.67);
-
-      } else {
-
-        // soft shadow
-        color = new Color(0, 0.76, 0.67);
-      }
-
-      buffer.setLED(i, color);
+      buffer.setLED(i, c);
     }
-
     push();
   }
 
-  // =========================================================
-  // ENABLED - QUEEN BEE
-  // =========================================================
-
-  private void queenBeePulse() {
-
-    double pulse = 0.35 + 0.15 * Math.sin(tick * 0.04);
-
-    Color color = new Color(pulse, pulse * 0.75, 0.08);
-
-    solid(color);
+  private void queenPulse() {
+    double p = 0.35 + 0.15 * Math.sin(tick * 0.04);
+    solid(new Color(p, p * 0.75, 0.08));
   }
-
-  // =========================================================
-  // INTAKING - NECTAR FLOW
-  // =========================================================
 
   private void nectarFlow() {
-
     for (int i = 0; i < buffer.getLength(); i++) {
-
       double wave = 0.5 + 0.5 * Math.sin((i * 0.45) - (tick * 0.25));
-
-      Color color = new Color(0.0, wave * 0.8, 0.05);
-
-      buffer.setLED(i, color);
+      buffer.setLED(i, new Color(0.0, wave * 0.8, 0.05));
     }
-
     push();
   }
-
-  // =========================================================
-  // VISION LOCK
-  // =========================================================
 
   private void visionLock() {
-
-    double pulse = 0.5 + 0.5 * Math.sin(tick * 0.12);
-
-    solid(new Color(pulse, pulse * 0.8, 0.1));
+    double p = 0.5 + 0.5 * Math.sin(tick * 0.12);
+    solid(new Color(p, p * 0.8, 0.1));
   }
-
-  // =========================================================
-  // SHOOTER READY
-  // =========================================================
 
   private void shooterReady() {
-
-    double pulse = 0.4 + 0.4 * Math.sin(tick * 0.18);
-
-    solid(new Color(pulse, pulse * 0.45, 0.0));
+    double p = 0.4 + 0.4 * Math.sin(tick * 0.18);
+    solid(new Color(p, p * 0.45, 0.0));
   }
 
-  // =========================================================
-  // SHOOTING - STINGER FIRE
-  // =========================================================
-
   private void stingerFire() {
-
     for (int i = 0; i < buffer.getLength(); i++) {
-
       double wave = 0.5 + 0.5 * Math.sin((i * 0.8) - (tick * 0.7));
 
-      Color color;
+      Color c;
+      if (wave > 0.7) c = Color.kWhite;
+      else if (wave > 0.4) c = new Color(1.0, 0.45, 0.0);
+      else c = new Color(0.25, 0.08, 0.0);
 
-      if (wave > 0.7) {
-
-        color = Color.kWhite;
-
-      } else if (wave > 0.4) {
-
-        color = new Color(1.0, 0.45, 0.0);
-
-      } else {
-
-        color = new Color(0.25, 0.08, 0.0);
-      }
-
-      buffer.setLED(i, color);
+      buffer.setLED(i, c);
     }
-
     push();
   }
 
-  // =========================================================
-  // CLIMBING - Up and Down can share the same pattern but with different speeds
-  // =========================================================
-
-  private void climbingUpPattern() {
-    rainbowChase(0.75); // slow
+  private void rainbow(double speed) {
+    for (int i = 0; i < buffer.getLength(); i++) {
+      int hue = (int) ((i * 180.0 / buffer.getLength()) + (tick * speed)) % 180;
+      buffer.setHSV(i, hue, 255, 128);
+    }
+    push();
   }
-
-  private void climbingDownPattern() {
-    rainbowChase(3.0); // fast
-  }
-
-  // =========================================================
-  // ENDGAME
-  // =========================================================
 
   private void endgamePulse() {
+    double t = DriverStation.getMatchTime();
+    double speed = (t <= 10) ? 0.45 : 0.20;
 
-    double matchTime = DriverStation.getMatchTime();
-
-    double speed;
-
-    // Final 10 seconds = faster pulse
-    if (matchTime <= 10) {
-
-      speed = 0.45;
-
-    } else {
-
-      speed = 0.20;
-    }
-
-    double pulse = 0.5 + 0.5 * Math.sin(tick * speed);
-
-    Color color = new Color(pulse, pulse * 0.55, 0.02);
-
-    solid(color);
+    double p = 0.5 + 0.5 * Math.sin(tick * speed);
+    solid(new Color(p, p * 0.55, 0.02));
   }
 
   // =========================================================
   // HELPERS
   // =========================================================
 
-  private void solid(Color color) {
-
+  private void solid(Color c) {
     for (int i = 0; i < buffer.getLength(); i++) {
-      buffer.setLED(i, color);
+      buffer.setLED(i, c);
     }
-
     push();
   }
 
   private void push() {
     led.setData(buffer);
-  }
-
-  private void rainbowChase(double speed) {
-
-    for (int i = 0; i < buffer.getLength(); i++) {
-
-      int hue = (int) ((i * 180.0 / buffer.getLength()) + (tick * speed)) % 180;
-
-      buffer.setHSV(i, hue, 255, 128);
-    }
-
-    push();
   }
 }

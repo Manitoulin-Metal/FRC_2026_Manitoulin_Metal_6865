@@ -117,12 +117,12 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     switch (currentMode) {
       case IDLE -> {
         setVelocity(Constants.Intake.IDLE_RPM);
-        led.clearState(LEDSubsystem.LEDState.INTAKING);
+        led.requestState(LEDSubsystem.LEDState.INTAKING);
       }
 
       case REVERSE -> {
         setVelocity(Constants.Intake.REVERSE_RPM);
-        led.clearState(LEDSubsystem.LEDState.INTAKING);
+        led.requestState(LEDSubsystem.LEDState.INTAKING);
       }
 
       case INTAKE -> {

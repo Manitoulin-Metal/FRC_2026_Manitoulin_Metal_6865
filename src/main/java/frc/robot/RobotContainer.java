@@ -2,7 +2,6 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.path.PathConstraints;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.*;
@@ -18,6 +17,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.*;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.vision.*;
+import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.*;
 
@@ -66,11 +66,28 @@ public class RobotContainer {
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
+  // ============================================================
+  // ENDGAME CONFIG
+  // ============================================================
+
   private final LoggedNetworkNumber endgameAlert1 =
       new LoggedNetworkNumber("/Tuning/Endgame Alert 20", 20.0);
 
   private final LoggedNetworkNumber endgameAlert2 =
       new LoggedNetworkNumber("/Tuning/Endgame Alert 10", 10.0);
+
+  // ============================================================
+  // ENDGAME STATE MACHINE
+  // ============================================================
+
+  private enum EndgameState {
+    NONE,
+    WARNING_20,
+    WARNING_10,
+    CRITICAL
+  }
+
+  private EndgameState endgameState = EndgameState.NONE;
 
   // ============================================================
   // CONSTRUCTOR
@@ -153,7 +170,7 @@ public class RobotContainer {
     // wraps command with a check to see if
     // climber is homed before raising hook
     // NamedCommands.registerCommand(
-    //         "ClimbAutoUp",
+    // "ClimbAutoUp",
     //
     // ClimbCommands.waitForHome(climb).andThen(ClimbCommands.hookUp(climb).withTimeout(3.0)));
 
@@ -177,39 +194,18 @@ public class RobotContainer {
   }
 
   private Command visionTestCommand() {
+
     return Commands.runOnce(
         () -> {
-          Pose2d tagPose = vision.getBestEstimatedPose().orElse(null);
+          Optional<Pose2d> opt = vision.getDockingPose();
 
-          if (tagPose == null) {
-            System.out.println("No vision pose detected");
+          if (opt.isEmpty()) {
             return;
           }
 
-          // Tag 32 assumed already filtered by Vision system OR you verify externally
-          Translation2d offset =
-              new Translation2d(1.0, 0.25); // 1m forward, 0.25m left (field frame)
+          Pose2d tagPose = opt.get();
 
-          Pose2d targetPose =
-              new Pose2d(
-                  tagPose.getX() + offset.getX(),
-                  tagPose.getY() + offset.getY(),
-                  tagPose.getRotation().plus(Rotation2d.fromDegrees(180)));
-
-          System.out.println("Vision test target: " + targetPose);
-
-          // Use PathPlanner built-in pathfind (cleanest way in your stack)
-          CommandScheduler.getInstance()
-              .schedule(
-                  AutoBuilder.pathfindToPose(
-                      targetPose,
-                      new PathConstraints(
-                          2.0, // max speed m/s
-                          2.0, // accel
-                          Math.PI, // max angular speed
-                          Math.PI // angular accel
-                          ),
-                      0.0));
+          // rest of your logic...
         },
         drive);
   }
@@ -246,9 +242,10 @@ public class RobotContainer {
     operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
     operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
 
-    operator.pov(0).whileTrue(ClimbCommands.hookUp(climb)).onFalse(ClimbCommands.stop(climb));
-
-    operator.pov(180).whileTrue(ClimbCommands.climbDown(climb)).onFalse(ClimbCommands.stop(climb));
+    operator.pov(0).onTrue(Commands.runOnce(climb::moveDown, climb));
+    operator.pov(180).onTrue(Commands.runOnce(climb::moveUp, climb));
+    operator.pov(0).onFalse(Commands.runOnce(climb::stop, climb));
+    operator.pov(180).onFalse(Commands.runOnce(climb::stop, climb));
 
     operator.leftTrigger(0.1).toggleOnTrue(intakeRoller.intakeToggleCommand());
 
@@ -281,24 +278,61 @@ public class RobotContainer {
   }
 
   // ============================================================
-  // PERIODIC (VISION + RUMBLE)
+  // PERIODIC
   // ============================================================
   public void periodic() {
 
-    // ---------------- ENDGAME RUMBLE (FIXED) ----------------
+    visualizer.update();
     double matchTime = DriverStation.getMatchTime();
+    boolean active = DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled();
 
-    boolean validMatch = DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled();
+    EndgameState newState = EndgameState.NONE;
 
-    boolean alert20 = validMatch && matchTime > 0 && matchTime <= endgameAlert1.get();
-    boolean alert10 = validMatch && matchTime > 0 && matchTime <= endgameAlert2.get();
+    if (active && matchTime > 0) {
+      if (matchTime <= 10) {
+        newState = EndgameState.CRITICAL;
+      } else if (matchTime <= 20) {
+        newState = EndgameState.WARNING_10;
+      } else {
+        newState = EndgameState.WARNING_20;
+      }
+    }
 
-    double rumble = (alert20 || alert10) ? 0.6 : 0.0;
+    if (newState != endgameState) {
+      endgameState = newState;
 
-    driver.getHID().setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kBothRumble, rumble);
+      Logger.recordOutput("Match/EndgameState", endgameState.toString());
 
-    // ---------------- LOGGER ----------------
-    Logger.recordOutput("Match/Alert20", alert20);
-    Logger.recordOutput("Match/Alert10", alert10);
+      switch (endgameState) {
+        case WARNING_20 -> {
+          led.requestState(LEDSubsystem.LEDState.ENDGAME);
+        }
+
+        case WARNING_10 -> {
+          led.requestState(LEDSubsystem.LEDState.ENDGAME);
+          driver
+              .getHID()
+              .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kBothRumble, 0.4);
+        }
+
+        case CRITICAL -> {
+          led.requestState(LEDSubsystem.LEDState.ENDGAME);
+          driver
+              .getHID()
+              .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kBothRumble, 0.8);
+        }
+
+        case NONE -> {
+          driver
+              .getHID()
+              .setRumble(edu.wpi.first.wpilibj.XboxController.RumbleType.kBothRumble, 0.0);
+          led.clearToDefault();
+        }
+      }
+    }
+
+    Logger.recordOutput("Match/Alert20", endgameState == EndgameState.WARNING_20);
+    Logger.recordOutput("Match/Alert10", endgameState == EndgameState.WARNING_10);
+    Logger.recordOutput("Match/CRITICAL", endgameState == EndgameState.CRITICAL);
   }
 }

@@ -111,8 +111,8 @@ public final class ShooterCommands {
               whip.stop();
 
               // clear shooting states
-              led.clearState(LEDSubsystem.LEDState.SHOOTING);
-              led.clearState(LEDSubsystem.LEDState.SHOOTER_READY);
+              led.requestState(LEDSubsystem.LEDState.SHOOTING);
+              led.requestState(LEDSubsystem.LEDState.SHOOTER_READY);
             });
   }
 

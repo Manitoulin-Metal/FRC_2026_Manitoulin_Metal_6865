@@ -1,11 +1,7 @@
 package frc.robot.commands;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -14,7 +10,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
-import java.util.Optional;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public final class DriveCommands {
@@ -35,28 +32,32 @@ public final class DriveCommands {
 
   public static Command joystickDrive(
       Drive drive,
-      java.util.function.DoubleSupplier xSupplier,
-      java.util.function.DoubleSupplier ySupplier,
-      java.util.function.DoubleSupplier omegaSupplier,
-      java.util.function.Supplier<Boolean> robotCentricSupplier) {
+      DoubleSupplier xSupplier,
+      DoubleSupplier ySupplier,
+      DoubleSupplier omegaSupplier,
+      Supplier<Boolean> robotCentricSupplier) {
 
     return Commands.run(
         () -> {
           double x = MathUtil.applyDeadband(xSupplier.getAsDouble(), 0.05);
           double y = MathUtil.applyDeadband(ySupplier.getAsDouble(), 0.05);
           double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), 0.05);
+
+          x *= drive.getMaxLinearSpeedMetersPerSec();
+          y *= drive.getMaxLinearSpeedMetersPerSec();
+          omega *= drive.getMaxAngularSpeedRadPerSec();
+
+          Rotation2d heading =
+              DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+                  ? drive.getRotation().plus(Rotation2d.fromDegrees(180))
+                  : drive.getRotation();
+
           ChassisSpeeds speeds =
-              new ChassisSpeeds(
-                  x * drive.getMaxLinearSpeedMetersPerSec(),
-                  y * drive.getMaxLinearSpeedMetersPerSec(),
-                  omega * drive.getMaxAngularSpeedRadPerSec());
+              robotCentricSupplier.get()
+                  ? new ChassisSpeeds(x, y, omega)
+                  : ChassisSpeeds.fromFieldRelativeSpeeds(x, y, omega, heading);
 
-          boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
-
-          drive.runVelocity(
-              ChassisSpeeds.fromFieldRelativeSpeeds(
-                  speeds,
-                  isRed ? drive.getRotation().plus(new Rotation2d(Math.PI)) : drive.getRotation()));
+          drive.runVelocity(speeds);
         },
         drive);
   }
@@ -64,138 +65,79 @@ public final class DriveCommands {
   // ============================================================
   // CLIMB DOCKING (BACK-IN, CLEAN SINGLE-SOURCE VERSION)
   // ============================================================
-  @SuppressWarnings("resource")
+
   public static Command dockToClimb(Drive drive, Vision vision) {
 
-    PIDController xPID = new PIDController(Constants.Climb.PID.kP_FORWARD, 0.0, 0.0);
-    PIDController yPID = new PIDController(Constants.Climb.PID.kP_STRAFE, 0.0, 0.0);
-    PIDController rotPID = new PIDController(Constants.Climb.PID.kP_TURN, 0.0, 0.0);
-
-    rotPID.enableContinuousInput(-Math.PI, Math.PI);
-
     return Commands.runEnd(
-        () -> {
+            () -> {
+              Pose2d target = vision.getDockTargetPose();
+              Pose2d current = drive.getPose();
 
-          // =========================================================
-          // 1. ROBOT POSE
-          // =========================================================
-          Pose2d robotPose = drive.getPose();
+              Translation2d delta = target.getTranslation().minus(current.getTranslation());
 
-          // =========================================================
-          // 2. TAG POSE
-          // =========================================================
-          Optional<Pose2d> tagOpt = vision.getClimbTagPose();
+              double distance = delta.getNorm();
 
-          if (tagOpt.isEmpty()) {
-            drive.stop();
-            Logger.recordOutput("Dock/HasTarget", false);
-            return;
-          }
+              double angleError = target.getRotation().minus(current.getRotation()).getRadians();
 
-          Pose2d tagPose = tagOpt.get();
+              double vx = delta.getX();
+              double vy = delta.getY();
 
-          // =========================================================
-          // 3. TUNABLE OFFSET (ONLY SOURCE OF GOAL POSITION)
-          // =========================================================
-          double forward = Constants.Climb.Vision.targetForward.get();
-          double strafe = Constants.Climb.Vision.targetStrafe.get();
-          double yawDeg = Constants.Climb.Vision.targetYawDeg.get();
+              Rotation2d direction = new Rotation2d(vx, vy);
 
-          Logger.recordOutput("Dock/TargetForward", forward);
-          Logger.recordOutput("Dock/TargetStrafe", strafe);
-          Logger.recordOutput("Dock/TargetYawDeg", yawDeg);
+              double speedScale;
 
-          // =========================================================
-          // 4. BUILD GOAL POSE (FIELD FRAME)
-          // =========================================================
-          Transform2d tagToGoal =
-              new Transform2d(new Translation2d(forward, strafe), Rotation2d.fromDegrees(yawDeg));
+              if (distance > Constants.Climb.Vision.DOCK_SLOW_DISTANCE) {
+                speedScale = Constants.Climb.Vision.DOCK_MAX_SPEED;
+              } else if (distance > Constants.Climb.Vision.DOCK_FINAL_DISTANCE) {
+                speedScale = 0.35;
+              } else {
+                speedScale = Constants.Climb.Vision.DOCK_MIN_SPEED;
+              }
 
-          Pose2d goalPose = tagPose.transformBy(tagToGoal);
+              double vxCmd = direction.getCos() * speedScale;
+              double vyCmd = direction.getSin() * speedScale;
 
-          // =========================================================
-          // 5. BACK-IN HEADING (STABLE, NO SELF-FIGHTING)
-          //
-          // Robot should face AWAY from tag while docking
-          // =========================================================
-          Translation2d goalToTag = tagPose.getTranslation().minus(goalPose.getTranslation());
+              double omegaScale;
 
-          Rotation2d faceTag = new Rotation2d(Math.atan2(goalToTag.getY(), goalToTag.getX()));
+              if (Math.abs(angleError) > Math.toRadians(8)) {
+                omegaScale = Constants.Climb.Vision.DOCK_MAX_OMEGA;
+              } else if (Math.abs(angleError) > Math.toRadians(3)) {
+                omegaScale = 0.4;
+              } else {
+                omegaScale = Constants.Climb.Vision.DOCK_MIN_OMEGA;
+              }
 
-          Rotation2d backInHeading = faceTag.rotateBy(Rotation2d.kPi);
+              double omegaCmd = MathUtil.clamp(angleError * 2.5, -omegaScale, omegaScale);
 
-          Pose2d finalGoal = new Pose2d(goalPose.getTranslation(), backInHeading);
+              if (distance < Constants.Climb.Vision.DOCK_POSITION_DEADBAND) {
+                vxCmd = 0;
+                vyCmd = 0;
+              }
 
-          // =========================================================
-          // 6. ERROR (FIELD SPACE)
-          // =========================================================
-          double errorX = finalGoal.getX() - robotPose.getX();
-          double errorY = finalGoal.getY() - robotPose.getY();
+              if (Math.abs(angleError)
+                  < Math.toRadians(Constants.Climb.Vision.DOCK_ANGLE_DEADBAND)) {
+                omegaCmd = 0;
+              }
 
-          double errorTheta =
-              MathUtil.angleModulus(
-                  finalGoal.getRotation().getRadians() - robotPose.getRotation().getRadians());
+              drive.runVelocity(
+                  new ChassisSpeeds(
+                      vxCmd * drive.getMaxLinearSpeedMetersPerSec(),
+                      vyCmd * drive.getMaxLinearSpeedMetersPerSec(),
+                      omegaCmd * drive.getMaxAngularSpeedRadPerSec()));
 
-          double distance = Math.hypot(errorX, errorY);
-
-          Logger.recordOutput("Dock/GoalPose", goalPose);
-          Logger.recordOutput("Dock/FinalGoalPose", finalGoal);
-          Logger.recordOutput("Dock/ErrorX", errorX);
-          Logger.recordOutput("Dock/ErrorY", errorY);
-          Logger.recordOutput("Dock/Distance", distance);
-
-          // =========================================================
-          // 7. SPEED LIMITS (PREVENT OVERSHOOT / OSCILLATION)
-          // =========================================================
-          boolean slow = distance < Constants.Climb.Vision.SLOW_MODE_DISTANCE;
-
-          double maxLinear =
-              slow
-                  ? Constants.Climb.Vision.SLOW_MAX_LINEAR
-                  : Constants.Climb.Vision.FAST_MAX_LINEAR;
-
-          double maxOmega =
-              slow ? Constants.Climb.Vision.SLOW_MAX_OMEGA : Constants.Climb.Vision.FAST_MAX_OMEGA;
-
-          // =========================================================
-          // 8. PID CONTROL
-          // =========================================================
-          double vx =
-              MathUtil.clamp(
-                  xPID.calculate(robotPose.getX(), finalGoal.getX()), -maxLinear, maxLinear);
-
-          double vy =
-              MathUtil.clamp(
-                  yPID.calculate(robotPose.getY(), finalGoal.getY()), -maxLinear, maxLinear);
-
-          double omega =
-              MathUtil.clamp(
-                  rotPID.calculate(
-                      robotPose.getRotation().getRadians(), finalGoal.getRotation().getRadians()),
-                  -maxOmega,
-                  maxOmega);
-
-          // =========================================================
-          // 9. DRIVE
-          // =========================================================
-          drive.runVelocity(
-              ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, omega, robotPose.getRotation()));
-        },
-        drive::stop,
-        drive);
+              Logger.recordOutput("Dock/Distance", distance);
+              Logger.recordOutput("Dock/AngleErrorDeg", Math.toDegrees(angleError));
+              Logger.recordOutput("Dock/Target", target);
+              Logger.recordOutput("Dock/Robot", current);
+            },
+            () -> drive.stop(),
+            drive)
+        .withName("DockToClimb");
   }
 
   public static Command logDockingPoseOnce(Vision vision) {
     return Commands.runOnce(
-        () ->
-            vision
-                .getDockingTarget()
-                .ifPresent(
-                    transform -> {
-                      Logger.recordOutput("Dock/RawForward", transform.getX());
-                      Logger.recordOutput("Dock/RawStrafe", transform.getY());
-                      Logger.recordOutput("Dock/RawYawDeg", transform.getRotation().getDegrees());
-                    }));
+        () -> Logger.recordOutput("Dock/TargetPose", vision.getDockTargetPose()));
   }
 
   // ============================================================

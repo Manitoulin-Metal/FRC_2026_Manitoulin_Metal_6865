@@ -284,6 +284,18 @@ public final class Constants {
 
       public static final double YAW_TOLERANCE_DEG = 2.0;
 
+      public static final double DOCK_SLOW_DISTANCE = 0.60; // meters
+      public static final double DOCK_FINAL_DISTANCE = 0.15; // meters
+
+      public static final double DOCK_MIN_SPEED = 0.08; // creep speed
+      public static final double DOCK_MAX_SPEED = 0.80;
+
+      public static final double DOCK_MIN_OMEGA = 0.05;
+      public static final double DOCK_MAX_OMEGA = 1.20;
+
+      public static final double DOCK_POSITION_DEADBAND = 0.015;
+      public static final double DOCK_ANGLE_DEADBAND = 1.5; // degrees
+
       // ===================================================
       // SPEED LIMITS
       // ===================================================

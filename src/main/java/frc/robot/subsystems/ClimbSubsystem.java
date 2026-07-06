@@ -165,7 +165,7 @@ public class ClimbSubsystem extends SubsystemBase {
         },
         () -> {
           stop();
-          led.clearState(LEDSubsystem.LEDState.CLIMBING_UP);
+          led.requestState(LEDSubsystem.LEDState.CLIMBING_UP);
         },
         this);
   }
@@ -178,7 +178,7 @@ public class ClimbSubsystem extends SubsystemBase {
         },
         () -> {
           stop();
-          led.clearState(LEDSubsystem.LEDState.CLIMBING_DOWN);
+          led.requestState(LEDSubsystem.LEDState.CLIMBING_DOWN);
         },
         this);
   }
