@@ -263,18 +263,14 @@ public final class Constants {
       // 1. Manually place robot in perfect climbing position
       // 2. Record Dock/RawForward
       // 3. Record Dock/RawStrafe
-      // 4. Record Dock/RawYawDeg
-      // 5. Copy values here
+      // 4. Copy values here
       // ===================================================
 
-      public static final LoggedNetworkNumber targetForward =
-          new LoggedNetworkNumber("Tuning/Climb/TargetForward", 1.126);
+      public static final LoggedNetworkNumber DOCK_OFFSET_X =
+          new LoggedNetworkNumber("Tuning/Climb/DockOffsetX", 1.15);
 
-      public static final LoggedNetworkNumber targetStrafe =
-          new LoggedNetworkNumber("Tuning/Climb/TargetStrafe", 0.237);
-
-      public static final LoggedNetworkNumber targetYawDeg =
-          new LoggedNetworkNumber("Tuning/Climb/TargetYawDeg", -180);
+      public static final LoggedNetworkNumber DOCK_OFFSET_Y =
+          new LoggedNetworkNumber("Tuning/Climb/DockOffsetY", 0.30);
 
       // ===================================================
       // DOCKING TOLERANCES

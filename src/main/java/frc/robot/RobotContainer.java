@@ -61,8 +61,7 @@ public class RobotContainer {
   // ============================================================
   private final Field2d field = new Field2d();
 
-  private final AprilTagFieldLayout fieldLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
 
@@ -70,11 +69,9 @@ public class RobotContainer {
   // ENDGAME CONFIG
   // ============================================================
 
-  private final LoggedNetworkNumber endgameAlert1 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert 20", 20.0);
+  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert 20", 20.0);
 
-  private final LoggedNetworkNumber endgameAlert2 =
-      new LoggedNetworkNumber("/Tuning/Endgame Alert 10", 10.0);
+  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert 10", 10.0);
 
   // ============================================================
   // ENDGAME STATE MACHINE
@@ -99,12 +96,11 @@ public class RobotContainer {
 
     // ---------------- VISION INIT (CLEAN) ----------------
 
-    vision =
-        new Vision(
-            drive::addVisionMeasurement,
-            () -> drive.getPose(),
-            new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
-            new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
+    vision = new Vision(
+        drive::addVisionMeasurement,
+        () -> drive.getPose(),
+        new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
+        new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
 
     // ---------------- DEFAULT DRIVE ----------------
     drive.setDefaultCommand(
@@ -144,11 +140,16 @@ public class RobotContainer {
           new ModuleIOSim(TunerConstants.BackRight));
 
       default -> new Drive(
-          new GyroIO() {},
-          new ModuleIO() {},
-          new ModuleIO() {},
-          new ModuleIO() {},
-          new ModuleIO() {});
+          new GyroIO() {
+          },
+          new ModuleIO() {
+          },
+          new ModuleIO() {
+          },
+          new ModuleIO() {
+          },
+          new ModuleIO() {
+          });
     };
   }
 
@@ -197,7 +198,7 @@ public class RobotContainer {
 
     return Commands.runOnce(
         () -> {
-          Optional<Pose2d> opt = vision.getDockingPose();
+          Optional<Pose2d> opt = vision.getDockTransform().map(t -> drive.getPose().plus(t));
 
           if (opt.isEmpty()) {
             return;
@@ -225,11 +226,11 @@ public class RobotContainer {
                   SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
                 }));
 
+    driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    
     driver.y().whileTrue(DriveCommands.dockToClimb(drive, vision));
 
-    driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
-
-    driver.a().whileTrue(DriveCommands.logDockingPoseOnce(vision));
+    driver.a().whileTrue(DriveCommands.logDockCalibration(vision));
 
     driver
         .b()

@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
@@ -69,75 +70,88 @@ public final class DriveCommands {
   public static Command dockToClimb(Drive drive, Vision vision) {
 
     return Commands.runEnd(
-            () -> {
-              Pose2d target = vision.getDockTargetPose();
-              Pose2d current = drive.getPose();
+        () -> {
+          Pose2d current = drive.getPose();
 
-              Translation2d delta = target.getTranslation().minus(current.getTranslation());
+          Optional<Pose2d> targetOpt =
+              vision.getDockTargetPose() == null
+                  ? Optional.empty()
+                  : Optional.of(vision.getDockTargetPose());
 
-              double distance = delta.getNorm();
+          if (targetOpt.isEmpty()) return;
 
-              double angleError = target.getRotation().minus(current.getRotation()).getRadians();
+          Pose2d target = targetOpt.get();
 
-              double vx = delta.getX();
-              double vy = delta.getY();
+          // =====================================================
+          // FIELD ERROR (correct frame usage)
+          // =====================================================
+          Translation2d error = target.getTranslation().minus(current.getTranslation());
+          double distance = error.getNorm();
 
-              Rotation2d direction = new Rotation2d(vx, vy);
+          double angleError = target.getRotation().minus(current.getRotation()).getRadians();
 
-              double speedScale;
+          // =====================================================
+          // LINEAR CONTROL (clean P controller)
+          // =====================================================
+          double kP = 1.2;
 
-              if (distance > Constants.Climb.Vision.DOCK_SLOW_DISTANCE) {
-                speedScale = Constants.Climb.Vision.DOCK_MAX_SPEED;
-              } else if (distance > Constants.Climb.Vision.DOCK_FINAL_DISTANCE) {
-                speedScale = 0.35;
-              } else {
-                speedScale = Constants.Climb.Vision.DOCK_MIN_SPEED;
-              }
+          double vx = MathUtil.clamp(error.getX() * kP, -1.0, 1.0);
+          double vy = MathUtil.clamp(error.getY() * kP, -1.0, 1.0);
 
-              double vxCmd = direction.getCos() * speedScale;
-              double vyCmd = direction.getSin() * speedScale;
+          // optional slowdown near target
+          double slowZone = Constants.Climb.Vision.DOCK_FINAL_DISTANCE;
 
-              double omegaScale;
+          if (distance < slowZone) {
+            vx *= 0.4;
+            vy *= 0.4;
+          }
 
-              if (Math.abs(angleError) > Math.toRadians(8)) {
-                omegaScale = Constants.Climb.Vision.DOCK_MAX_OMEGA;
-              } else if (Math.abs(angleError) > Math.toRadians(3)) {
-                omegaScale = 0.4;
-              } else {
-                omegaScale = Constants.Climb.Vision.DOCK_MIN_OMEGA;
-              }
+          // =====================================================
+          // ANGULAR CONTROL
+          // =====================================================
+          double omega = MathUtil.clamp(angleError * 2.5, -2.0, 2.0);
 
-              double omegaCmd = MathUtil.clamp(angleError * 2.5, -omegaScale, omegaScale);
+          if (Math.abs(angleError) < Math.toRadians(3)) {
+            omega = 0;
+          }
 
-              if (distance < Constants.Climb.Vision.DOCK_POSITION_DEADBAND) {
-                vxCmd = 0;
-                vyCmd = 0;
-              }
+          // =====================================================
+          // CONVERT TO ROBOT SPEEDS
+          // =====================================================
+          ChassisSpeeds speeds =
+              ChassisSpeeds.fromFieldRelativeSpeeds(
+                  vx * drive.getMaxLinearSpeedMetersPerSec(),
+                  vy * drive.getMaxLinearSpeedMetersPerSec(),
+                  omega * drive.getMaxAngularSpeedRadPerSec(),
+                  current.getRotation());
 
-              if (Math.abs(angleError)
-                  < Math.toRadians(Constants.Climb.Vision.DOCK_ANGLE_DEADBAND)) {
-                omegaCmd = 0;
-              }
+          drive.runVelocity(speeds);
 
-              drive.runVelocity(
-                  new ChassisSpeeds(
-                      vxCmd * drive.getMaxLinearSpeedMetersPerSec(),
-                      vyCmd * drive.getMaxLinearSpeedMetersPerSec(),
-                      omegaCmd * drive.getMaxAngularSpeedRadPerSec()));
-
-              Logger.recordOutput("Dock/Distance", distance);
-              Logger.recordOutput("Dock/AngleErrorDeg", Math.toDegrees(angleError));
-              Logger.recordOutput("Dock/Target", target);
-              Logger.recordOutput("Dock/Robot", current);
-            },
-            () -> drive.stop(),
-            drive)
-        .withName("DockToClimb");
+          Logger.recordOutput("Dock/Distance", distance);
+          Logger.recordOutput("Dock/AngleErrorDeg", Math.toDegrees(angleError));
+          Logger.recordOutput("Dock/Target", target);
+          Logger.recordOutput("Dock/Robot", current);
+        },
+        () -> drive.stop(),
+        drive);
   }
 
-  public static Command logDockingPoseOnce(Vision vision) {
+  public static Command logDockCalibration(Vision vision) {
+
     return Commands.runOnce(
-        () -> Logger.recordOutput("Dock/TargetPose", vision.getDockTargetPose()));
+        () -> {
+          var dock = vision.getDockTransform();
+
+          if (dock.isEmpty()) {
+            Logger.recordOutput("Dock/Calibration/Status", "NO_DOCK");
+            return;
+          }
+
+          Translation2d t = dock.get().getTranslation();
+
+          Logger.recordOutput("Dock/Calibration/Forward", t.getX());
+          Logger.recordOutput("Dock/Calibration/Strafe", t.getY());
+        });
   }
 
   // ============================================================
