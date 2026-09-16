@@ -163,8 +163,8 @@ public class RobotContainer {
         "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(1.0));
     NamedCommands.registerCommand(
         "Shoot",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 48.0)
-            .withTimeout(6.0));
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 55.0)
+            .withTimeout (6.0));
   }
 
   // ============================================================
