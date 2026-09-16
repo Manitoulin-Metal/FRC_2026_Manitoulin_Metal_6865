@@ -136,7 +136,8 @@ public class RobotContainer {
         "IntakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
 
     NamedCommands.registerCommand("IntakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
-
+    NamedCommands.registerCommand(
+        "collectFuel", intakeRoller.collectFuelCommand().withTimeout(5.0));
     // NamedCommands.registerCommand("ClimbAutoUp",
     // ClimbCommands.climbUp(climb).withTimeout(2.0));
 
@@ -163,7 +164,7 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "Shoot",
         ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 48.0)
-            .withTimeout(3.0));
+            .withTimeout(6.0));
   }
 
   // ============================================================
