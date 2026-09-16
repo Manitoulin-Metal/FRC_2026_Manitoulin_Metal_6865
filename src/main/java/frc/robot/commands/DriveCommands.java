@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.Vision;
-import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
@@ -67,70 +66,108 @@ public final class DriveCommands {
   // CLIMB DOCKING (BACK-IN, CLEAN SINGLE-SOURCE VERSION)
   // ============================================================
 
+  // ============================================================
+  // CLIMB DOCKING (REAR LIMELIGHT ROBOT-RELATIVE VERSION)
+  // ============================================================
+
   public static Command dockToClimb(Drive drive, Vision vision) {
 
     return Commands.runEnd(
         () -> {
-          Pose2d current = drive.getPose();
-
-          Optional<Pose2d> targetOpt =
-              vision.getDockTargetPose() == null
-                  ? Optional.empty()
-                  : Optional.of(vision.getDockTargetPose());
-
-          if (targetOpt.isEmpty()) return;
-
-          Pose2d target = targetOpt.get();
-
-          // =====================================================
-          // FIELD ERROR (correct frame usage)
-          // =====================================================
-          Translation2d error = target.getTranslation().minus(current.getTranslation());
-          double distance = error.getNorm();
-
-          double angleError = target.getRotation().minus(current.getRotation()).getRadians();
-
-          // =====================================================
-          // LINEAR CONTROL (clean P controller)
-          // =====================================================
-          double kP = 1.2;
-
-          double vx = MathUtil.clamp(error.getX() * kP, -1.0, 1.0);
-          double vy = MathUtil.clamp(error.getY() * kP, -1.0, 1.0);
-
-          // optional slowdown near target
-          double slowZone = Constants.Climb.Vision.DOCK_FINAL_DISTANCE;
-
-          if (distance < slowZone) {
-            vx *= 0.4;
-            vy *= 0.4;
+          if (!vision.hasFreshDock()) {
+            drive.stop();
+            return;
           }
 
           // =====================================================
-          // ANGULAR CONTROL
+          // LIMELIGHT ROBOT-RELATIVE ERROR
+          //
+          // Forward  = distance along robot forward axis
+          // Strafe   = distance along robot left/right axis
+          // Yaw      = robot rotation relative to tag
+          //
+          // These are already robot-frame measurements.
+          // DO NOT convert to field-relative speeds.
           // =====================================================
-          double omega = MathUtil.clamp(angleError * 2.5, -2.0, 2.0);
 
-          if (Math.abs(angleError) < Math.toRadians(3)) {
+          double forwardError = vision.getDockTransform().get().getX();
+          double strafeError = vision.getDockTransform().get().getY();
+          double yawError =
+              MathUtil.angleModulus(vision.getDockTransform().get().getRotation().getRadians());
+
+          // =====================================================
+          // POSITION CONTROL
+          // =====================================================
+
+          double kPForward = 1.2;
+          double kPStrafe = 1.2;
+          double kPYaw = 2.5;
+
+          double vx = MathUtil.clamp(forwardError * kPForward, -1.0, 1.0);
+
+          double vy = MathUtil.clamp(strafeError * kPStrafe, -1.0, 1.0);
+
+          double omega = MathUtil.clamp(yawError * kPYaw, -2.0, 2.0);
+
+          // =====================================================
+          // STOP ROTATION WHEN ALIGNED
+          // =====================================================
+
+          if (Math.abs(Math.toDegrees(yawError)) < 3.0) {
             omega = 0;
           }
 
           // =====================================================
-          // CONVERT TO ROBOT SPEEDS
+          // FINAL APPROACH + STOP TOLERANCE
           // =====================================================
+
+          double distance = Math.hypot(forwardError, strafeError);
+
+          double distanceTolerance = 0.015; // 1.5 cm
+          double yawToleranceDeg = 1.0; // 1 degree
+
+          boolean atPosition =
+              distance < distanceTolerance && Math.abs(Math.toDegrees(yawError)) < yawToleranceDeg;
+
+          Logger.recordOutput("Dock/DistanceError", distance);
+          Logger.recordOutput("Dock/AtPosition", atPosition);
+
+          if (atPosition) {
+            drive.stop();
+            Logger.recordOutput("Dock/Status", "LOCKED");
+            return;
+          }
+
+          Logger.recordOutput("Dock/Status", "MOVING");
+
+          if (distance < Constants.Climb.Vision.DOCK_FINAL_DISTANCE) {
+            vx *= 0.25;
+            vy *= 0.25;
+          }
+
+          // =====================================================
+          // SEND ROBOT-RELATIVE COMMAND
+          // =====================================================
+
           ChassisSpeeds speeds =
-              ChassisSpeeds.fromFieldRelativeSpeeds(
+              new ChassisSpeeds(
                   vx * drive.getMaxLinearSpeedMetersPerSec(),
                   vy * drive.getMaxLinearSpeedMetersPerSec(),
-                  omega * drive.getMaxAngularSpeedRadPerSec(),
-                  current.getRotation());
+                  omega * drive.getMaxAngularSpeedRadPerSec());
 
           drive.runVelocity(speeds);
 
-          Logger.recordOutput("Dock/Distance", distance);
-          Logger.recordOutput("Dock/AngleErrorDeg", Math.toDegrees(angleError));
-          Logger.recordOutput("Dock/Target", target);
-          Logger.recordOutput("Dock/Robot", current);
+          // =====================================================
+          // CALIBRATION LOGGING
+          // =====================================================
+
+          Logger.recordOutput("Dock/ForwardError", forwardError);
+          Logger.recordOutput("Dock/StrafeError", strafeError);
+          Logger.recordOutput("Dock/YawErrorDeg", Math.toDegrees(yawError));
+
+          Logger.recordOutput("Dock/VxCmd", vx);
+          Logger.recordOutput("Dock/VyCmd", vy);
+          Logger.recordOutput("Dock/OmegaCmd", omega);
         },
         () -> drive.stop(),
         drive);

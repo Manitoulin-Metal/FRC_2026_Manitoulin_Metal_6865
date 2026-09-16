@@ -43,6 +43,11 @@ public class Vision extends SubsystemBase {
   private double lastDockTimestamp = 0;
 
   // =========================================================
+  // DOCK MEASUREMENT DATA
+  // =========================================================
+  public record DockMeasurement(double forward, double strafe, double yawDeg) {}
+
+  // =========================================================
   // CONSTRUCTOR
   // =========================================================
   public Vision(VisionConsumer consumer, Supplier<Pose2d> robotPoseSupplier, VisionIO... io) {
@@ -151,6 +156,10 @@ public class Vision extends SubsystemBase {
     Logger.recordOutput("Dock/Raw", raw);
     Logger.recordOutput("Dock/Filtered", filtered);
     Logger.recordOutput("Dock/HistorySize", dockHistory.size());
+
+    Logger.recordOutput("Dock/TargetForward", filtered.getX());
+    Logger.recordOutput("Dock/TargetStrafe", filtered.getY());
+    Logger.recordOutput("Dock/TargetYawDeg", filtered.getRotation().getDegrees());
   }
 
   // =========================================================
@@ -186,6 +195,7 @@ public class Vision extends SubsystemBase {
     // DOCKING (REAR CAMERA ONLY)
     // =====================================================
     computeDocking();
+    Logger.recordOutput("Dock/HasFreshDock", hasFreshDock());
   }
 
   // =========================================================
@@ -227,13 +237,6 @@ public class Vision extends SubsystemBase {
       // FINAL measurement: robot → dock
       Transform2d raw = new Transform2d(robot, dockPose);
 
-      // =====================================================
-      // REQUIRED LOGGING (THIS IS WHAT YOU ASKED FOR)
-      // =====================================================
-      Logger.recordOutput("Dock/TargetForward", raw.getX());
-      Logger.recordOutput("Dock/TargetStrafe", raw.getY());
-      Logger.recordOutput("Dock/TargetYawDeg", raw.getRotation().getDegrees());
-
       updateDock(raw);
       return;
     }
@@ -247,10 +250,35 @@ public class Vision extends SubsystemBase {
 
     double[] pose = LimelightHelpers.getBotPose_TargetSpace(Constants.Climb.Vision.REAR_LIMELIGHT);
 
-    if (pose == null || pose.length < 6) return;
+    if (pose == null || pose.length < 6) {
+      Logger.recordOutput("Dock/LimelightPoseValid", false);
+      return;
+    }
 
-    Transform2d raw =
-        new Transform2d(new Translation2d(-pose[2], pose[0]), Rotation2d.fromDegrees(pose[5]));
+    Logger.recordOutput("Dock/LL/X", pose[0]);
+    Logger.recordOutput("Dock/LL/Z", pose[2]);
+    Logger.recordOutput("Dock/LimelightPoseValid", true);
+    Logger.recordOutput("Dock/LimelightX", pose[0]);
+    Logger.recordOutput("Dock/LimelightY", pose[1]);
+    Logger.recordOutput("Dock/LimelightZ", pose[2]);
+    Logger.recordOutput("Dock/LimelightYaw", pose[5]);
+
+    // Camera to AprilTag measurement
+    Transform2d cameraToTag =
+        new Transform2d(
+            new Translation2d(pose[2], -pose[0]),
+            Rotation2d.fromDegrees(pose[5] + 180 + Constants.Climb.Vision.DOCK_OFFSET_YAW.get()));
+
+    // Your desired robot position relative to the tag
+    Transform2d tagToDock =
+        new Transform2d(
+            new Translation2d(
+                Constants.Climb.Vision.DOCK_OFFSET_X.get(),
+                Constants.Climb.Vision.DOCK_OFFSET_Y.get()),
+            Rotation2d.fromDegrees(Constants.Climb.Vision.DOCK_OFFSET_YAW.get()));
+
+    // Camera -> tag -> dock
+    Transform2d raw = cameraToTag.plus(tagToDock);
 
     updateDock(raw);
   }

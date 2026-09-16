@@ -2,12 +2,8 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.ClimbCommands;
@@ -17,7 +13,6 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.*;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.vision.*;
-import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.*;
 
@@ -50,28 +45,9 @@ public class RobotContainer {
 
   private final RobotVisualizer visualizer = new RobotVisualizer(intakeDeploy, climb);
 
-  // ============================================================
-  // VISION
-  // ============================================================
   private final Vision vision;
-  private boolean visionEnabled = true;
-
-  // ============================================================
-  // FIELD / AUTO
-  // ============================================================
-  private final Field2d field = new Field2d();
-
-  private final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
   private final LoggedDashboardChooser<Command> autoChooser;
-
-  // ============================================================
-  // ENDGAME CONFIG
-  // ============================================================
-
-  private final LoggedNetworkNumber endgameAlert1 = new LoggedNetworkNumber("/Tuning/Endgame Alert 20", 20.0);
-
-  private final LoggedNetworkNumber endgameAlert2 = new LoggedNetworkNumber("/Tuning/Endgame Alert 10", 10.0);
 
   // ============================================================
   // ENDGAME STATE MACHINE
@@ -96,11 +72,12 @@ public class RobotContainer {
 
     // ---------------- VISION INIT (CLEAN) ----------------
 
-    vision = new Vision(
-        drive::addVisionMeasurement,
-        () -> drive.getPose(),
-        new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
-        new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
+    vision =
+        new Vision(
+            drive::addVisionMeasurement,
+            () -> drive.getPose(),
+            new VisionIOLimelight(VisionConstants.rearCameraName, drive::getRotation),
+            new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
 
     // ---------------- DEFAULT DRIVE ----------------
     drive.setDefaultCommand(
@@ -140,16 +117,11 @@ public class RobotContainer {
           new ModuleIOSim(TunerConstants.BackRight));
 
       default -> new Drive(
-          new GyroIO() {
-          },
-          new ModuleIO() {
-          },
-          new ModuleIO() {
-          },
-          new ModuleIO() {
-          },
-          new ModuleIO() {
-          });
+          new GyroIO() {},
+          new ModuleIO() {},
+          new ModuleIO() {},
+          new ModuleIO() {},
+          new ModuleIO() {});
     };
   }
 
@@ -180,35 +152,18 @@ public class RobotContainer {
         Constants.currentMode == Constants.Mode.SIM
             ? ClimbCommands.hookUp(climb).withTimeout(3.0)
             : ClimbCommands.waitForHome(climb)
-                .andThen(ClimbCommands.hookUp(climb).withTimeout(3.0)));
+                .andThen(ClimbCommands.hookUp(climb).withTimeout(1.0)));
 
     NamedCommands.registerCommand(
-        "DockToClimb", DriveCommands.dockToClimb(drive, vision).withTimeout(4.0));
+        "DockToClimb", DriveCommands.dockToClimb(drive, vision).withTimeout(1.0));
 
-    NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(1.0));
+    NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(2.0));
     NamedCommands.registerCommand(
-        "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(2.0));
+        "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(1.0));
     NamedCommands.registerCommand(
         "Shoot",
         ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 48.0)
-            .withTimeout(5.0));
-  }
-
-  private Command visionTestCommand() {
-
-    return Commands.runOnce(
-        () -> {
-          Optional<Pose2d> opt = vision.getDockTransform().map(t -> drive.getPose().plus(t));
-
-          if (opt.isEmpty()) {
-            return;
-          }
-
-          Pose2d tagPose = opt.get();
-
-          // rest of your logic...
-        },
-        drive);
+            .withTimeout(3.0));
   }
 
   // ============================================================
@@ -218,21 +173,23 @@ public class RobotContainer {
 
     // ---------------- DRIVER ----------------
     driver
-        .start()
+        .start() // toggle robot centric vs field centric
         .onTrue(
             Commands.runOnce(
                 () -> {
                   robotCentric = !robotCentric;
-                  SmartDashboard.putBoolean("Drive/RobotCentric", robotCentric);
+                  Logger.recordOutput("Drive/RobotCentric", robotCentric);
                 }));
 
     driver.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
-    
-    driver.y().whileTrue(DriveCommands.dockToClimb(drive, vision));
 
-    driver.a().whileTrue(DriveCommands.logDockCalibration(vision));
+    driver.y().whileTrue(DriveCommands.dockToClimb(drive, vision)); // move to climbing position
 
     driver
+        .a()
+        .whileTrue(DriveCommands.logDockCalibration(vision)); // logs vision data for calibration
+
+    driver // resets gyro to zero heading, but keeps translation the same
         .b()
         .onTrue(
             Commands.runOnce(

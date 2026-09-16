@@ -47,9 +47,9 @@ public final class Constants {
   public static final double WHIP_TRIGGER_RPS = rpmToRps(1200.0);
 
   public static final double SHOOTER_AT_TARGET_TOLERANCE_RPS = 3.0;
-  public static final double SHOOTER_MIN_RPS = 28.0;
+  public static final double SHOOTER_MIN_RPS = 32.0;
 
-  public static final double DEMO_RPS = 28.0;
+  public static final double DEMO_RPS = 65.0;
 
   public static final double WHIP_SLOW_SPEED = -0.15;
 
@@ -267,11 +267,13 @@ public final class Constants {
       // ===================================================
 
       public static final LoggedNetworkNumber DOCK_OFFSET_X =
-          new LoggedNetworkNumber("Tuning/Climb/DockOffsetX", 1.15);
+          new LoggedNetworkNumber("Tuning/Climb/DockOffsetX", 1.08);
 
       public static final LoggedNetworkNumber DOCK_OFFSET_Y =
-          new LoggedNetworkNumber("Tuning/Climb/DockOffsetY", 0.30);
+          new LoggedNetworkNumber("Tuning/Climb/DockOffsetY", 0.0);
 
+      public static final LoggedNetworkNumber DOCK_OFFSET_YAW =
+          new LoggedNetworkNumber("Tuning/Climb/DockOffsetYaw", 0.0);
       // ===================================================
       // DOCKING TOLERANCES
       // ===================================================
@@ -281,7 +283,7 @@ public final class Constants {
       public static final double YAW_TOLERANCE_DEG = 2.0;
 
       public static final double DOCK_SLOW_DISTANCE = 0.60; // meters
-      public static final double DOCK_FINAL_DISTANCE = 0.15; // meters
+      public static final double DOCK_FINAL_DISTANCE = 0.10; // meters
 
       public static final double DOCK_MIN_SPEED = 0.08; // creep speed
       public static final double DOCK_MAX_SPEED = 0.80;
