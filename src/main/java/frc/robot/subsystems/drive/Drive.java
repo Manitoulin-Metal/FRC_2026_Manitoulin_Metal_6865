@@ -241,6 +241,7 @@ public class Drive extends SubsystemBase {
 
   public void runVelocity(ChassisSpeeds speeds) {
 
+    // try without the discretization (i.e.  (ChassisSpeeds.discretize(speeds, 0.02) -> (speeds)))
     var states = kinematics.toSwerveModuleStates(ChassisSpeeds.discretize(speeds, 0.02));
 
     SwerveDriveKinematics.desaturateWheelSpeeds(states, TunerConstants.kSpeedAt12Volts);

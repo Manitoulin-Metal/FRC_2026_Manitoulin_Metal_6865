@@ -80,6 +80,8 @@ public class RobotContainer {
             new VisionIOLimelight(VisionConstants.frontCameraName, drive::getRotation));
 
     // ---------------- DEFAULT DRIVE ----------------
+
+    //explore a slow down on drive speed here.
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
@@ -151,19 +153,19 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "ClimbAutoUp",
         Constants.currentMode == Constants.Mode.SIM
-            ? ClimbCommands.hookUp(climb).withTimeout(3.0)
+            ? ClimbCommands.hookUp(climb).withTimeout(4.0)
             : ClimbCommands.waitForHome(climb)
                 .andThen(ClimbCommands.hookUp(climb).withTimeout(1.0)));
 
     NamedCommands.registerCommand(
         "DockToClimb", DriveCommands.dockToClimb(drive, vision).withTimeout(1.0));
 
-    NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(2.0));
+    NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(4.0));
     NamedCommands.registerCommand(
         "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(1.0));
     NamedCommands.registerCommand(
         "Shoot",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 48.0)
+        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 60.0)
             .withTimeout(6.0));
   }
 

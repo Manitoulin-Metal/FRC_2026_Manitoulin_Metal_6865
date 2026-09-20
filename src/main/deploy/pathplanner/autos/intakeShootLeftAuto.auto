@@ -19,6 +19,12 @@
                 "data": {
                   "name": "IntakeDeploy"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "collectFuel"
+                }
               }
             ]
           }
@@ -31,12 +37,6 @@
                 "type": "path",
                 "data": {
                   "pathName": "throughBallsLeftPath"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "collectFuel"
                 }
               }
             ]
