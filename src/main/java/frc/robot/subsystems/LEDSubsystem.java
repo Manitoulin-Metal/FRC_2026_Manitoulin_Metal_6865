@@ -174,8 +174,8 @@ public class LEDSubsystem extends SubsystemBase {
 
       if (wave > 0.72) {
 
-        // warm honey gold
-        color = new Color(0, 0.76, 0.67);
+        // ourple
+        color = new Color(96, 2, 60);
 
       } else if (wave > 0.48) {
 
