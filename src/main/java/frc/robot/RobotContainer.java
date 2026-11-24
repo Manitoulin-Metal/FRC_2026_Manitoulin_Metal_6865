@@ -16,7 +16,7 @@ import frc.robot.subsystems.vision.*;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.*;
 
-//@SuppressWarnings("unused")
+// @SuppressWarnings("unused")
 public class RobotContainer {
 
   // ============================================================
@@ -81,7 +81,7 @@ public class RobotContainer {
 
     // ---------------- DEFAULT DRIVE ----------------
 
-    //explore a slow down on drive speed here.
+    // explore a slow down on drive speed here.
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
             drive,
