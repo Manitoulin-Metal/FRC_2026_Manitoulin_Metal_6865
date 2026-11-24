@@ -145,7 +145,7 @@ public final class Constants {
   // INTAKE DEPLOY
   // =========================================================
 
-  public static final class IntakeDeploy {
+  public static final class Claw {
 
     // Hardware
     public static final int MOTOR_ID = 59;

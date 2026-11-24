@@ -14,8 +14,8 @@ import frc.robot.Constants;
 
 public class ClawSubsystem extends SubsystemBase {
 
-  private final SparkFlex clawSparkFlex =
-      new SparkFlex(Constants.Intake.MOTOR_ID, MotorType.kBrushless);
+  private final SparkFlex ClawSparkFlex =
+      new SparkFlex(Constants.Claw.MOTOR_ID, MotorType.kBrushless);
 
   private final SparkClosedLoopController velocityController;
   private final LEDSubsystem led;
@@ -50,9 +50,9 @@ public class ClawSubsystem extends SubsystemBase {
         .velocityFF(Constants.Intake.KFF)
         .outputRange(-1, 1);
 
-    clawSparkFlex.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    ClawSparkFlex.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    velocityController = clawSparkFlex.getClosedLoopController();
+    velocityController = ClawSparkFlex.getClosedLoopController();
 
     intakeStartTimer.start();
     jamTimer.start();
@@ -94,11 +94,11 @@ public class ClawSubsystem extends SubsystemBase {
   }
 
   public double getVelocity() {
-    return clawSparkFlex.getEncoder().getVelocity();
+    return ClawSparkFlex.getEncoder().getVelocity();
   }
 
   public double getCurrent() {
-    return clawSparkFlex.getOutputCurrent();
+    return ClawSparkFlex.getOutputCurrent();
   }
 
   public boolean jamDetected() {
