@@ -36,7 +36,7 @@ public class RobotContainer {
   // SUBSYSTEMS
   // ============================================================
   private final LEDSubsystem led = new LEDSubsystem();
-  private final ClawSubsystem Claw = new ClawSubsystem();
+  private final ClawSubsystem Claw = new ClawSubsystem(led);
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(led);
   private final ShooterSubsystem shooter = new ShooterSubsystem();
   private final KickerSubsystem kicker = new KickerSubsystem(shooter);
@@ -296,4 +296,9 @@ public class RobotContainer {
     Logger.recordOutput("Match/Alert10", endgameState == EndgameState.WARNING_10);
     Logger.recordOutput("Match/CRITICAL", endgameState == EndgameState.CRITICAL);
   }
+
+public Command enableHomingCommand() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'enableHomingCommand'");
+}
 }
