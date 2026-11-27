@@ -196,4 +196,9 @@ public static void deploy() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'deploy'");
 }
+
+public Object startHoming() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'startHoming'");
+}
 }
