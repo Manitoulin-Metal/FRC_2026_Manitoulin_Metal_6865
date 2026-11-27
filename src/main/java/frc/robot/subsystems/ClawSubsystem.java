@@ -181,4 +181,9 @@ public class ClawSubsystem extends SubsystemBase {
       }
     }
   }
+
+public double getAngleDegrees() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'getAngleDegrees'");
+}
 }

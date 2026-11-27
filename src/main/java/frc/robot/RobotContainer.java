@@ -36,14 +36,14 @@ public class RobotContainer {
   // SUBSYSTEMS
   // ============================================================
   private final LEDSubsystem led = new LEDSubsystem();
-  private final IntakeDeploySubsystem intakeDeploy = new IntakeDeploySubsystem();
+  private final ClawSubsystem Claw = new ClawSubsystem();
   private final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(led);
   private final ShooterSubsystem shooter = new ShooterSubsystem();
   private final KickerSubsystem kicker = new KickerSubsystem(shooter);
   private final WhipSubsystem whip = new WhipSubsystem(shooter);
   private final ClimbSubsystem climb = new ClimbSubsystem(led);
 
-  private final RobotVisualizer visualizer = new RobotVisualizer(intakeDeploy, climb);
+  private final RobotVisualizer visualizer = new RobotVisualizer(Claw, climb);
 
   private final Vision vision;
 
@@ -134,12 +134,12 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
 
-    NamedCommands.registerCommand(
-        "IntakeDeploy", Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
+   // NamedCommands.registerCommand(
+        //"IntakeDeploy", Commands.runOnce(Claw::deploy, Claw));
 
-    NamedCommands.registerCommand("IntakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
-    NamedCommands.registerCommand(
-        "collectFuel", intakeRoller.collectFuelCommand().withTimeout(5.0));
+    //NamedCommands.registerCommand("IntakeStow", Commands.runOnce(Claw::stow, Claw));
+    //NamedCommands.registerCommand(
+        //"collectFuel", intakeRoller.collectFuelCommand().withTimeout(5.0));
     // NamedCommands.registerCommand("ClimbAutoUp",
     // ClimbCommands.climbUp(climb).withTimeout(2.0));
 
@@ -161,12 +161,12 @@ public class RobotContainer {
         "DockToClimb", DriveCommands.dockToClimb(drive, vision).withTimeout(1.0));
 
     NamedCommands.registerCommand("ClimbAutoDown", ClimbCommands.climbDown(climb).withTimeout(4.0));
-    NamedCommands.registerCommand(
-        "wave", Commands.runOnce(intakeDeploy::shake, intakeDeploy).withTimeout(1.0));
-    NamedCommands.registerCommand(
-        "Shoot",
-        ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, intakeDeploy, led, 60.0)
-            .withTimeout(6.0));
+//NamedCommands.registerCommand(
+       // "wave", Commands.runOnce(Claw::shake, Claw).withTimeout(1.0));
+    //NamedCommands.registerCommand(
+        //"Shoot",
+        //ShooterCommands.shootWithWhipAndShake(shooter, whip, kicker, Claw, led, 60.0)
+            //.withTimeout(6.0));
   }
 
   // ============================================================
@@ -200,8 +200,8 @@ public class RobotContainer {
                 drive));
 
     // ---------------- OPERATOR ----------------
-    operator.a().onTrue(Commands.runOnce(intakeDeploy::deploy, intakeDeploy));
-    operator.b().onTrue(Commands.runOnce(intakeDeploy::stow, intakeDeploy));
+    //operator.a().onTrue(Commands.runOnce(Claw, Claw));
+    //operator.b().onTrue(Commands.runOnce(Claw::stow, Claw));
 
     operator.pov(0).onTrue(Commands.runOnce(climb::moveDown, climb));
     operator.pov(180).onTrue(Commands.runOnce(climb::moveUp, climb));
@@ -210,11 +210,11 @@ public class RobotContainer {
 
     operator.leftTrigger(0.1).toggleOnTrue(intakeRoller.intakeToggleCommand());
 
-    operator
+    //operator
         .rightTrigger(0.5)
         .toggleOnTrue(
-            ShooterCommands.shootWithWhipAndShake(
-                shooter, whip, kicker, intakeDeploy, led, Constants.DEMO_RPS));
+           ShooterCommands.shootWithWhipAndShake(
+               shooter, whip, kicker, Claw, led, Constants.DEMO_RPS));
   }
 
   // ============================================================
@@ -225,10 +225,10 @@ public class RobotContainer {
   // CommandScheduler.getInstance().schedule(climb.homeCommand());
   // }
 
-  public Command enableHomingCommand() {
-    return Commands.sequence(
-        Commands.runOnce(() -> intakeDeploy.startHoming()), climb.homeCommand());
-  }
+  //public Command enableHomingCommand() {
+   // return Commands.sequence(
+       // Commands.runOnce(() -> Claw.startHoming()), climb.homeCommand());
+ // }
 
   public Command getAutonomousCommand() {
     return autoChooser.get();

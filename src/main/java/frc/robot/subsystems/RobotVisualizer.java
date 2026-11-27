@@ -7,10 +7,10 @@ import org.littletonrobotics.junction.Logger;
 
 public class RobotVisualizer {
 
-  private final IntakeDeploySubsystem intake;
+  private final ClawSubsystem intake;
   private final ClimbSubsystem climb;
 
-  public RobotVisualizer(IntakeDeploySubsystem intake, ClimbSubsystem climb) {
+  public RobotVisualizer(ClawSubsystem intake, ClimbSubsystem climb) {
 
     this.intake = intake;
     this.climb = climb;
