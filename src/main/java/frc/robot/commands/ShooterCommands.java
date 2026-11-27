@@ -1,9 +1,9 @@
 package frc.robot.commands;
-import frc.robot.subsystems.ClawSubsystem;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
-import frc.robot.Constants.Claw;
+import frc.robot.subsystems.ClawSubsystem;
 import frc.robot.subsystems.KickerSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -62,18 +62,18 @@ public final class ShooterCommands {
       ShooterSubsystem shooter,
       WhipSubsystem whip,
       KickerSubsystem kicker,
-      ClawSubsystem intakeDeploy,
+      ClawSubsystem Claw,
       LEDSubsystem led,
       double shooterRps) {
 
     return Commands.runOnce(
             () -> {
-             // intakeDeploy.shake();
+              Claw.shake();
 
               // shooter spin-up state
               led.requestState(LEDSubsystem.LEDState.SHOOTER_READY);
             },
-            intakeDeploy)
+            Claw)
         .andThen(
             Commands.parallel(
 
@@ -107,7 +107,7 @@ public final class ShooterCommands {
             interrupted -> {
               shooter.stopShooter();
               kicker.stop();
-              //intakeDeploy.deploy();
+              ClawSubsystem.deploy();
               whip.stop();
 
               // clear shooting states
@@ -123,8 +123,8 @@ public final class ShooterCommands {
       ClawSubsystem Claw,
       Supplier<Double> distanceMeters) {
 
-    //return Commands.runOnce(intake::shake, intake)
-       // .andThen(
+    return Commands.runOnce(Claw::shake, Claw)
+        .andThen(
             Commands.parallel(
 
                 // WHIP ALWAYS RUNS
@@ -149,14 +149,13 @@ public final class ShooterCommands {
                         kicker.setKicker(0.0);
                       }
                     },
-                  
                     shooter,
-                    kicker));
-                  }):
-        //.finallyDo(
-          //  interrupted -> {
-             // shooter.stopShooter();
-              //kicker.stop();
-              //Claw();
-            
-  
+                    kicker)))
+        .finallyDo(
+            interrupted -> {
+              shooter.stopShooter();
+              kicker.stop();
+              Claw.deploy();
+            });
+  }
+}

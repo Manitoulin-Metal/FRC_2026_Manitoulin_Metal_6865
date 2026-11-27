@@ -186,4 +186,14 @@ public double getAngleDegrees() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'getAngleDegrees'");
 }
+
+public void shake() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'shake'");
+}
+
+public static void deploy() {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'deploy'");
+}
 }
