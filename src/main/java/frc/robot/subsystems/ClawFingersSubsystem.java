@@ -12,11 +12,6 @@ public class ClawFingersSubsystem extends SubsystemBase {
   // Motor
   private final SparkMax Clawfinger = new SparkMax(57, MotorType.kBrushless);
 
-//  @SuppressWarnings("deprecation")
- // public WhipSubsystem(ShooterSubsystem shooterSubsystem) {
-   // Clawfinger.setInverted(true);
- // }
-
   /** Direct control (used by shooter command) */
   public void set(double speed) {
     Clawfinger.set(speed);
