@@ -14,30 +14,31 @@ public class RobotVisualizer {
 
     this.intake = intake;
     this.climb = climb;
-  
+  }
 
   // public RobotVisualizer(ClawSubsystem Claw, ClimbSubsystem climb2) {
   // TODO Auto-generated constructor stub
 
- // public void update() {
-   // double intakeAngleDeg = intake.getAngleDegrees();
+  public void update() {
+    double intakeAngleDeg = intake.getAngleDegrees();
 
-  //  double climberPos = climb.getPosition();
+    double climberPos = climb.getPosition();
 
-  //  Logger.recordOutput("Visualizer/IntakeAngle", intakeAngleDeg);
-  //  Logger.recordOutput("Visualizer/ClimberPos", climberPos);
+    Logger.recordOutput("Visualizer/IntakeAngle", intakeAngleDeg);
+    Logger.recordOutput("Visualizer/ClimberPos", climberPos);
+
     // Normalize climber travel from 0.0 to 1.0
-    //double climberPercent = climberPos / Constants.Climb.Motion.UP_TARGET_ROTATIONS;
+    double climberPercent = climberPos / Constants.Climb.Motion.UP_TARGET_ROTATIONS;
 
-  //gger.recordOutput(
-        //"ComponentPoses",
-        //new Pose3d[] {
+    Logger.recordOutput(
+        "ComponentPoses",
+        new Pose3d[] {
 
           // Component 0 = Intake
-        //  new Pose3d(0.3, 0.15, 0.225, new Rotation3d(0, Math.toRadians(intakeAngleDeg), 0)),
+          new Pose3d(0.3, 0.15, 0.225, new Rotation3d(0, Math.toRadians(intakeAngleDeg), 0)),
 
           // Component 1 = Climber
-        //  new Pose3d(0.0, 0.0, -0.15 * climberPercent, new Rotation3d())
-      //  });
+          new Pose3d(0.0, 0.0, -0.15 * climberPercent, new Rotation3d())
+        });
   }
 }
