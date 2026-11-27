@@ -3,8 +3,6 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import frc.robot.Constants;
-import frc.robot.IntakeDeploySubsystem;
-
 import org.littletonrobotics.junction.Logger;
 
 public class RobotVisualizer {
@@ -18,11 +16,10 @@ public class RobotVisualizer {
     this.climb = climb;
   }
 
-  //public RobotVisualizer(ClawSubsystem Claw, ClimbSubsystem climb2) {
-    //TODO Auto-generated constructor stub
+  // public RobotVisualizer(ClawSubsystem Claw, ClimbSubsystem climb2) {
+  // TODO Auto-generated constructor stub
 
-
-public void update() {
+  public void update() {
     double intakeAngleDeg = intake.getAngleDegrees();
 
     double climberPos = climb.getPosition();

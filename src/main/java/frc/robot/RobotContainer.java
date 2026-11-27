@@ -134,12 +134,13 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("StopDrive", Commands.runOnce(drive::stop, drive));
 
-    //NamedCommands.registerCommand(
-       // "IntakeDeploy", Commands.runOnce(ClawSubsystem::deploy, intakeDeploy));
+    // NamedCommands.registerCommand(
+    // "IntakeDeploy", Commands.runOnce(ClawSubsystem::deploy, intakeDeploy));
 
-    //NamedCommands.registerCommand("IntakeStow", Commands.runOnce(intakeDeploy::stow, intakeDeploy));
-   // NamedCommands.registerCommand(
-     //   "collectFuel", intakeRoller.collectFuelCommand().withTimeout(5.0));
+    // NamedCommands.registerCommand("IntakeStow", Commands.runOnce(intakeDeploy::stow,
+    // intakeDeploy));
+    // NamedCommands.registerCommand(
+    //   "collectFuel", intakeRoller.collectFuelCommand().withTimeout(5.0));
     // NamedCommands.registerCommand("ClimbAutoUp",
     // ClimbCommands.climbUp(climb).withTimeout(2.0));
 
@@ -201,7 +202,7 @@ public class RobotContainer {
 
     // ---------------- OPERATOR ----------------
     operator.a().onTrue(Commands.runOnce(ClawSubsystem::deploy, intakeDeploy));
-    //operator.b().onTrue(Commands.runOnce(ClawFingersSubsystem::stow, intakeDeploy));
+    // operator.b().onTrue(Commands.runOnce(ClawFingersSubsystem::stow, intakeDeploy));
 
     operator.pov(0).onTrue(Commands.runOnce(climb::moveDown, climb));
     operator.pov(180).onTrue(Commands.runOnce(climb::moveUp, climb));

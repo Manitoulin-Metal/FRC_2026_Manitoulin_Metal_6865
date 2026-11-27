@@ -182,23 +182,23 @@ public class ClawSubsystem extends SubsystemBase {
     }
   }
 
-public double getAngleDegrees() {
+  public double getAngleDegrees() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'getAngleDegrees'");
-}
+  }
 
-public void shake() {
+  public void shake() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'shake'");
-}
+  }
 
-public static void deploy() {
+  public static void deploy() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'deploy'");
-}
+  }
 
-public Object startHoming() {
+  public Object startHoming() {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("Unimplemented method 'startHoming'");
-}
+  }
 }
