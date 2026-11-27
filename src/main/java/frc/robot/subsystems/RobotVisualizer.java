@@ -18,9 +18,9 @@ public class RobotVisualizer {
     this.climb = climb;
   }
 
-  //public RobotVisualizer(IntakeDeploySubsystem intakeDeploy, ClimbSubsystem climb2) {
+  //public RobotVisualizer(ClawSubsystem Claw, ClimbSubsystem climb2) {
     //TODO Auto-generated constructor stub
-}
+
 
 public void update() {
     double intakeAngleDeg = intake.getAngleDegrees();
